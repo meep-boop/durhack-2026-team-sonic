@@ -245,3 +245,19 @@ each builder's brief (`builder-file-<name>.md`, on the `context` branch).
 - ⚠️ Conflicts: @laura @salman @max — an additive change to the contract you build on
 - Conflict status: open
 
+
+### 2026-11-14 22:15 — dashboard stack picked, splat on screen — @max
+- Shipped: research in `research/ledger.md` § 7 (splat renderer), § 8 (dashboard shell), § 9 (training splats on
+  the DGX Spark). `dashboard/` scaffolded on `max-scene` (`49342b3`, not merged yet): Vite + React, the scene in
+  plain three.js + Spark 2.4 behind `dashboard/src/scene/`. Shows Spark's SAMPLE splat, or a dropped .spz/.ply.
+  Run: `cd dashboard && npm install && npm run dev` · test: `npm test && npm run typecheck`.
+- Touched: `dashboard/` (new, branch `max-scene`); on `context`: `research/ledger.md`
+- Decision: by Max: Spark on three.js, proven by a short spike with a kill test (30 fps or more on the weakest laptop,
+  a click-pick under 300 ms, a cut-out under 2 s), PlayCanvas only if it fails; Vite 8 + React 19 + TypeScript,
+  plain three.js behind `scene/api.ts`, no React Three Fiber, a shared zustand store when one is needed.
+- 📨 To @ahmed: we have a DGX Spark, not Dawn access. Max's task 9 should read "train the set's splat on the DGX
+  Spark" (ledger § 9 has the pipeline). Please also fill Stack in `CLAUDE.md` with the dashboard line above.
+- 📨 To @laura: the dashboard is React, so your guide builder is React components. `scene/api.ts` is next; I'll
+  flag it here for you to agree before you build on it.
+- ⚠️ Conflicts: @laura — the app shell you build inside is now fixed (React)
+- Conflict status: open
