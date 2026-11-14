@@ -210,4 +210,12 @@ each builder's brief (`builder-file-<name>.md`, on the `context` branch).
   (that's what closes my task 1); the "TOP" edge on the sheet is upright for the +X/+Z check. @max — the marker is
   printed; the demo set it goes on isn't built yet. @ahmed — `fixtures/sample-guide.json` still says 0.16 m and
   `sample-marker`; fine for a SAMPLE, but the real guide needs 0.18.
+- Conflict status: open (the @ahmed part resolved by @ahmed 2026-11-14 in `f28411b`)
+
+### 2026-11-14 21:34 — sample guide sized for the printed marker — @ahmed
+- Shipped: `fixtures/sample-guide.json` and the example `guide.set` in `fixtures/messages.json` now use Laura's
+  marker: `{ "name": "marker", "width": 0.18, "height": 0.18 }`. Still labelled SAMPLE; positions unchanged.
+  Commit `f28411b`.
+- Touched: `fixtures/sample-guide.json`, `fixtures/messages.json`
+- ⚠️ Conflicts: @salman — if you bundled the sample guide or decode `messages.json` in a test, pull again
 - Conflict status: open
