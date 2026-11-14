@@ -92,6 +92,8 @@ splats until that's settled. Training splats in the app (the scan is taken in Sc
    - WebSocket client: `hello`, receive `guide.set` and `step.set`, send `step.done` and `pose`. Reconnect on drop.
    - The contract is TypeScript types only (`contracts/protocol.ts`). Mirror the messages as Swift `Codable`
      structs. `fixtures/messages.json` has one example of every message: decode them all in a unit test.
+   - Guide objects may carry an optional `expect` (for the UNO Q rig, added 2026-11-14). Make it optional in your
+     struct, or leave it out: Swift's decoder ignores keys it doesn't know.
    - The relay is on `main`: `cd relay && npm install && npm start` prints the `ws://` address to use. Then run
      `node fixtures/fake-expert.ts ws://<that address>` to send the sample guide. The connection is plain
      `ws://` on the team hotspot, so add `NSAllowsLocalNetworking` under App Transport Security in Info.plist.

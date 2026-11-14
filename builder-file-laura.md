@@ -73,6 +73,8 @@ them, so a renamed or resized model breaks two apps).
      beside it: ARKit needs the exact size. Print spares.
    - *Done when:* the file and its width are on `main`, and @salman confirms Xcode accepts it with no warnings.
 2. ⬜ **Pick and get the demo objects** 🟠 (asked for by @max)
+   - Added 2026-11-14 21:54 by @ahmed: the cable that moves needs a **brightly coloured plug boot** in one distinct colour
+     (the UNO Q rig's camera finds it by colour), and leave a spot where the Nicla Vision can see the ports.
    - What the set is made of (a real switch or router, a patch panel, a cover with screws), who brings or borrows
      it, and whether it can be carried to any table and scanned once.
    - *Done when:* the set is built with the marker fixed on it, and @max has been told it's ready to scan.
@@ -82,6 +84,8 @@ them, so a renamed or resized model breaks two apps).
      action pickers, send the guide, jump to a step, tick steps as `step.done` arrives.
    - The guide's shape is `Guide` in `contracts/protocol.ts` (`import type`). Steps are referred to by `id`, never
      by position, and each edit bumps `rev`. Positions come from @max's scene API already in the marker frame.
+   - Objects can carry an optional `expect: { port, cable: "in" | "out" }`: what the UNO Q rig should see once the
+     step is done. Let the expert set it on cable steps (port names to match the rig's, e.g. "17").
    - *Done when:* a three-step guide built in the UI appears in the fake phone's log, and its `step.done` ticks the
      step.
    - `[⚠ conflicts with @max: dashboard/src/scene/api.ts]` `[⚠ conflicts with @ahmed: the guide shape in contracts/protocol.ts]`

@@ -106,9 +106,20 @@ but all three teammates build on them, so every change after the first version i
    - Decide the provider and what the model looks at with @max. Return labels with positions.
    - *Done when:* @max's search box finds a labelled part from a real response; a canned response is labelled MOCK.
    - `[⚠ conflicts with @max: the label shape]`
-9. ⬜ **The hardware check** 🟠 (the RS feature, only if task 3 found a kit; moved from @laura 2026-11-14)
-   - The UNO Q and camera notice which port the cable is in and send `step.verified` through the relay to both
-     sides. Decide the detection method first.
+9. ⬜ **The hardware check** (the RS feature; plan decided 2026-11-14 21:54, see `PROJECT.md` → Decision log; moved from
+   @laura 2026-11-14)
+   - The chain: the Nicla Vision finds the cable's coloured boot in one region per port → prints one line per change
+     over USB → the powered hub → a Python app on the UNO Q, joined to the relay as `rig` with `websocket-client` →
+     it compares what the Nicla sees with the current step's `expect` and sends `step.verified`, and shows ✓ or ✗ on
+     the UNO Q's LED matrix through the Bridge (`research/ledger.md` § 10).
+   - Needs first: a **micro-USB data cable** for the Nicla (charge-only cables fail silently), a **charger in the hub's
+     power input** (the UNO Q doesn't power the hub), and a **brightly coloured patch cable** on Laura's set.
+   - 9a ⬜ **5-minute access test before anything else:** Nicla on the hub; can an App Lab Python app see and open
+     `/dev/ttyACM*`? Reports conflict. If it can't, run the same Python over SSH, outside App Lab.
+   - 9b ⬜ The Nicla script: one region per port, the colour threshold from OpenMV's Threshold Editor, one printed line
+     per change, e.g. which ports hold the cable.
+   - 9c ⬜ The UNO Q app: read the lines, follow the guide and step from the relay, compare with `expect`, send
+     `step.verified`, light the LED matrix.
    - *Done when:* moving the cable to the right port ticks the step on the dashboard and the phone, and a wrong port
      warns. Before the kit arrives: a fake rig message does the same on the two fakes.
    - `[⚠ conflicts with @laura: the rig mounts on her demo set, before it's scanned]`
@@ -124,14 +135,15 @@ but all three teammates build on them, so every change after the first version i
 ## 5. Waiting on / owed to others
 - 📤 **Owed to @salman @max @laura:** nothing right now. The contract, sample guide, fakes and relay are on `main`.
 - 📥 **Waiting on @salman:** his pick of WebRTC library.
-- 📥 **Waiting on @laura:** a spot on the demo set for the UNO Q rig.
+- 📥 **Waiting on @laura:** a spot on the demo set for the UNO Q rig, where the Nicla can see the ports, and a
+  brightly coloured patch cable for the cable that moves.
 
 ## 6. Working-style notes for the agent
 - Verbosity: Level 0.
 - Ahmed is the docs owner: run the owner sweep on every prompt (CLAUDE.md §4c).
 
 ## 7. Reference (no secrets, ever)
-- The plan: `docs/remote-assist/`. Evidence: `research/ledger.md` § 1–4 (Max) and § 5.
+- The plan: `docs/remote-assist/`. Evidence: `research/ledger.md` § 1–4 and 7–9 (Max), § 5, 6 and 10 (the rig).
 
 ---
 ── Archived (superseded — do NOT action) ──

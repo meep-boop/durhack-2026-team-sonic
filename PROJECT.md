@@ -44,6 +44,8 @@ Source: `EVENT.md` §1 (one notes file, not yet checked against Devpost). The th
 
 | Date | Decision |
 |---|---|
+| 2026-11-14 | Guide objects can carry an optional `expect: { port, cable: in or out }` for the rig (Ahmed) |
+| 2026-11-14 | The rig: colour blobs on the Nicla Vision, USB through the hub to the UNO Q, `websocket-client` to the relay, ✓/✗ on the LED matrix (Ahmed) |
 | 2026-11-14 | The RS camera is the Nicla Vision; the RS staff confirmed it counts (Ahmed) |
 | 2026-11-14 | Anyone on the hotspot can connect; the relay enforces who may send what, by role (Ahmed) |
 | 2026-11-14 | Phone and dashboard reach the relay over plain `ws://` on the team hotspot (Ahmed) |
@@ -128,6 +130,8 @@ Xcode" is answered: yes, per Ahmed.
 ### Blockers only humans can clear
 *Accounts, API keys, access, team registration, hardware, asking the organisers.*
 - **Dawn login.** Promised by the event, untested by us. Max to try.
+- **For the rig: a micro-USB data cable** for the Nicla Vision (not charge-only) and **a charger for the hub's power
+  input**. The team notes list no micro-USB data cable. Ahmed.
 - **Cleared 2026-11-14 21:47: a camera and a USB hub** for the RS challenge. The Nicla Vision is the camera (RS staff
   confirmed) and Ahmed has a USB-C hub.
 - **Cleared 2026-11-14 21:31: a paper printer** for the marker. Laura printed it, matte, 180 mm (`assets/marker/`).
@@ -255,6 +259,23 @@ The diagram, components, alignment maths and draft protocol are in `docs/remote-
 
 ## Decision log
 *Full records, newest first. NOW → Decisions in force holds the one-line versions.*
+
+## 2026-11-14 21:54 — The UNO Q rig
+- Chose (Ahmed, each as recommended): the Nicla Vision works out which port holds the cable, with OpenMV colour blobs
+  in one region per port; it sends one line per change over USB through the powered hub; a Python app on the UNO Q
+  joins the relay as `rig` with `websocket-client` (a new dependency, pure Python), compares with the step's
+  `expect`, sends `step.verified` and shows ✓ or ✗ on its LED matrix; guide objects gain an optional
+  `expect: { port, cable: "in" | "out" }`
+- Because: colour blobs have an official Nicla tutorial and need no training; the hub is mandatory for RS anyway;
+  the UNO Q visibly makes the decision, which is what RS judges; an explicit field beats parsing display labels
+  (`research/ledger.md` § 10)
+- Rejected: a trained model on the Nicla; detecting on the UNO Q; serial wires (pins vary by firmware, voltage
+  unconfirmed); the Nicla's Wi-Fi; parsing "Port 17" from labels; a rig-only config file; forwarding through the
+  laptop
+- Known risk: reports conflict on whether an App Lab app can open a USB serial device. Test first; the fallback is
+  running the same Python outside App Lab
+- `expect` says in or out (a detail inside the approved field, proposed by Ahmed's agent): a "pull out of port 14"
+  step needs "port 14 is now empty"
 
 ## 2026-11-14 21:29 — The relay
 - Chose (Ahmed, each as recommended): the `ws` package (with `@types/ws` and `@types/node` dev-only); state kept in
