@@ -45,6 +45,9 @@ each builder's brief (`builder-file-<name>.md`, on the `context` branch).
 | Who | Role | Branch | Owns (paths / pieces) | How the rest plugs into it |
 |---|---|---|---|---|
 | **Ahmed** `meep-boop` | Docs owner; build role TBD at kickoff | `ahmed-<area>` | The team kit (`scripts/`, `kit/`, `team.conf`), the shared docs on `context` | Add teammates: their key in `team.conf`, a brief, a row here |
+| **Max** `xaw1` | TBD at kickoff | `max-<area>` | TBD | Setup: `bash scripts/setup.sh max` |
+| **Laura** `furtunalaura` | TBD at kickoff | `laura-<area>` | TBD | Setup: `bash scripts/setup.sh laura` |
+| **Salman** _GitHub login to confirm_ | TBD at kickoff | `salman-<area>` | TBD | Setup: `bash scripts/setup.sh salman` |
 
 **Shared** (anyone may edit; flag it): `contracts/*`, `fixtures/*`
 
@@ -72,3 +75,9 @@ each builder's brief (`builder-file-<name>.md`, on the `context` branch).
 - Touched: everything (new repo)
 - ⚠️ Conflicts: none
 - Conflict status: resolved by @ahmed 2026-11-14
+
+### 2026-11-14 18:40 — Max, Laura and Salman added — @ahmed
+- Shipped: keys `max`, `laura`, `salman` in `team.conf`; a brief for each on `context` (roles set at kickoff); rows in Who owns what. GitHub invites still to send.
+- Touched: `team.conf`, `progress.md`, `builder-file-{max,laura,salman}.md` on `context`
+- ⚠️ Conflicts: @max @laura @salman — once invited: clone, then `bash scripts/setup.sh <your key>` (Start here, step 1)
+- Conflict status: open
