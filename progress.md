@@ -309,3 +309,21 @@ each builder's brief (`builder-file-<name>.md`, on the `context` branch).
   shows them the wrong size or way up. @max — same for the `.glb` files in the scene; the tip, not the centre, sits
   at `pos`.
 - Conflict status: open
+
+### 2026-11-14 23:03 — the demo is now an SSD swap on Ahmed's laptop — @laura
+- Shipped: no code. Records a team decision that changes several tasks.
+- Touched: nothing yet
+- Decision: by the whole team (Ahmed, Max, Salman, Laura): the demo set is **Ahmed's laptop, and the guide walks
+  the user through replacing its SSD**, instead of a network cabinet. The marker is taped to the same board as the
+  laptop, next to the SSD cover, so the two can't move apart.
+- 📨 To @ahmed: please (1) update `PROJECT.md` and the briefs (my task 2 is now "fix the laptop and the marker to one
+  board", and the coloured cable boot is no longer needed); (2) add `"ssd"` to `ModelName` in
+  `contracts/protocol.ts`, and I'll build `ssd.glb`/`ssd.usdz` with the same conventions as the other six
+  (`cable-plug` and `bolt` stay, just unused for now); (3) decide what the UNO Q rig checks now that there's no cable,
+  since `expect: { port, cable }` no longer fits. Suggestion: back up the laptop first, and in the demo take its own
+  SSD out and put the same one back, so it still boots.
+- 📨 To @max: the splat to scan is the laptop on its board (laptops are dark and shiny, so expect a harder scan than
+  the cabinet).
+- 📨 To @salman: the marker sits on a board beside the laptop, not on equipment; nothing changes in the app.
+- ⚠️ Conflicts: @ahmed — the `expect` field and the rig's port regions; @max @salman — the demo scene changes
+- Conflict status: open
