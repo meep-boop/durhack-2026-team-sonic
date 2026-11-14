@@ -18,6 +18,9 @@ The one research file for this project (`research-ledger` skill). Every source g
 | 8 | Dashboard shell: build tool, UI layer, R3F or not, scene-UI state (2026-11-14) | Scaffolding `dashboard/`; the scene/guide seam |
 | 9 | Training our own splat on the DGX Spark (2026-11-14) | Whether and how to beat Scaniverse's splat; replaces the Dawn route |
 | 10 | The UNO Q rig: Nicla Vision → UNO Q → relay (2026-11-14) | Wiring the RS hardware check; what to test on the board first |
+| 11 | Scanning on a non-LiDAR iPhone: Scaniverse vs the other apps (2026-11-14) | Which app captures the set; capture technique |
+| 12 | Video to splat on our own hardware, including pose-free models (2026-11-14) | The DGX Spark pipeline step by step; when VGGT helps |
+| 13 | Meshes: from video, and from a splat (2026-11-14) | Whether to make meshes; textured parts for the phone |
 
 ---
 
@@ -687,3 +690,238 @@ test:** can an App Lab app open the Nicla's serial port? If not, run the same Py
 - Cirkit Designer's Nicla Vision pinout (TX and RX on pins 5 and 6 of a 16-pin connector): contradicts Arduino's own
   pinout and the OpenMV forum. Tombstone.
 
+
+# § 11 Scanning on a non-LiDAR iPhone: Scaniverse vs the other apps (2026-11-14)
+**Question:** is Scaniverse the best way to get a splat of the demo set on an iPhone 13 or 15 (no LiDAR), and what are
+the alternatives? Builds on § 4 and § 9. Asked by Max.
+
+**How this pass was done:** about 20 minutes by Max's agent. Reddit and Polycam's help centre refused automated
+fetches; the community view is from radiancefields.com, trade press and PlayCanvas.
+
+## Findings
+### Scaniverse split in two (April 2026)
+- **Scaniverse Classic:** trains the splat on the phone, free, unlimited, nothing uploaded, about 2 minutes (sources:
+  [1], [2], [3], [4], [10]). **New Scaniverse:** cloud processing (map + mesh + splat) on monthly credits; free is
+  about 10 minutes of scanning a month; results take "a few hours" (sources: [3], [5], [6]).
+- Works without LiDAR since 2022; iOS 16.6+ and A12 or newer, so both our phones qualify; Niantic recommends iPhone 13
+  or newer and says LiDAR gives the best results (sources: [1], [5], [8]).
+- Exports SPZ and PLY splats; meshes (GLB, USDZ, FBX) come from mesh mode or the cloud, not from the splat (sources:
+  [1], [7], [9]). Classic can also export the raw images [10].
+- Whether exports are in metres is **not documented**; take scale from the 18 cm marker ([12], and § 4).
+### The alternatives
+- **Polycam:** cloud, minutes to an hour. A splat PLY needs the Basic plan, about $30/month (sources: [13], [15]).
+- **KIRI Engine:** cloud, 7–20 min; splats are Pro only (€18/month); can also export a mesh (sources: [20], [21],
+  [22]).
+- **Luma AI:** capture app effectively unmaintained; the company moved to video generation (sources: [11], [17],
+  [18]). Not a dependency for a 24-hour event.
+- **Varjo Teleport:** room-scale, 30 min to 24 h in the cloud (sources: [25], [27]).
+- **Apple Object Capture on the phone:** needs LiDAR. On a Mac it works from any photos, mesh only (sources: [31],
+  [32]).
+- **New in 2026, one source each:** Scantic (on-phone splats, paid full-quality export) [33]; SpAItial Echo-3 (cloud,
+  claims metric scale without LiDAR) [34]; SplatKing (a capture app with manual camera controls) [35].
+### Capture practice for small detail
+- Photos beat video for sharpness; with video use 4K, 60 fps, locked exposure, ISO, white balance and focus, and
+  shutter 1/125 s or faster (sources: [36], [38]).
+- 3–4 rings at different heights, 70–80% overlap, extra close shots of fine detail, soft even light, one continuous
+  take ([36], § 9 [1]). Glossy plastic and chrome cause false features [36].
+
+## Community consensus
+Scaniverse is the free, fast default; Polycam is picked for formats, KIRI for objects, both paid; desktop training is
+the quality route with a clean capture. Capture technique matters more than which app. Contrasting: vendors claim
+better cloud results (Echo-3, KIRI), with no measurements.
+
+## Final call (professional + community)
+Scaniverse Classic for the first splat (free, on-phone, about 2 min). For the sharpness needed to click 1 cm parts,
+train the same capture on the DGX Spark (§ 12). Paid cloud apps only as a second opinion. Check scale against the
+marker whatever the app.
+
+## Source ledger
+### KEEP
+- [1] Scaniverse App Store listing, v5.2.9, Oct 2026, https://apps.apple.com/us/app/id1541433223
+- [2] Niantic Spatial Scaniverse FAQ, 2026, https://www.nianticspatial.com/faq/scaniverse
+- [3] "Niantic Spatial releases major Scaniverse update", radiancefields.com, 2026-04-07, https://radiancefields.com/niantic-releases-major-scaniverse-update
+- [4] PlayCanvas "Recommended tools", https://developer.playcanvas.com/user-manual/gaussian-splatting/creating/recommended-tools/ (also [15])
+- [5] Scaniverse FAQ (credits, devices), 2026, https://www.nianticspatial.com/faq/scaniverse
+- [6] Scaniverse getting started, 2026, https://www.nianticspatial.com/capture/scaniverse-getting-started
+- [8] Scaniverse release notes, https://www.nianticspatial.com/capture/scaniverse-release-notes
+- [9] Niantic Spatial Capture product page, 2026, https://www.nianticspatial.com/products/capture
+- [13] Polycam pricing, Nov 2026, https://poly.cam/pricing
+- [20] "KIRI Engine Basic vs Pro", kiriengine.app, 2026-06-04, https://www.kiriengine.app/blog/kiri-engine-basic-vs-pro
+- [22] KIRI 3DGS feature page, https://www.kiriengine.app/features/3d-gaussian-splatting
+- [25] Teleport help (plans, PLY export), https://teleport.varjo.com/help/authors/1931641
+- [27] Teleport uploading and processing, https://teleport.varjo.com/help/en_US/-uploading-processing-
+- [31] Apple "Creating 3D objects from photographs", https://developer.apple.com/documentation/realitykit/creating-3d-objects-from-photographs.md
+- [32] Apple Developer Forums 732317 / 775564, https://developer.apple.com/forums/thread/732317
+- [36] PlayCanvas "Taking photos" (§ 9 [18]), https://developer.playcanvas.com/user-manual/gaussian-splatting/creating/taking-photos/
+### WEAK
+- [7] Same story as [3], cloud export formats
+- [10] "Scaniverse introduces Gaussian splatting", radiancefields.com, 2024-03-22, https://radiancefields.com/scaniverse-introduces-gaussian-splatting
+- [11] "Luma AI alternatives", radiancefields.com, 2026-07, https://radiancefields.com/luma-ai-alternatives
+- [12] SketchUp splat best practices (arbitrary scale), https://help.sketchup.com/en/gaussian-splats-best-practices
+- [16] Polycam "Create splats from images and video" (snippet only), https://learn.poly.cam/hc/en-us/articles/30549121659412
+- [17] Luma capture app listing, v1.3.14, Jan 2026 (search summary), https://apps.apple.com/FR/app/id1615849914
+- [18] "Luma AI review 2026", fast.io (snippet), https://fast.io/resources/luma-ai-review-2026/
+- [21] KIRI Engine 4.0, digitalproduction.com, 2025-09-13 (snippet), https://digitalproduction.com/2025/09/13/faster-wider-cleaner-kiri-engine-4-0-drops-mobile-scan-limits/
+- [33] Scantic, CG Channel, 2026-08-19, https://www.cgchannel.com/2026/08/scantic-trains-gaussian-splats-entirely-on-your-phone/
+- [34] SpAItial Echo-3, radiancefields.com, 2026-10-27 (vendor claims), https://radiancefields.com/spaitial-echo-3-turns-iphone-scans-into-3d-worlds
+- [35] SplatKing 1.0.2, radiancefields.com (its maker), 2026-06-06, https://radiancefields.com/splatking-1.0.2-native-colmap-export-from-lidar-a-redesigned-capture-interface-and-expanded-manual-controls
+- [38] MacRumors iPhone video tips (AE/AF lock, lock camera), https://www.macrumors.com/guide/better-video-with-your-iphone/
+### DO NOT USE
+- polyvia3d guides: "all four apps process in the cloud" is refuted by [2], [4], [9] (already DO NOT USE in § 9).
+- Teleport FAQ "we do not support export": superseded by [25].
+- Older third-party Polycam prices: superseded by [13].
+
+# § 12 Video to splat on our own hardware, including the new pose-free models (2026-11-14)
+**Question:** how do we turn an iPhone video of the set into a splat sharp enough to click 1 cm parts, on the DGX
+Spark or a laptop? Do the new "pose-free" models (VGGT and friends) make it faster or better? Builds on § 9.
+
+**How this pass was done:** about 20 minutes by Max's agent. Reddit blocked; community view from Hacker News, the
+PlayCanvas forum, GitHub and radiancefields.com.
+
+## Findings
+### Capture and frames
+- Turn HDR video off: iPhone 4K is Dolby Vision HLG and plain ffmpeg frames come out washed out [39]. Lock exposure
+  and focus; 4K at 60 fps for less blur (§ 9 [18]).
+- Pull frames at 3–4 fps, keep the sharpest with `sharp-frames-python` (MIT) (sources: [26], [28]). RealityScan's
+  video import doesn't reject blurry frames [36]. About 250–350 frames (our estimate).
+- 1080p training is enough for 1 cm screws at 25 cm (our arithmetic: about 0.2 mm per pixel); blur and pose accuracy
+  limit sharpness, not pixels.
+### Camera positions (poses)
+- COLMAP 4.x has GLOMAP built in (`global_mapper`) and newer features (sources: [1], [2]). CPU COLMAP is the known-good
+  route on the Spark (§ 9).
+### Trainers
+- gsplat MCMC uses far fewer Gaussians for about the same quality on benchmarks [19]; defaults to override:
+  `data_factor`, `save_ply`, `test_every` [17].
+- Against "MCMC is sharper": a 2026 drone study had Postshot's trainer best and MCMC behind [20]; a forum user found
+  Postshot better on fine detail [21]. Both weak for our case; compare on our set.
+- Postshot's free plan can't export (sources: [24], [25]). Brush runs on any GPU but has no ARM build [23].
+### Pose-free / feed-forward models
+- VGGT, VGGT-X, MapAnything, Depth Anything 3 and π3 all have code and weights, several with COLMAP export (sources:
+  [3]–[9]). They work at low resolution (518 px for VGGT) [3].
+- They don't beat COLMAP on quality yet: VGGT-X's own numbers show a gap (26.4 vs 27.4–27.9 PSNR) [5]; Hacker News users
+  report "decent" to "mediocre" on phone video [13]. AnySplat's "beats 3DGS" used VGGT poses as the baseline [12].
+- No report of any of them on GB10.
+
+## Community consensus
+COLMAP plus sharp-frame filtering is still the quality route; learned methods are faster and more robust on hard
+captures. Pose accuracy and blur limit sharpness more than the trainer. Contrasting: the methods' own authors claim
+parity, on benchmark data rather than phone video.
+
+## Final call (professional + community)
+SDR 4K video → about 300 sharp frames → CPU COLMAP 4.x → gsplat at 1080p, 30k steps, on the Spark (about 1.5–2 h after
+setup) → splat-transform to .spz/.sog. If COLMAP registers too few frames, VGGT or MapAnything poses into the same
+step. If the Spark setup fails, Brush on a laptop. Last resort: the Scaniverse splat. Never say "pose-free" or
+"trained on the Spark" unless the splat on screen was.
+
+## Source ledger
+### KEEP
+- [1] COLMAP 4.1.0, radiancefields.com, 2026, https://radiancefields.com/colmap-4.1.0-ships-caspar-gpu-bundle-adjustment-and-native-360-reconstruction
+- [3] facebookresearch/vggt README, May 2026, https://github.com/facebookresearch/vggt
+- [4] VGGT, CVPR 2025, arXiv 2503.11651, https://arxiv.org/html/2503.11651v1
+- [5] VGGT-X, arXiv 2509.25191, https://arxiv.org/abs/2509.25191
+- [6] VGGT-X repo, https://github.com/Linketic/VGGT-X
+- [7] MapAnything, Meta, 3DV 2026, https://github.com/facebookresearch/map-anything
+- [8] Depth Anything 3, Nov 2025, https://github.com/ByteDance-Seed/Depth-Anything-3
+- [9] Pi3 / Pi3X, https://github.com/yyfz/Pi3
+- [10] naver/mast3r, https://github.com/naver/mast3r
+- [12] AnySplat, arXiv 2505.23716, https://huggingface.co/papers/2505.23716
+- [16] gsplat README, https://github.com/nerfstudio-project/gsplat
+- [17] gsplat `simple_trainer.py` defaults, https://raw.githubusercontent.com/nerfstudio-project/gsplat/main/examples/simple_trainer.py
+- [18] gsplat COLMAP example, https://docs.gsplat.studio/main/examples/colmap.html
+- [20] Fadilah et al., 3DGS for UAV heritage, ISPRS Archives, 2026-02-12, https://isprs-archives.copernicus.org/articles/XLVIII-2-W12-2026/143/2026/
+- [22] LichtFeld Studio README, https://github.com/MrNeRF/LichtFeld-Studio
+- [24] "Postshot launches v1.0", radiancefields.com, Aug 2025, https://radiancefields.com/postshot-launches-v1-0-out-of-beta
+- [25] Postshot pricing, https://activation.jawset.com/shop/pricing
+- [26] Sharp Frames Python, https://github.com/reflct/sharp-frames-python
+- [28] nerfstudio "Using custom data", https://docs.nerf.studio/quickstart/custom_dataset.html
+- [36] RealityScan video import, https://rshelp.capturingreality.com/en-US/tools/videoimport.htm
+- [38] fVDB Reality Capture 0.6.0, NVIDIA, 2026-09-18, https://fvdb-reality-capture.readthedocs.io/latest/release_notes.html
+### WEAK
+- [2] Debian COLMAP 4.0.2 docs (snippet), https://sources.debian.org/src/colmap/4.0.2-1/doc/features.rst
+- [11] InstantSplat (sparse views only), https://github.com/NVlabs/InstantSplat
+- [13] Hacker News VGGT thread (mirror), https://hn.nuxt.dev/item/43470651
+- [15] Stanford CS231n poster, iPhone reconstruction benchmark (snippet only), https://sflynn7.github.io/3d-reconstruction-benchmark/poster.pdf
+- [19] gsplat paper, arXiv 2409.06765 (snippet), https://arxiv.org/pdf/2409.06765
+- [21] PlayCanvas forum, MCMC method, Oct 2025, https://forum.playcanvas.com/t/gaussian-splatting-mcmc-method/40962
+- [23] Brush v0.3, https://radiancefields.com/brush-releases-v0-3
+- [39] HDR to SDR with ffmpeg, dev.to, 2026, https://dev.to/masonwritescode/ffmpeg-hdr-to-sdr-tone-mapping-that-doesnt-look-washed-out-2026-24ie
+### DO NOT USE
+- "AnySplat beats 3DGS": its baseline used VGGT poses, not COLMAP [12].
+- "VGGT 21.88 vs COLMAP 29.24 PSNR" (GASE, arXiv 2606.17520): from a snippet, not in the paper we could read.
+- MILo on the GB10 tonight: tested only on CUDA 11.8, non-commercial licence (https://github.com/Anttwo/MILo).
+
+# § 13 Meshes: from video, and from a splat (2026-11-14)
+**Question:** can we turn a video of the room into a solid 3D model (a mesh)? Can we turn a splat into one? What would
+a mesh be good for in this project? Asked by Max.
+
+**How this pass was done:** about 20 minutes by Max's agent. Papers, Apple docs and repos opened; community view from
+forums.
+
+## Findings
+### Photos or video → mesh
+- **Apple Object Capture:** not on non-LiDAR iPhones, but works on an Apple-silicon Mac from any photos; "area mode"
+  handles scenes, not just objects; output is a textured USDZ that RealityKit loads directly; no true scale without
+  depth (sources: [M1], [M3], [M4]).
+- **RealityScan (Epic):** free, Windows only, needs an NVIDIA or AMD GPU for good meshes; exports GLB, USD, OBJ, FBX
+  (sources: [M5], [M6]).
+- **Meshroom:** no ARM build [M7]. Not viable on the Spark.
+- **Neural surface methods** (2DGS, RaDe-GS, GOF, MILo) beat plain splats for geometry on benchmarks (Tanks & Temples
+  F1: 3DGS 0.09, 2DGS 0.30, MILo 0.47–0.49) and take 10–110 min on a 4090 (sources: [M9], [M11]). gsplat ships a 2DGS
+  trainer [M16]; the others pin old CUDA stacks [M12]. Their meshes carry vertex colours, which RealityKit doesn't
+  render without a custom material or a texture bake [M25].
+- Black glossy plastic, specular highlights and thin cables are weak spots for every method (sources: [M9], [M33]).
+### Splat → mesh
+- **Possible, but documented as poor:** converting a plain splat gives F1 0.09 against 0.30 for 2DGS trained from the
+  images (sources: [M9], [M11]). Clean results need coarse voxels (2 cm in one report), which erase 1 cm parts [M15].
+- The better post-hoc method needs the original camera positions, which a bare Scaniverse file doesn't have [M14].
+- Retraining with a surface-aware method from the original images beats converting.
+### What a mesh is for here
+- **Phone cut-outs:** a textured USDZ of a part would beat the stand-in model on the phone (sources: [M1], [M27]).
+- **Clicking in the browser:** exact only for parts captured up close; the room's splat raycast already exists (§ 7).
+- **Measuring:** better defined on a mesh; scale still comes from the marker either way.
+- The splat stays better for looking at the room: photoreal, forgiving of shiny black plastic and thin cables.
+### Formats
+- glTF for three.js (`gltf-transform optimize`) [M29]; USDZ for RealityKit, made directly by Object Capture or via
+  Blender [M28]. Keep each part under about 50k triangles with a 1–2K texture (our estimate from [M1], [M27]).
+
+## Community consensus
+Train surface-aware from images rather than converting a finished splat; photogrammetry gives the most usable
+textured meshes; splats look better. Contrasting: GS2Mesh says post-hoc can work well, but it needs the camera poses.
+
+## Final call (professional + community)
+Room: keep the splat for the dashboard; don't mesh it. Parts: if a phone needs to show a real part, photograph it up
+close (80–150 photos, marker in frame) and run Object Capture on a Mac (or RealityScan on a Windows GPU laptop); crop,
+scale from the marker, ship USDZ to the phone and GLB to the dashboard. Label meshes "photogrammetry mesh" and sizes
+"estimated from the marker". Before starting: check whether the team has a Mac, and which iOS the demo phones run
+(iOS 27.2+ may draw splats on the phone, § 1).
+
+## Source ledger
+### KEEP
+- [M1] PhotogrammetrySession detail levels, Apple docs, https://developer.apple.com/documentation/realitykit/photogrammetrysession/request/detail.md
+- [M2] PhotogrammetrySession, Apple docs, https://developer.apple.com/documentation/realitykit/photogrammetrysession.md
+- [M3] "Discover area mode for Object Capture", WWDC24, https://developer.apple.com/videos/play/wwdc2024/10107/
+- [M4] Apple Developer Forums 775564 (LiDAR needed on iPhone), 2025, https://developer.apple.com/forums/thread/775564
+- [M5] RealityScan 2.2, Digital Production, 2026-06-26, https://digitalproduction.com/2026/06/26/realityscan-2-2-widens-gpu-support/
+- [M9] 2D Gaussian Splatting, SIGGRAPH 2024, arXiv 2403.17888, https://arxiv.org/html/2403.17888
+- [M10] 2DGS repo, https://github.com/hbb1/2d-gaussian-splatting
+- [M11] MILo, SIGGRAPH Asia 2025, arXiv 2506.24096, https://arxiv.org/html/2506.24096v2
+- [M12] MILo repo, https://github.com/Anttwo/MILo
+- [M14] GS2Mesh, ECCV 2024, arXiv 2404.01810, https://arxiv.org/abs/2404.01810
+- [M16] gsplat examples (2DGS trainer), https://github.com/nerfstudio-project/gsplat/tree/main/examples
+- [M25] Apple Developer Forums 691674, vertex colour unsupported, 2021, https://developer.apple.com/forums/thread/691674
+- [M27] Apple Developer Forums 693867, USDZ size guidance, 2021, https://developer.apple.com/forums/thread/693867
+- [M28] AOUSD forum, usdzconvert discontinued, 2024, https://forum.aousd.org/t/obj-gltf-to-usdz-usdzconvert-discontinued/1648
+- [M29] gltf-transform CLI, https://gltf-transform.dev/cli
+- [M30] open3d 0.19.0 on PyPI (no aarch64), https://pypi.org/pypi/open3d/0.19.0/json
+### WEAK
+- [M6] RealityScan hardware requirements (snippet), https://dev.epicgames.com/documentation/realityscan/hardware-and-software-requirements
+- [M7] Meshroom 2025.1.0 (snippet), https://github.com/alicevision/Meshroom/releases/tag/v2025.1.0
+- [M15] NVIDIA forum, fVDB mesh from 3DGS, May 2026, one user, https://forums.developer.nvidia.com/t/fvdb-reality-capture-poor-mesh-quality-from-3dgs-parameter-tuning-alternatives/369420
+- [M18] PGSR, arXiv 2406.06521, https://arxiv.org/abs/2406.06521
+- [M22] KIRI 4.2 "3DGS to Mesh 3.0", radiancefields.com, Apr 2026 (vendor claims), https://radiancefields.com/kiri-engine-4.2-ships-3dgs-to-mesh-3.0
+- [M26] Apple Developer Forums 759449, vertex colours via ShaderGraph, https://developer.apple.com/forums/thread/759449
+- [M33] Black/shiny object scanning: Formlabs forum, https://forum.formlabs.com/t/3d-scanning-black-plastic-or-metal-utilitarian-objects/21376
+### DO NOT USE
+- The bransantiago/MILo mirror: downloads point to an unrelated zip. Use Anttwo/MILo only.
+- polyvia3d splat-to-mesh page: unsourced.
+- "Post-hoc conversion gives a usable mesh of 1 cm parts from our Scaniverse splat": refuted by [M9], [M11], [M15].
