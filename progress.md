@@ -47,7 +47,7 @@ each builder's brief (`builder-file-<name>.md`, on the `context` branch).
 | **Ahmed** `meep-boop` | Docs owner; build role TBD at kickoff | `ahmed-<area>` | The team kit (`scripts/`, `kit/`, `team.conf`), the shared docs on `context` | Add teammates: their key in `team.conf`, a brief, a row here |
 | **Max** `xaw1` | TBD at kickoff | `max-<area>` | TBD | Setup: `bash scripts/setup.sh max` |
 | **Laura** `furtunalaura` | TBD at kickoff | `laura-<area>` | TBD | Setup: `bash scripts/setup.sh laura` |
-| **Salman** _GitHub login to confirm_ | TBD at kickoff | `salman-<area>` | TBD | Setup: `bash scripts/setup.sh salman` |
+| **Salman** `salman-abdulrazaq-ali` | TBD at kickoff | `salman-<area>` | TBD | Setup: `bash scripts/setup.sh salman` |
 
 **Shared** (anyone may edit; flag it): `contracts/*`, `fixtures/*`
 
@@ -63,8 +63,8 @@ each builder's brief (`builder-file-<name>.md`, on the `context` branch).
 ## Latest
 - **The volatile facts live here only:** the current commit, test counts, what's merged vs. local-only, and deploy
   status.
-- **As of 2026-11-14 17:05:** `main` has the team kit, and the `context` branch is seeded (`92ef49a`). Kit tests are
-  green locally (`test-context-scripts.sh`, `test-git-hooks.sh`). No project code yet; teammates not added yet.
+- **As of 2026-11-14 18:45:** `main` has the team kit, and the `context` branch is seeded. Kit tests are
+  green locally (`test-context-scripts.sh`, `test-git-hooks.sh`). No project code yet. All four of us have repo access.
 
 ---
 
@@ -80,4 +80,10 @@ each builder's brief (`builder-file-<name>.md`, on the `context` branch).
 - Shipped: keys `max`, `laura`, `salman` in `team.conf`; a brief for each on `context` (roles set at kickoff); rows in Who owns what. GitHub invites still to send.
 - Touched: `team.conf`, `progress.md`, `builder-file-{max,laura,salman}.md` on `context`
 - ⚠️ Conflicts: @max @laura @salman — once invited: clone, then `bash scripts/setup.sh <your key>` (Start here, step 1)
+- Conflict status: open
+
+### 2026-11-14 18:45 — teammates on GitHub — @ahmed
+- Shipped: Max (`xaw1`), Laura (`furtunalaura`) and Salman (`salman-abdulrazaq-ali`) accepted their invites, with write access. Salman's login is in his brief and in Who owns what.
+- Touched: `progress.md`, `builder-file-salman.md` on `context`
+- ⚠️ Conflicts: @max @laura @salman — clone, then `bash scripts/setup.sh <your key>` (Start here, step 1)
 - Conflict status: open
