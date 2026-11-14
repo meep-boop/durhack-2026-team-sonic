@@ -17,6 +17,7 @@ The one research file for this project (`research-ledger` skill). Every source g
 | 7 | Splat renderer for the dashboard: Spark vs PlayCanvas vs the rest (2026-11-14) | Picking the renderer; picking and cut-out APIs; the spike's pass criteria |
 | 8 | Dashboard shell: build tool, UI layer, R3F or not, scene-UI state (2026-11-14) | Scaffolding `dashboard/`; the scene/guide seam |
 | 9 | Training our own splat on the DGX Spark (2026-11-14) | Whether and how to beat Scaniverse's splat; replaces the Dawn route |
+| 10 | The UNO Q rig: Nicla Vision → UNO Q → relay (2026-11-14) | Wiring the RS hardware check; what to test on the board first |
 
 ---
 
@@ -606,3 +607,83 @@ Never claim "trained on our DGX Spark" unless the splat on screen was.
 ### DO NOT USE
 - [24] polyvia3d guides: unsourced PSNR figures (Scaniverse 25.2 dB, photo vs video 28.4 vs 26.8 dB). Keep these
   numbers out of the pitch. https://polyvia3d.pages.dev/guides/gaussian-splatting-tools-comparison
+
+# § 10 The UNO Q rig: Nicla Vision → UNO Q → relay (2026-11-14)
+**Question:** for the RS hardware check, where should "which port is the cable in" be worked out, how does the
+Nicla Vision talk to the UNO Q, and how does the UNO Q's verdict reach our relay?
+
+**How this pass was done:** about 15 minutes by Ahmed's agent. One forum thread and one blog post were opened and
+read in full ([6], [2]); the rest were read through search summaries. Arduino's official UNO Q user manual didn't
+load, so UNO Q facts come from third-party guides that agree with each other.
+
+## Findings
+### The UNO Q
+- One USB-C port. It switches to host mode for a hub, but **the hub needs its own Power Delivery supply**: the UNO Q
+  doesn't power the hub. If the board is powered through VIN or 5V the port may not switch to host mode (sources:
+  [1], [11]).
+- Dual-band Wi-Fi 5 and Bluetooth 5.1; Debian 13 on the Linux side (sources: [1], [11]).
+- Python apps in App Lab run in a container; extra packages go in a `requirements.txt` beside `main.py`, and
+  packages installed by hand over SSH aren't seen by the app (sources: [7], [8]).
+- Python talks to the sketch through the Bridge: `Bridge.call`, `Bridge.notify` and `Bridge.provide`, both ways
+  (source: [2]). Header pins are 3.3 V maximum (source: [2]).
+- **Can an App Lab app open a USB serial device on the hub? Reports conflict.** Two users found the container
+  couldn't see it; one confirmed reading a Teensy on the hub from App Lab Python with plain PySerial (July 2026);
+  plain Python run over SSH, outside App Lab, can open it (sources: [6], [9]). No Arduino staff answer. **Test on
+  our board before building on it.**
+### The Nicla Vision
+- OpenMV finds coloured blobs with `find_blobs`, limited to a region of interest (`roi`); Arduino's Nicla tutorial
+  uses the Threshold Editor to pick the colour (sources: [3], [4]).
+- An OpenMV script's printed output can be read over USB serial by a host with pyserial, with DTR disabled or the
+  camera suppresses its output (source: [5]). OpenMV's maintainer calls the RPC library "a little finicky" over USB
+  (source: [10]), so plain printed lines are the safer protocol.
+- Its UART pins differ by firmware version, and no source confirms their logic level; its analog pins A0–A2 are
+  1.8 V only and 3.3 V damages them (source: [12]). Wiring a UART to the UNO Q is the riskiest link.
+### Reaching the relay
+- `websocket-client` 1.9.2 on PyPI has no runtime dependencies and needs Python 3.10 or later (source: [13]).
+
+## Community consensus
+Arduino forum and OpenMV forum only. Agreement: the UNO Q is a good USB host; App Lab's container is the friction
+point for USB serial and for packages; the Nicla's UART is confusing across firmware. Contrasting view: one user
+reads USB serial from App Lab fine. Nobody has published our exact chain. No Reddit or Hacker News pass.
+
+## Final call (professional + community)
+Do the vision on the Nicla (colour blobs, one region per port) and send one short line per change over USB through
+the hub. The UNO Q reads it, decides right or wrong for the current step, reports `step.verified` to the relay over
+Wi-Fi with `websocket-client`, and can show the result on its LED matrix through the Bridge. **First, a 5-minute
+test:** can an App Lab app open the Nicla's serial port? If not, run the same Python outside App Lab over SSH.
+
+## Source ledger
+### KEEP
+- [1] Arduino UNO Q, Waveshare docs, https://docs.waveshare.com/Arduino-UNO-Q-02016 : one USB-C port, host mode,
+  hub power, Wi-Fi 5.
+- [3] "Blob Detection with OpenMV", Arduino docs, https://docs.arduino.cc/tutorials/nicla-vision/blob-detection :
+  `find_blobs` and the Threshold Editor on the Nicla Vision.
+- [4] "Finding blobs", OpenMV docs, https://docs.openmv.io/openmvcam/tutorial/image/finding/blobs.html : `find_blobs`
+  thresholds and `roi`.
+- [11] "Arduino UNO Q: high-resolution pinout, datasheet, schema, and specifications", mischianti.org,
+  https://mischianti.org/arduino-uno-q-high-resolution-pinout-datasheet-schema-and-specifications/ : agrees with [1].
+- [13] websocket-client on PyPI, https://pypi.org/project/websocket-client/ : 1.9.2, no runtime dependencies.
+### WEAK
+- [2] "Arduino UNO Q Bridge: how Python and the STM32 sketch talk", mischianti.org, https://mischianti.org/?p=36047 :
+  the Bridge API and 3.3 V headers. One third-party source; App Lab's own examples will confirm it on the board.
+- [5] OpenMV firmware README, https://github.com/openmv/openmv : printed output over USB serial, DTR disabled.
+  Vendor source, not cross-checked.
+- [6] "Arduino Uno Q (App Lab) as a USB Host … Python environment sees 0 devices", Arduino forum,
+  https://forum.arduino.cc/t/arduino-uno-q-app-lab-as-a-usb-host-to-an-uno-r3-python-environment-sees-0-devices/1433482
+  : conflicting user reports on container access to USB serial; no staff answer.
+- [7] "How to install Python Packages", Arduino forum, https://forum.arduino.cc/t/how-to-install-python-packages/1411276
+  : `requirements.txt` beside `main.py`.
+- [8] Answer Overflow thread, https://www.answeroverflow.com/m/1470236402661982278 : packages installed over SSH
+  aren't seen by App Lab apps.
+- [9] "UNO Q: Possible to connect Python (not containerized) with Arduino?", Arduino forum,
+  https://forum.arduino.cc/t/uno-q-possible-to-connect-python-not-containerized-with-arduino/1436102 : Python outside
+  App Lab can open `/dev/ttyACM0`; the bridge package comes as a wheel from Arduino's GitHub.
+- [10] "Nicla vision stream video over USB", OpenMV forum, https://forums.openmv.io/t/nicla-vision-stream-video-over-usb/10334
+  : RPC over USB is "a little finicky".
+- [12] Arduino Nicla Vision quick reference, OpenMV docs,
+  https://docs.openmv.io/openmvcam/quickref/arduino-nicla-vision.html, and UART threads on the Arduino and OpenMV
+  forums : UART pins vary by firmware; A0–A2 are 1.8 V only.
+### DO NOT USE
+- Cirkit Designer's Nicla Vision pinout (TX and RX on pins 5 and 6 of a 16-pin connector): contradicts Arduino's own
+  pinout and the OpenMV forum. Tombstone.
+
