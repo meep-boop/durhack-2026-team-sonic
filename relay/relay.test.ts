@@ -312,6 +312,16 @@ test("a new guide clears progress, an edit of the same guide keeps it", async (t
   assert.equal(ofType(afterSwap, "step.set")[0]?.stepId, "s1");
 });
 
+test("the fake expert can jump straight to a step, for testing the rig on a cable step", async (t) => {
+  const { port } = await relay(t);
+  const expert = await startFakeExpert({ url: `ws://127.0.0.1:${port}`, guide: sampleGuide, stepId: "s4", log: quiet });
+  t.after(async () => expert.close());
+
+  const rig = await connect(port, "rig");
+  await until(() => ofType(rig, "step.set").length === 1, "the replayed step");
+  assert.equal(ofType(rig, "step.set")[0]!.stepId, "s4");
+});
+
 test("the fake phone and fake expert complete the sample guide through the relay", async (t) => {
   const { port } = await relay(t);
   const url = `ws://127.0.0.1:${port}`;
