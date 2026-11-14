@@ -43,8 +43,9 @@ final class CallManager: NSObject {
   func receive(_ signal: RtcSignal) {
     switch signal {
     case .offer(let sdp):
-      // A new offer while in a call means the expert redialled: drop the old call and ring again.
-      if state != .idle { tearDown() }
+      // Anyone on the relay can send an offer, so a second one never cuts into a live call; it can only ring when
+      // the phone is free (or replace an unanswered ring), and the user still has to accept it.
+      guard state == .idle || state == .ringing else { return }
       pendingOffer = sdp
       pendingCandidates = []
       state = .ringing
