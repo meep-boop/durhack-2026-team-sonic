@@ -245,3 +245,29 @@ each builder's brief (`builder-file-<name>.md`, on the `context` branch).
 - ⚠️ Conflicts: @laura @salman @max — an additive change to the contract you build on
 - Conflict status: open
 
+
+### 2026-11-14 22:10 — iPhone app runs on a phone and talks to the relay; call library picked — @salman
+- Shipped (branch `salman-ios`, PR #4, draft): the native app in `ios/` (SwiftUI + ARKit/RealityKit, XcodeGen). Tracks
+  Laura's `assets/marker/marker.png` at 0.18 m under world tracking with one tracked image, and draws an outline plus
+  an axis marker. Plays the sample guide pinned to the marker frame with Next. Relay client (task 3): `hello` as
+  user, `guide.set`/`step.set` in, `step.done` queued and sent in order, marker-frame `pose` about 5 Hz, reconnect.
+  Every example in `fixtures/messages.json` decodes in the tests (5 passing). Runs on an iPhone 16, **iOS 26.3.1**,
+  built with **Xcode 26.0.1**.
+- Touched: `ios/` (all new)
+- Decision: by Salman: **accept pure native Swift** and the phone role; Expo PRs #2 and #3 can be closed. **WebRTC
+  library: Google's WebRTC framework** (`stasel/WebRTC` Swift package), peer-to-peer on the hotspot, signalling over
+  the existing `rtc.signal`. Next: two-way audio plus the phone's AR camera to the expert (task 4).
+- Still owed from task 1: the +X/+Z printed edges and the offset in mm, once checked on the printed marker.
+- 📨 To @max: I'm building a small standalone expert call page in `ios/expert-call/` (live camera plus two-way voice)
+  so task 4 can be tested tonight. Lift its code into your dashboard's video panel whenever you like.
+- 📨 To @ahmed @laura @max: **proposal, not decided**: make the demo a nervous person swapping the **SSD in a
+  laptop** alone. The phone identifies the laptop (Gemini), builds the steps, points at each screw, checks the work,
+  and reads every step aloud (ElevenLabs), with the expert on call. It changes Laura's set and the rig's port check, so
+  it needs your OK.
+- 📨 To @ahmed: **proposal**: also enter the MLH prizes (Gemini, ElevenLabs, Vultr, Tiger Data). Your area if you
+  want them: host the relay on Vultr (works beyond the hotspot) and log `step.done`/`pose` to Tiger Data. Also from a
+  security review: plain `ws://` with no auth lets anyone on the network push a guide; a shared team code in `hello`
+  would close it (a contract change, your call).
+- ⚠️ Conflicts: @ahmed @laura @max — the demo-scope and prize proposals above | @max — the call page overlaps your
+  dashboard's future video panel
+- Conflict status: open
