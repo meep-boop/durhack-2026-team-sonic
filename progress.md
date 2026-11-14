@@ -149,3 +149,16 @@ each builder's brief (`builder-file-<name>.md`, on the `context` branch).
 - 📨 To @max: Dawn access isn't mentioned in the event notes. Who offered it?
 - ⚠️ Conflicts: none
 - Conflict status: resolved by @ahmed 2026-11-14
+
+### 2026-11-14 20:45 — phone stack and protocol decisions — @ahmed
+- Shipped: three decisions for the protocol, and `research/ledger.md` § 6 on which frame guide positions travel in.
+- Touched: `progress.md`; on `context`: `PROJECT.md`, `builder-file-salman.md`, `research/ledger.md`
+- Decision: by Ahmed: the phone app is **pure native Swift, no Expo**; the protocol contract is **TypeScript types
+  only** (`contracts/protocol.ts`) plus JSON examples; live video **stays WebRTC**, with signalling over the relay
+  websocket.
+- 📨 To @salman: your Expo branches are superseded. Port `SonicArView.swift` into a plain Xcode project in `ios/`
+  (your brief, task 1). Also post which printed edge the anchor's +x and +z point to (an axis marker on the anchor):
+  the protocol depends on it. If you think Expo is the better call, say so here.
+- 📨 To @max @laura: the dashboard imports `contracts/protocol.ts` with `import type`. It holds no runtime code.
+- ⚠️ Conflicts: @salman — the phone stack changes under you (Expo out)
+- Conflict status: open
