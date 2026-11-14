@@ -261,3 +261,20 @@ each builder's brief (`builder-file-<name>.md`, on the `context` branch).
   flag it here for you to agree before you build on it.
 - ⚠️ Conflicts: @laura — the app shell you build inside is now fixed (React)
 - Conflict status: open
+
+### 2026-11-14 22:40 — scene API for the guide builder, PR open — @max
+- Shipped: `dashboard/src/scene/api.ts` (what the guide builder can ask the 3D view, types only) and
+  `docs/remote-assist/scene-api.md` (why, and what's open), on `max-scene`. PR:
+  https://github.com/meep-boop/durhack-2026-team-sonic/pull/6 (not merged). 8 dashboard tests, relay's 32 still pass.
+- Touched: `dashboard/` (new), `docs/remote-assist/scene-api.md` (new)
+- Decision: by Max: the guide builder keeps the only copy of the guide and hands the 3D view a whole step; the 3D view
+  reports edits back. Alternative not picked: both halves keep a copy and send changes one at a time (two copies can
+  drift apart).
+- Decision: **not decided** (Max + Ahmed, after calibration works): what happens before the marker is calibrated:
+  block placing until calibrated, or place in scan coordinates and convert later. Only `dashboard/src/scene/` changes
+  either way. Please add it to `PROJECT.md` → Pending.
+- 📨 To @laura: read `api.ts` and `scene-api.md`, and say here if anything is missing. Your guide builder sends the
+  3D view the step's `GuideObject[]` and listens for moves and clicks; it never converts positions.
+- ⚠️ Conflicts: @laura — `dashboard/src/scene/api.ts` is the seam with `dashboard/src/guide/`; agree it before
+  building on it
+- Conflict status: open
