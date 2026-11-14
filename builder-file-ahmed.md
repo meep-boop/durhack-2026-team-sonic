@@ -16,11 +16,9 @@
 **Conflict tags:** `[⚠ conflicts with @name: what]` marks a task that touches someone else's area or a shared contract.
 Agree with them before merging.
 
-**START HERE (2026-11-14, from @ahmed):** the split and the decisions in `PROJECT.md` → NOW were made by Ahmed on
-top of Max's round-1 plan. If you disagree with your role or with a decision, say so in a `progress.md` entry
-(`📨 To @ahmed`) before building on it. All four of us build at once, each against the fake peers in `fixtures/`,
-so nobody waits for anybody. Until `contracts/protocol.ts` lands, use the draft in
-`docs/remote-assist/architecture.md` and expect small changes.
+**START HERE (2026-11-14 23:40, from @ahmed's task sweep):** the demo is now an SSD swap on Ahmed's laptop (the whole
+team, 23:03). The contract, relay, fakes and sample guide are on `main`; the deadlines are in `PROJECT.md` → Clock,
+and the walking skeleton is the next one. Your open items are tasks 8 to 13.
 
 ---
 
@@ -93,43 +91,67 @@ but all three teammates build on them, so every change after the first version i
    - Node and `ws` over HTTPS, as planned; confirm the packages first. Keeps the latest guide, calibration and
      step, and replays them to whoever reconnects.
    - *Done when:* the two fakes complete a guide through it, and a fake that reconnects gets the current state.
-6. ⬜ **WebRTC signalling** 🟠
+6. ✅ **WebRTC signalling** (done: the relay has carried `rtc.signal` since 21:29; Salman's call goes through it, his
+   23:25 entry; `fixtures/video-test.html` checked in headless Chrome. Decided 23:30: the expert calls the phone)
    - Agree the library with @salman, then carry offer, answer and candidates.
    - *Done when:* @salman's phone and a browser test page connect through the relay.
    - `[⚠ conflicts with @salman and @laura: both ends of the video]`
-7. ⬜ **Offline resync** 🟠 (the Neptune North feature)
+7. ✅ **Offline resync** (the Neptune North feature) (done 23:09, `32ff3e8`: the latest guide wins, the phone keeps
+   its place, the relay stops replaying the current step to phones; the fake phone's `--offline-after` mode)
    - Decide first what happens if the expert edited the guide while the phone was offline. Then accept the phone's
      queued `step.done` on reconnect.
    - *Done when:* the fake phone goes offline mid-guide, finishes, reconnects, and both sides agree on the state.
    - `[⚠ conflicts with @salman: the phone's queue]`
-8. ⬜ **Labelling endpoint** 🟠 (the Accenture feature)
+8. 🟡 **Labelling endpoint** (the Accenture feature) (relay side done 23:15, `63b4be1`: Claude on a snapshot, off
+   unless `--labels`. Left: one paid live call with your OK, once Max's dashboard sends a snapshot)
    - Decide the provider and what the model looks at with @max. Return labels with positions.
    - *Done when:* @max's search box finds a labelled part from a real response; a canned response is labelled MOCK.
    - `[⚠ conflicts with @max: the label shape]`
 9. ⬜ **The hardware check** (the RS feature; plan decided 2026-11-14 21:54, see `PROJECT.md` → Decision log; moved from
    @laura 2026-11-14)
-   - The chain: the Nicla Vision finds the cable's coloured boot in one region per port → prints one line per change
+   - The chain (reworked 23:24 for the SSD swap): the Nicla Vision finds a bright sticker on the SSD in named
+     regions → prints one line per change
      over USB → the powered hub → a Python app on the UNO Q, joined to the relay as `rig` with `websocket-client` →
      it compares what the Nicla sees with the current step's `expect` and sends `step.verified`, and shows ✓ or ✗ on
      the UNO Q's LED matrix through the Bridge (`research/ledger.md` § 10).
    - Needs first: a **micro-USB data cable** for the Nicla (charge-only cables fail silently), a **charger in the hub's
-     power input** (the UNO Q doesn't power the hub), and a **brightly coloured patch cable** on Laura's set.
-   - 9a ⬜ **5-minute access test before anything else:** Nicla on the hub; can an App Lab Python app see and open
+     power input** (the UNO Q doesn't power the hub), and a **bright sticker on the SSD** (Laura's task 2).
+   - 9a 🟡 (23:30: the first run stopped before reaching the Nicla, because `pyserial` didn't install:
+     `requirements.txt` must sit in the app's `python` folder beside `main.py`) **5-minute access test before
+     anything else:** Nicla on the hub; can an App Lab Python app see and open
      `/dev/ttyACM*`? Reports conflict. If it can't, run the same Python over SSH, outside App Lab.
    - 9b 🟡 (22:27: written as `hardware/nicla/main.py`, not yet run on a Nicla; regions and colour are examples)
-     The Nicla script: one region per port, the colour threshold from OpenMV's Threshold Editor, one printed line
-     per change, e.g. which ports hold the cable.
+     The Nicla script: one region per place (the SSD bay), the colour threshold from OpenMV's Threshold Editor, one
+     printed line per change, e.g. `seen=ssd-bay`.
    - 9c 🟡 (22:27: `hardware/unoq/`, tested end to end against the relay with typed-in Nicla lines; not yet on the
      board)
      The UNO Q app: read the lines, follow the guide and step from the relay, compare with `expect`, send
      `step.verified`, light the LED matrix.
    - 9d ⬜ The ✓ / ✗ on the UNO Q's LED matrix through the Bridge: a small sketch plus one call from the app. Use
      App Lab's own LED matrix example as the reference once the board is in hand.
-   - *Done when:* moving the cable to the right port ticks the step on the dashboard and the phone, and a wrong port
-     warns. Before the kit arrives: a fake rig message does the same on the two fakes.
+   - *Done when:* taking the SSD out ticks "take it out" and putting it back ticks "put it back", on the dashboard and
+     the phone.
    - `[⚠ conflicts with @laura: the rig mounts on her demo set, before it's scanned]`
+10. ⬜ **Move the relay to the dashboard laptop** (decided 23:20: your laptop is opened up in the demo)
+    - With @max: Node 24, the repo, `cd relay && npm install && npm start`; Anthropic credentials there too if
+      labelling is on. Give the phone and the rig the new address.
+    - *Done when:* the phone, the dashboard and the rig all connect to it on the hotspot.
+11. ⬜ **The walking skeleton** (`PROJECT.md` → Clock)
+    - The real phone (PR #4), the real dashboard (PR #6) and the relay play one guide end to end. Chase the two merges,
+      run the relay, and be the first to try it.
+    - *Done when:* a guide sent from the dashboard plays on the phone and its taps tick on the dashboard.
+12. ⬜ **Settle what's left in `PROJECT.md` → Pending**
+    - With @max: cut-outs on the phone (his iOS 26.3.1 phone can't draw splats) and what the dashboard does before
+      calibration. With @laura: how the pitch answers Neptune North's "no central hub". Ask an organiser whether one
+      project may enter all its challenges. Salman's team-code idea for `hello`.
+    - *Done when:* each item says decided or parked.
+13. ⬜ **Back up your laptop before any rehearsal.** The demo opens it and takes the SSD out.
+    - *Done when:* a backup exists and you've checked it opens.
 
 ## 4. Done log (newest first)
+- 2026-11-14 23:40: the task sweep (every brief, five decisions). Code since 22:27, all on `main`: offline resync (`32ff3e8`),
+  the video test page (`03827d1`, then the dashboard calls, `6afbfa5`), Claude labelling (`63b4be1`), the rig and the
+  sample guide reworked for the SSD swap (`b3a2d0f`). 41 relay tests, 13 rig tests.
 - 2026-11-14 22:27: task 9b and 9c written, not yet on hardware: `hardware/` on `main` (`4db2ce6`). 13 rig tests; the UNO Q
   app reported wrong then right through the real relay.
 - 2026-11-14 21:47: task 3, the RS kit. UNO Q + Nicla Vision as the camera (RS staff confirmed it counts) + a USB-C hub.
@@ -140,10 +162,11 @@ but all three teammates build on them, so every change after the first version i
 - 2026-11-14 20:30: task 1, the event's rules and deadlines. `EVENT.md` §1–§6 and the Clock filled from the notes file.
 
 ## 5. Waiting on / owed to others
-- 📤 **Owed to @salman @max @laura:** nothing right now. The contract, sample guide, fakes and relay are on `main`.
-- 📥 **Waiting on @salman:** his pick of WebRTC library.
-- 📥 **Waiting on @laura:** a spot on the demo set for the UNO Q rig, where the Nicla can see the ports, and a
-  brightly coloured patch cable for the cable that moves.
+- 📤 **Owed to @salman @max @laura:** nothing right now.
+- 📥 **Waiting on @salman:** the +X/+Z printed edges; PR #4 merged.
+- 📥 **Waiting on @max:** PR #6 merged; the relay running on his laptop (task 10).
+- 📥 **Waiting on @laura:** the board, the SSD sticker and the Nicla's spot (her task 2); `ssd` in the contract with
+  her models.
 
 ## 6. Working-style notes for the agent
 - Verbosity: Level 0.

@@ -15,7 +15,8 @@ against the Devpost page yet. Gaps are marked _not stated_.
 - **Where submissions go:** Devpost, submitted by: _not decided_
 - **Team size, and whether everyone must be registered on the platform:** maximum 4. Registration: _not stated_
 - **Tracks / sponsor challenges we're entering:** Neptune North, Accenture, Marshall Wace, RS (decided by Ahmed,
-  2026-11-14). **The slides don't say how many challenges one project may enter.** Ask an organiser.
+  2026-11-14). Plus MLH: best use of Gemini and of ElevenLabs (Salman's extras, Ahmed 23:30). **The slides don't say how many
+  challenges one project may enter.** Ask an organiser.
 - **Prizes:** overall 1st a portable monitor and electronic keyboard; 2nd a £100 Amazon voucher and Polaroid camera;
   a Spirit of the Dino award. Sponsor prizes are in §4.
 

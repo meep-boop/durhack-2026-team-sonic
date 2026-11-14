@@ -21,7 +21,7 @@ apply; the step-by-step protocols live in the skills it names (§ Triggers).*
 | Progress | `progress.md` on `main`: build log + conflict board |
 | Stack | Phone: pure native Swift, ARKit + RealityKit. Dashboard: Vite 8 + React 19 + TypeScript, plain three.js + Spark 2.4 behind `dashboard/src/scene/` (no React Three Fiber), zustand when shared state is needed. Relay: Node 24 + `ws`. Rig: Nicla Vision (OpenMV) + UNO Q (Python, `websocket-client`) (§5) |
 | Run · Test | Relay: `cd relay && npm install && npm start` (prints the `ws://` address to give the phone; `npm start -- --fresh` starts empty). Test: `cd relay && npm test && npm run typecheck`. Fakes need only Node 24: `node fixtures/fake-expert.ts ws://<relay>:8080` or `node fixtures/fake-phone.ts ws://<relay>:8080`. Rig: `cd hardware/unoq && python -m unittest test_rig` (`hardware/README.md`) |
-| Deploy | The relay runs on the laptop that starts it (Ahmed's for now), on the team hotspot, port 8080. No cloud. State in `relay/state.json` (git-ignored) |
+| Deploy | The relay runs on the dashboard laptop (Ahmed's is opened up in the demo), on the team hotspot, port 8080: `cd relay && npm start`, plus `--labels` for Claude labelling (billed per snapshot). No cloud. State in `relay/state.json` (git-ignored) |
 | Expected scale | _blank_ (until set, `no-slop` designs for 10× the real load) |
 | Verbosity | **Level 0** (§3; a brief or the user can change it) |
 
@@ -204,8 +204,9 @@ rig is a Nicla Vision and an UNO Q. Splats come from Scaniverse, with the team's
 table: `PROJECT.md` §6.
 **The plan:** `docs/remote-assist/` on `main`.
 **Runtime shape:** `PROJECT.md` §5 diagram.
-**Known gaps:** no project code yet (2026-11-14). Nothing has been trained on Dawn. No alignment accuracy has been measured.
-The fake peers in `fixtures/` are test tools, never demo content.
+**Known gaps** (2026-11-14 23:40): the iPhone app (PR #4), the dashboard (PR #6) and the guide builder (`laura-guide`) aren't
+on `main` yet. No alignment accuracy has been measured. The UNO Q rig hasn't run on its hardware. Claude labelling has
+never made a live call. The fake peers and `fixtures/video-test.html` are test tools, never demo content.
 
 ## 6. Locked decisions *(starts empty)*
 _None yet._ Add one only when the user says it's locked.

@@ -16,11 +16,9 @@
 **Conflict tags:** `[⚠ conflicts with @name: what]` marks a task that touches someone else's area or a shared contract.
 Agree with them before merging.
 
-**START HERE (2026-11-14, from @ahmed):** the split and the decisions in `PROJECT.md` → NOW were made by Ahmed on
-top of Max's round-1 plan. If you disagree with your role or with a decision, say so in a `progress.md` entry
-(`📨 To @ahmed`) before building on it. All four of us build at once, each against the fake peers in `fixtures/`,
-so nobody waits for anybody. Until `contracts/protocol.ts` lands, use the draft in
-`docs/remote-assist/architecture.md` and expect small changes.
+**START HERE (2026-11-14 23:40, from @ahmed's task sweep):** the demo is now an SSD swap on Ahmed's laptop (the whole
+team, 23:03). The contract, relay, fakes and sample guide are on `main`; the deadlines are in `PROJECT.md` → Clock,
+and the walking skeleton is the next one. Anything new for you is in the block at the top of your tasks.
 
 ---
 
@@ -65,7 +63,25 @@ splats until that's settled. Training splats in the app (the scan is taken in Sc
 ## 3. ▶ Current tasks (2026-11-14), in order
 *Status: ⬜ not started · 🟡 in progress · ⏸ blocked · ✅ done*
 
-1. ⬜ **App skeleton and marker detection**
+**New from @ahmed (2026-11-14 23:40 sweep), before the tasks below:**
+- A. ⬜ **Mirror the new `expect`.** It changed at 23:24 to `{ region, present }` (the SSD swap has no cable). If your
+  Swift struct requires `port` and `cable`, any guide carrying the new `expect` fails to decode, the sample guide
+  included. *Done when:* after `git merge origin/main`, every example in `fixtures/messages.json` and
+  `fixtures/sample-guide.json` decodes in your tests.
+- B. ⬜ **The phone owns its place.** Since 23:09 the relay no longer replays the current step to phones on reconnect:
+  keep your position and your queued taps across reconnects and app restarts. *Done when:* kill the relay mid-guide,
+  tap on, restart it, and the fake expert logs every tap in order while the phone stays on its step.
+- C. ⬜ **Merge PR #4 to `main` with the `ship` skill before the walking skeleton** (`PROJECT.md` → Clock). *Done
+  when:* `ios/` is on `main` with a board entry.
+- D. ⬜ **Post the +X/+Z printed edges and the offset in mm** (still owed from task 1); the contract marks the axes
+  provisional until you do.
+- E. Housekeeping: close PRs #2 and #3 (the Expo app), as you said. Put board entries straight on `main`: your 22:10
+  and 23:25 entries sit only on `salman-board` (PR #5), so the team's agents can't see them.
+- Kept by @ahmed (23:30): your Gemini assistant and ElevenLabs voice, as optional AI-labelled extras, entered for MLH.
+  Not Vultr or Tiger Data. Your team-code idea for `hello` is in `PROJECT.md` → Pending.
+
+
+1. 🟡 **App skeleton and marker detection** (sweep: done on `salman-ios`, PR #4, on an iPhone 16; left: item D)
    - **2026-11-14 20:45, decided by @ahmed: pure native Swift, not Expo.** Your `salman-mobile` and `salman-ar` branches
      are superseded: keep them, don't merge them to `main`. Port the ARKit code from
      `mobile/modules/sonic-ar/ios/SonicArView.swift`. It already does what Apple's docs ask for: world tracking,
@@ -79,7 +95,9 @@ splats until that's settled. Training splats in the app (the scan is taken in Sc
      Also put a small axis marker (red x, green y, blue z) on the image anchor and post which printed edge +x and
      +z point to. Apple's docs say the image lies in the anchor's X–Z plane but not which way each axis points,
      and the protocol depends on it (`research/ledger.md` § 6).
-2. ⬜ **Play the sample guide, lined up by the marker**
+2. 🟡 **Play the sample guide, lined up by the marker** (sweep: plays on `salman-ios`, now on a world anchor so a
+   hand over the marker doesn't hide it; the ruler check isn't reported. The sample guide is now an SSD swap, same
+   step ids)
    - Load `fixtures/sample-guide.json` from the app bundle. **Positions arrive in the marker's own frame, in metres**
      (decided by @ahmed): make each object a child of the image anchor and set its position, rotation and size
      straight from the JSON. No conversion on the phone. Draw the highlight box and a placeholder shape per
@@ -88,7 +106,8 @@ splats until that's settled. Training splats in the app (the scan is taken in Sc
      all the steps.
    - `[⚠ conflicts with @ahmed: the frame is defined at the top of contracts/protocol.ts. The +x and +z directions are
      provisional until your axis check in task 1.]`
-3. ⬜ **Talk to the relay**
+3. ✅ **Talk to the relay** (done on `salman-ios`, not merged: hello, guide and step in, queued taps in order, pose
+   at about 5 Hz, reconnect; every fixture decodes. Follow-ups: items A and B)
    - WebSocket client: `hello`, receive `guide.set` and `step.set`, send `step.done` and `pose`. Reconnect on drop.
    - The contract is TypeScript types only (`contracts/protocol.ts`). Mirror the messages as Swift `Codable`
      structs. `fixtures/messages.json` has one example of every message: decode them all in a unit test.
@@ -99,36 +118,48 @@ splats until that's settled. Training splats in the app (the scan is taken in Sc
      `ws://` on the team hotspot, so add `NSAllowsLocalNetworking` under App Transport Security in Info.plist.
    - *Done when:* with the fake expert from `fixtures/` running, its guide shows on the phone and each Next appears
      in its log.
-4. ⬜ **Live camera over WebRTC** 🟠
+4. 🟡 **Live camera over WebRTC** (on `salman-ios`: Google's WebRTC framework, the AR camera plus two-way audio.
+   **Decided by @ahmed 23:30: the expert calls the phone**, as you built it. Left: merge, and a run through the
+   relay on the hotspot)
    - ARKit holds the camera, so WebRTC's own camera capturer won't work. Feed `ARFrame.capturedImage` into a custom
      video source (`research/ledger.md` § 2 and § 5). **Settled by @ahmed: WebRTC stays, and signalling rides the
      relay websocket** as a pass-through message. Still yours to pick: the library. Max's research compares the
      plain WebRTC framework with LiveKit Cloud, and flags that 4G may need TURN.
    - *Done when:* a browser test page shows the phone's camera while the AR boxes keep tracking on the phone.
    - `[⚠ conflicts with @ahmed: signalling messages in contracts/protocol.ts]` `[⚠ conflicts with @laura: the dashboard's video panel]`
-5. ⬜ **Preset animations**
+5. 🟡 **Preset animations** (on `salman-ios`: Laura's six models load and loop along `axis`; left: tell Laura if any
+   looks the wrong size or way up)
    - `unscrew`, `pull`, `push`, `flip`, `rotate90` on the built-in USDZ models, along the object's axis, looping
      until Next.
    - *Done when:* each of the five actions loops on a model in the right place and direction.
    - `[⚠ conflicts with @laura: model names, sizes and origins in assets/models/]`
-6. ⬜ **Offline play and resync** (the Neptune North feature)
+6. 🟡 **Offline play and resync** (the Neptune North feature) (taps queue and send in order; left: item B and the
+   kill-the-relay check)
    - Keep the whole guide on the device. Keep playing when the relay is gone. Queue `step.done`, send on reconnect.
    - *Done when:* kill the relay mid-guide, finish the steps, restart it, and the fake expert logs every queued
      `step.done` in order.
    - `[⚠ conflicts with @ahmed: the resync rule if the expert edited the guide meanwhile]`
-7. ⬜ **Show the hardware check** (the RS feature, only if the rig exists)
-   - On `step.verified`, tick the step or warn about a wrong port.
+7. ✅ **Show the hardware check** (the RS feature) (done on `salman-ios`: ✓ or the `detail` on the step card)
+   - On `step.verified`, tick the step or show the `detail`, e.g. "seen in slot-2, expected in ssd-bay".
    - *Done when:* a `step.verified` from the fake expert shows a tick, and a failed one shows the warning.
 8. ⬜ **Scan capture in the app** (last; Scaniverse covers it until then)
    - *Done when:* agreed with @max what the app must hand over, and that hand-over works once.
 
 ## 4. Done log (newest first)
-- _(empty)_
+- 2026-11-14 23:25 (logged by @ahmed from your `salman-board` entry): on `salman-ios`, PR #4: the live call (the expert
+  calls; AR camera and two-way audio) with `ios/expert-call/`, the guide on a world anchor, the six USDZ models with
+  their actions, the rig's verdict on the step card, `expect` mirrored, the optional Gemini assistant and ElevenLabs
+  voice.
+- 2026-11-14 22:10 (logged by @ahmed from your `salman-board` entry): on `salman-ios`: the native app tracking Laura's
+  marker at 0.18 m, the sample guide with Next, the relay client; iPhone 16, iOS 26.3.1, Xcode 26.0.1; WebRTC library
+  picked.
 
 ## 5. Waiting on / owed to others
-- 📥 **Waiting on @laura:** the marker image and its printed width; the USDZ models.
-- 📥 **Waiting on @ahmed:** `contracts/protocol.ts`, the fake expert, the sample guide.
-- 📤 **Owed to @ahmed:** your pick of WebRTC library, so signalling can be written.
+- 📥 **Waiting on:** nothing. The marker and models are on `main` (Laura); the contract, relay, fakes and sample guide
+  are on `main` (Ahmed).
+- 📤 **Owed to @ahmed:** the +X/+Z printed edges and the offset in mm (item D).
+- 📤 **Owed to @laura:** the models' size and up-direction as the phone shows them; `ios/expert-call/` as the base for
+  her dashboard video panel (her task 5).
 
 ## 6. Working-style notes for the agent
 - Verbosity: project level (Level 0) unless Salman changes it.

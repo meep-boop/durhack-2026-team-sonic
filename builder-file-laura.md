@@ -16,11 +16,9 @@
 **Conflict tags:** `[⚠ conflicts with @name: what]` marks a task that touches someone else's area or a shared contract.
 Agree with them before merging.
 
-**START HERE (2026-11-14, from @ahmed):** the split and the decisions in `PROJECT.md` → NOW were made by Ahmed on
-top of Max's round-1 plan. If you disagree with your role or with a decision, say so in a `progress.md` entry
-(`📨 To @ahmed`) before building on it. All four of us build at once, each against the fake peers in `fixtures/`,
-so nobody waits for anybody. Until `contracts/protocol.ts` lands, use the draft in
-`docs/remote-assist/architecture.md` and expect small changes.
+**START HERE (2026-11-14 23:40, from @ahmed's task sweep):** the demo is now an SSD swap on Ahmed's laptop (the whole
+team, 23:03). The contract, relay, fakes and sample guide are on `main`; the deadlines are in `PROJECT.md` → Clock,
+and the walking skeleton is the next one. Anything new for you is in the block at the top of your tasks.
 
 ---
 
@@ -67,40 +65,57 @@ them, so a renamed or resized model breaks two apps).
 ## 3. ▶ Current tasks (2026-11-14), in order
 *Status: ⬜ not started · 🟡 in progress · ⏸ blocked · ✅ done*
 
-1. 🟡 **The marker** (printed, measured 180 × 180 mm, on main `eca6c24`; waiting on @salman to confirm Xcode) (do this first: @salman and @max are both waiting on it)
+1. ✅ **The marker** (printed, measured 180 × 180 mm, on main `eca6c24`; waiting on @salman to confirm Xcode) (sweep
+   by @ahmed: Salman's app tracks it at 0.18 m, his 22:10 entry; he didn't mention Xcode warnings) (do this first: @salman and @max are both waiting on it)
    - A high-contrast, detailed, non-repeating image, 15 to 20 cm wide (small ones track badly), printed flat and
      matte. Measure the printed width with a ruler and commit the image to `assets/marker/` with that width in mm
      beside it: ARKit needs the exact size. Print spares.
    - *Done when:* the file and its width are on `main`, and @salman confirms Xcode accepts it with no warnings.
-2. ⬜ **Pick and get the demo objects** 🟠 (asked for by @max)
-   - Added 2026-11-14 21:54 by @ahmed: the cable that moves needs a **brightly coloured plug boot** in one distinct colour
-     (the UNO Q rig's camera finds it by colour), and leave a spot where the Nicla Vision can see the ports.
-   - What the set is made of (a real switch or router, a patch panel, a cover with screws), who brings or borrows
-     it, and whether it can be carried to any table and scanned once.
-   - *Done when:* the set is built with the marker fixed on it, and @max has been told it's ready to scan.
-   - `[⚠ conflicts with @ahmed: his UNO Q rig mounts on the set; agree where before it's scanned]`
-3. ⬜ **The guide builder**
+2. ⬜ **Fix the laptop and the marker to one board** (replaces "Pick and get the demo objects" after the team's
+   SSD-swap decision, 23:03)
+   - Ahmed's laptop and the printed marker on one board, the marker next to the SSD cover, so the two can't move apart.
+   - A **bright sticker on the SSD**, in one colour nothing else in view has: the UNO Q rig's camera finds the SSD by it
+     (decided 23:24). The coloured cable boot is no longer needed.
+   - A fixed spot for the Nicla Vision looking into the SSD bay, agreed with Ahmed before the scan.
+   - Nobody sprays the laptop for the scan (Ahmed). Ahmed backs the laptop up before any rehearsal.
+   - *Done when:* the board is built, @max has been told it's ready to scan, and the rig's spot is agreed with @ahmed.
+   - `[⚠ conflicts with @ahmed: the rig's camera spot]` `[⚠ conflicts with @max: he scans it]`
+3. 🟡 **The guide builder** (sweep: step editing and progress tracking on `laura-guide`, not merged; blocked on
+   @max's answer to your scene-API ask 1)
    - Build against the fake phone in `fixtures/` and @max's scene API. Step list, instruction text, model and
      action pickers, send the guide, jump to a step, tick steps as `step.done` arrives.
    - The guide's shape is `Guide` in `contracts/protocol.ts` (`import type`). Steps are referred to by `id`, never
      by position, and each edit bumps `rev`. Positions come from @max's scene API already in the marker frame.
-   - Objects can carry an optional `expect: { port, cable: "in" | "out" }`: what the UNO Q rig should see once the
-     step is done. Let the expert set it on cable steps (port names to match the rig's, e.g. "17").
+   - Objects can carry an optional `expect: { region, present }` (changed 23:24): what the UNO Q rig should see once
+     the step is done. Let the expert set it on the SSD steps: `{ region: "ssd-bay", present: false }` to take it out,
+     `present: true` to put it back. Region names match the rig's.
+   - A model moves along `axis` (decided by Ahmed): fill it from the model's own +Y after rotation (pull +Y, push -Y,
+     turns around Y), and let the expert change it.
    - *Done when:* a three-step guide built in the UI appears in the fake phone's log, and its `step.done` ticks the
      step.
    - `[⚠ conflicts with @max: dashboard/src/scene/api.ts]` `[⚠ conflicts with @ahmed: the guide shape in contracts/protocol.ts]`
 4. 🟡 **The built-in models** 🟠 (all six on main `3ab2d07`, conventions decided; waiting on @max and @salman to load them)
+   - **New (your 23:03 ask): an `ssd` model.** Build `ssd.glb` and `ssd.usdz`, and in the same commit add `"ssd"` to
+     `ModelName` in `contracts/protocol.ts` and to `MODELS` in `relay/validate.ts`: your test and the relay's
+     type-check each need all three to agree, so separate commits would turn `main` red. You have Ahmed's OK to edit
+     both files. Check with `cd relay && npm install && npm run typecheck && npm test`.
+   - Salman reports the six USDZ load and animate in RealityKit (23:25); size and up-direction not reported yet.
    - Screw, bolt, arrow, screwdriver, hand, cable plug, as glTF for the dashboard and USDZ for the phone. Decide
      first: author once and convert, or keep both by hand. Same names, sizes and origins in both.
    - *Done when:* each model loads in the dashboard and in @salman's app, the same size and the same way up.
    - `[⚠ conflicts with @salman and @max: both load these]`
 5. ⬜ **The live video panel**
    - Show the phone's camera in the dashboard.
+   - **The expert calls the phone** (decided 23:30): the dashboard makes the offer, the phone answers. Salman's
+     `ios/expert-call/index.html` (on `salman-ios`) is a working expert side to build from: the offer, `rtc.signal`,
+     two-way audio, a data channel for hang-up. `fixtures/video-test.html?role=send` stands in for the phone.
    - *Done when:* the stream from the phone (or a fake sender) plays in the panel, and the guide builder still
      works with it switched off.
    - `[⚠ conflicts with @ahmed and @salman: WebRTC signalling]`
 6. ⬜ **What the judges see**
    - README, demo video, submission form (`pitch` skill). Start once a guide plays end to end.
+   - The demo is the SSD swap. Tick MLH Gemini and ElevenLabs as well as the four sponsor challenges (decided
+     23:30), and say on Devpost that AI tools were used (`EVENT.md` §3).
    - *Done when:* `bash scripts/submission-check.sh` passes and the submission is in.
 
 ## 4. Done log (newest first)
@@ -108,12 +123,13 @@ them, so a renamed or resized model breaks two apps).
 - 2026-11-14 21:31 · 🟡 Marker printed on matte paper, measured 180 × 180 mm, image + print sheet in `assets/marker/` on main. Closes when @salman confirms Xcode accepts it.
 
 ## 5. Waiting on / owed to others
-- 📥 **Waiting on @max:** `dashboard/src/scene/api.ts` and the dashboard shell.
+- 📥 **Waiting on @max:** answers to your four scene-API asks (ask 1 blocks the guide builder); PR #6 merged.
 - 📥 **Waiting on @ahmed:** nothing right now. The contract, relay and fake phone are on `main`
   (`node fixtures/fake-phone.ts ws://<relay>:8080`), and the deadlines are in `PROJECT.md` → Clock.
 - 📤 **Owed to @salman and @max:** the marker image and width are on main (task 1, 180 mm); the six models are on main too (`assets/models/`).
-- 📤 **Owed to @max:** the finished demo set, to scan.
-- 📤 **Owed to @ahmed:** a spot on the set for his UNO Q rig, agreed before the scan.
+- 📤 **Owed to @max:** the laptop and marker on their board, to scan.
+- 📤 **Owed to @ahmed:** a spot where the Nicla Vision sees the SSD bay, and the sticker on the SSD, agreed before
+  the scan.
 
 ## 6. Working-style notes for the agent
 - Verbosity: project level (Level 0) unless Laura changes it.
@@ -123,5 +139,8 @@ them, so a renamed or resized model breaks two apps).
 
 ---
 ── Archived (superseded 2026-11-14 — do NOT action) ──
+- **Pick and get the demo objects** (task 2 until 23:03): a switch or router, a patch panel, a cover with screws,
+  and a cable with a coloured boot. Superseded by the team's SSD-swap decision (Laura's 23:03 entry). Would come
+  back only if the demo returns to a network cabinet.
 - **Ask about the UNO Q today** and **The hardware check** (the RS feature). Moved to @ahmed on 2026-11-14: he said he'd do the
   rig himself. Now tasks 3 and 9 in his brief. Would come back only if he hands it back.

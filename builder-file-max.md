@@ -16,11 +16,9 @@
 **Conflict tags:** `[⚠ conflicts with @name: what]` marks a task that touches someone else's area or a shared contract.
 Agree with them before merging.
 
-**START HERE (2026-11-14, from @ahmed):** the split and the decisions in `PROJECT.md` → NOW were made by Ahmed on
-top of Max's round-1 plan. If you disagree with your role or with a decision, say so in a `progress.md` entry
-(`📨 To @ahmed`) before building on it. All four of us build at once, each against the fake peers in `fixtures/`,
-so nobody waits for anybody. Until `contracts/protocol.ts` lands, use the draft in
-`docs/remote-assist/architecture.md` and expect small changes.
+**START HERE (2026-11-14 23:40, from @ahmed's task sweep):** the demo is now an SSD swap on Ahmed's laptop (the whole
+team, 23:03). The contract, relay, fakes and sample guide are on `main`; the deadlines are in `PROJECT.md` → Clock,
+and the walking skeleton is the next one. Anything new for you is in the block at the top of your tasks.
 
 ---
 
@@ -75,6 +73,15 @@ so nobody waits for anybody. Until `contracts/protocol.ts` lands, use the draft 
 > swap) and drop the export on the dashboard for the first real speed test. Open PRs: #6 (dashboard + scene API),
 > #1 (research answers and decisions, with sources, on `max-docs`). Research: `research/ledger.md` § 7–15.
 
+**New from @ahmed (2026-11-14 23:40 sweep):**
+- A. ⬜ **Run the relay on the dashboard laptop for the demo** (decided 23:20: Ahmed's laptop is opened up in the
+  demo, so it can't host it). Node 24, then `cd relay && npm install && npm start`; add `--labels` only for Claude
+  labelling, which also needs Anthropic credentials on that laptop. *Done when:* the phone, the dashboard and the rig
+  all connect to it on the hotspot. `[with @ahmed]`
+- B. ⬜ **Merge PR #6 with the `ship` skill before the walking skeleton** (`PROJECT.md` → Clock), and merge or close
+  PR #1.
+- C. Scanning the laptop: **nobody sprays it** (Ahmed); your correction that it was never your request is noted.
+
 1. 🟡 **Dashboard shell with a splat on screen, and the scene API**
    - *Status (2026-11-14 23:55, @max):* shell, SAMPLE splat and `api.ts` in PR #6 (`max-scene`). Laura agreed the
      one-copy design (23:04) but asked for four additions first. Left: answer them; scan the real set (now Ahmed's
@@ -105,20 +112,25 @@ so nobody waits for anybody. Until `contracts/protocol.ts` lands, use the draft 
 5. ⬜ **Cut-outs**
    - The expert draws a box around a part. The splat points inside become their own object that can be moved and
      highlighted. The expert picks the closest built-in model for the phone to show.
-   - *Done when:* a cable or screw is lifted out of the scan and moved, and the guide sent to the fake phone names a
+   - *Done when:* a screw or the SSD is lifted out of the scan and moved, and the guide sent to the fake phone names a
      built-in model for it.
+   - Salman's phone runs iOS 26.3.1, below the iOS 27.2 that RealityKit splats need, so on the phone a cut-out shows
+     as its box and a built-in model.
 6. ⬜ **Where the user is standing**
    - Draw the phone's camera position inside the scan from `pose` messages. They arrive in the marker frame, so
      apply the inverse of your calibration. Show when `markerTracked` is false: alignment may be drifting.
    - *Done when:* the fake phone's moving pose shows as a moving marker in the scene.
-7. ⬜ **Find a part by name** (the Accenture feature) 🟠
-   - A search box: type "port 14", the view jumps to it and it can be dropped into a step. Labels come from
-     @ahmed's endpoint. First decide with him what the model looks at (renders of the splat, or camera frames).
+7. ⬜ **Find a part by name** (the Accenture feature)
+   - A search box: type "SSD", the view jumps to it and it can be dropped into a step. **Decided by @ahmed:** the
+     dashboard sends `labels.request` with a snapshot of its current view (at most 1280 px on the long side) and gets
+     `labels.result` back, labels at pixel positions, which your click-pick turns into 3D points. The relay side is on
+     `main`; start the relay with `--labels` to turn it on (each snapshot is a paid Claude call).
    - *Done when:* typing a label that exists highlights the right part. Labels are shown as AI-made, with a way to
      fix a wrong one.
    - `[⚠ conflicts with @ahmed: the labelling endpoint and the label shape in contracts/protocol.ts]`
 8. ⬜ **The real splat of the demo set**
-   - Once @laura's set is built with the marker fixed on it, scan it and swap it in.
+   - The set is now Ahmed's laptop on a board with the marker (the team, 23:03). Once @laura has fixed them to the
+     board, scan it and swap it in. Nobody sprays the laptop (Ahmed): scan it as it is.
    - *Done when:* the set's splat is in the dashboard and a re-calibration gives a residual you'd demo with.
 9. ⬜ **Train the set's splat on the DGX Spark** (upgrade only; replaces Dawn 2026-11-14 22:20, at @max's request)
    - The team has a DGX Spark, not Dawn access. Pipeline and risks: `research/ledger.md` § 9. Scaniverse stays the
