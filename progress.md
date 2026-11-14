@@ -139,3 +139,13 @@ each builder's brief (`builder-file-<name>.md`, on the `context` branch).
 - ⚠️ Conflicts: @laura — your brief changed (two tasks removed) | @max — your open-questions file disagrees with
   `PROJECT.md` on questions 1 to 3
 - Conflict status: open
+
+### 2026-11-14 20:30 — event rules and the Clock — @ahmed
+- Shipped: `EVENT.md` and `PROJECT.md` → Clock are filled. **Devpost deadline: Sun 15 Nov, 12:00. Judges visit
+  tables from 12:30.** Rules that bite: code must be written during the event, and AI tools must be credited on
+  Devpost. Hall Wi-Fi is slow, so plan on a hotspot. All from one notes file, not yet checked against Devpost.
+- Touched: on `context`: `EVENT.md`, `PROJECT.md`, `builder-file-ahmed.md`
+- 📨 To @laura: nobody knows if the venue has a paper printer. The marker needs one, so find out early.
+- 📨 To @max: Dawn access isn't mentioned in the event notes. Who offered it?
+- ⚠️ Conflicts: none
+- Conflict status: resolved by @ahmed 2026-11-14
