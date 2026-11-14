@@ -21,6 +21,8 @@ The one research file for this project (`research-ledger` skill). Every source g
 | 11 | Scanning on a non-LiDAR iPhone: Scaniverse vs the other apps (2026-11-14) | Which app captures the set; capture technique |
 | 12 | Video to splat on our own hardware, including pose-free models (2026-11-14) | The DGX Spark pipeline step by step; when VGGT helps |
 | 13 | Meshes: from video, and from a splat (2026-11-14) | Whether to make meshes; textured parts for the phone |
+| 14 | Video to a textured mesh on the DGX Spark (2026-11-14) | Mesh routes ranked for tonight; open3d and COLMAP on ARM |
+| 15 | Phone → DGX Spark → mesh back on the phone (2026-11-14) | ARKit camera positions, upload, USDZ/GLB conversion |
 
 ---
 
@@ -912,7 +914,7 @@ scale from the marker, ship USDZ to the phone and GLB to the dashboard. Label me
 - [M27] Apple Developer Forums 693867, USDZ size guidance, 2021, https://developer.apple.com/forums/thread/693867
 - [M28] AOUSD forum, usdzconvert discontinued, 2024, https://forum.aousd.org/t/obj-gltf-to-usdz-usdzconvert-discontinued/1648
 - [M29] gltf-transform CLI, https://gltf-transform.dev/cli
-- [M30] open3d 0.19.0 on PyPI (no aarch64), https://pypi.org/pypi/open3d/0.19.0/json
+- [M30] open3d 0.19.0 on PyPI (no aarch64), https://pypi.org/pypi/open3d/0.19.0/json *(superseded 2026-11-14: open3d 0.20.0 has aarch64 wheels, § 14 [1])*
 ### WEAK
 - [M6] RealityScan hardware requirements (snippet), https://dev.epicgames.com/documentation/realityscan/hardware-and-software-requirements
 - [M7] Meshroom 2025.1.0 (snippet), https://github.com/alicevision/Meshroom/releases/tag/v2025.1.0
@@ -925,3 +927,183 @@ scale from the marker, ship USDZ to the phone and GLB to the dashboard. Label me
 - The bransantiago/MILo mirror: downloads point to an unrelated zip. Use Anttwo/MILo only.
 - polyvia3d splat-to-mesh page: unsourced.
 - "Post-hoc conversion gives a usable mesh of 1 cm parts from our Scaniverse splat": refuted by [M9], [M11], [M15].
+
+# § 14 Video to a textured mesh on the DGX Spark (2026-11-14)
+**Question:** every way to turn an iPhone video of the set into a textured mesh, computed on the DGX Spark (GB10,
+ARM64, CUDA 13), ranked by how likely each is to work tonight. Asked by Max, who wants a mesh route that works.
+Updates § 9 and § 13.
+
+**How this pass was done:** about 25 minutes by Max's agent. PyPI file lists, GitHub issues and release notes opened.
+
+## Findings
+### Two corrections to earlier sections
+- **open3d 0.20.0 (2026-09-16) ships Linux aarch64 wheels** (CPU only). § 9's stubbed open3d imports and § 13 [M30]
+  are out of date: TSDF fusion, Poisson and marching cubes all run on the Spark (sources: [1], [2]).
+- **COLMAP's CUDA dense step works on Blackwell since PR #4213 (April 2026)**, confirmed by a GB10 user; it needs the
+  CUDA toolkit no newer than the driver (sources: [3], [4]). `colmap poisson_mesher` still crashes on aarch64 (open
+  issue) [5].
+### The routes, most likely to work tonight first (times are estimates)
+1. **CPU COLMAP poses → gsplat 2DGS → open3d TSDF on rendered depth → pymeshlab texture bake.** Every piece is
+   already proven or pip-installable on the Spark (§ 9, [1], [16], [19]); no C++ builds. gsplat's 2DGS trainer has no
+   mesh export, so a ~60-line script renders depth per camera and fuses it [16]. About 1–2 h. 2DGS scores about 3×
+   plain splats on geometry benchmarks (§ 13 [M9]). Risks: dents on the glossy switch, cables under 2 voxels vanish,
+   blurry per-vertex texture unless the mesh is dense. No report of the 2DGS trainer itself on GB10.
+2. **VGGT / Depth Anything 3 / MapAnything depth and poses → open3d TSDF.** Fast (30–45 min); VGGT's and MapAnything's
+   dependencies all install on aarch64; DA3 needs `--no-deps` (sources: [12], [13], [14]). Coarse: low-resolution
+   depth, no 1 cm screws [21].
+3. **COLMAP 4.2.1 built with CUDA → dense PatchMatch → mesh in open3d or pymeshlab** (not COLMAP's crashing Poisson).
+   Highest detail on matte textured parts; holes on black gloss and cables. Build 30–60 min, run 45–90 min
+   (sources: [3], [4], [5], [7]).
+4. **OpenMVS TextureMesh on top of route 3:** the best real photo texture; ARM builds plausible, CUDA off; untested
+   on GB10 (sources: [17], [18]).
+5. **DN-Splatter** (nerfstudio, uses AI normal and depth hints, made for glossy indoor surfaces): fits our problem but
+   last updated 2024; 1–2 h setup, untested [WEAK].
+- **Not tonight:** nvblox (pip wheels x86 only) [10]; fVDB (x86 wheels only) [8], [9]; Neuralangelo and other neural
+  SDFs (day-scale); research surface repos (old CUDA) [WEAK]; running x86 tools like RealityScan on the Spark through
+  emulation (sources: [20], [22]).
+### Black glossy plastic and thin cables
+- Make the switch matte for the scan (vanishing scanning spray or dry shampoo), use soft even light, lock exposure
+  and focus [WEAK, forum consensus]. AI normal/depth hints help splat-based routes, not classic PatchMatch.
+- Anything under about 2–3 voxels (thin cables) is lost by TSDF and Poisson.
+
+## Community consensus
+COLMAP + OpenMVS is the standard open textured-mesh pipeline and has the best texture; 2DGS-family meshes are more
+complete and smoother than converting a splat; feed-forward models are fast but coarse; black gloss needs coating or
+diffuse light.
+
+## Final call (professional + community)
+Primary: route 1 (2DGS + open3d TSDF + pymeshlab bake), because it reuses the stack already proven on the Spark.
+Backup: route 2 (VGGT into the same TSDF script), a coarse mesh in under an hour. Stretch, in parallel: COLMAP with
+CUDA + OpenMVS texturing for the sharpest result. Before capture, matte the switch. Label meshes "made on the DGX
+Spark" only if they were; sizes are estimates from the marker.
+
+## Source ledger
+### KEEP
+- [1] open3d 0.20.0 on PyPI (aarch64 wheels), 2026-09-16, https://pypi.org/pypi/open3d/json
+- [2] Open3D v0.20.0 release notes, 2026-09-16, https://github.com/isl-org/Open3D/releases
+- [3] COLMAP issue #3514, PatchMatch on Blackwell (GB10 reports, fix, driver caveat), https://github.com/colmap/colmap/issues/3514
+- [4] COLMAP PR #4213, Blackwell PatchMatch fix, 2026-04-02, https://github.com/colmap/colmap/pull/4213
+- [5] COLMAP issue #4335, `poisson_mesher` crash on DGX Spark, open, https://github.com/colmap/colmap/issues/4335
+- [6] COLMAP issue #5004, no pycolmap aarch64 wheels, 2026-11-09, https://github.com/colmap/colmap/issues/5004
+- [7] COLMAP issue #4105, ONNX Runtime x86 on arm64, closed 2026-02, https://github.com/colmap/colmap/issues/4105
+- [8] fVDB Reality Capture installation, https://fvdb-reality-capture.readthedocs.io/latest/installation.html
+- [9] fVDB wheel index (x86 only), https://d36m13axqqhiit.cloudfront.net/simple/fvdb-core/
+- [10] nvblox installation (pip x86 only), https://nvidia-isaac.github.io/nvblox/v0.0.9/pages/installation.html
+- [11] NuRec stereo workflow (stereo, x86), https://docs.nvidia.com/nurec/robotics/neural_reconstruction_stereo.html
+- [12] Depth Anything 3 README and pyproject, https://github.com/ByteDance-Seed/Depth-Anything-3
+- [13] MapAnything pyproject v1.1.4, https://github.com/facebookresearch/map-anything
+- [14] VGGT requirements, https://github.com/facebookresearch/vggt
+- [16] gsplat examples, `simple_trainer_2dgs.py`, https://github.com/nerfstudio-project/gsplat/tree/main/examples
+- [17] OpenMVS PR #1324, CPU fallback, 2026-11-03, https://github.com/cdcseacave/openMVS/pull/1324
+- [18] OpenMVS v2.4.0 release and CI, 2026-01-20, https://github.com/cdcseacave/openMVS/releases
+- [19] PyMeshLab filter list, https://pymeshlab.readthedocs.io/en/latest/filter_list.html
+- [20] FEX-2607 (partial CUDA thunking on DGX Spark), 2026-07, https://fex-emu.com/FEX-2607/
+- [21] Li, Vosselman, Nex, multi-view stereo comparison, arXiv 2604.10246, 2026-04-11, https://arxiv.org/abs/2604.10246
+- [22] RealityScan for Linux (Wine, experimental), Epic, https://dev.epicgames.com/documentation/en-us/realityscan/realityscan-for-linux
+### WEAK
+- Isaac ROS nvblox page (DGX Spark listed; search summary), https://nvidia-isaac-ros.github.io/repositories_and_packages/isaac_ros_nvblox
+- NVIDIA forum, fVDB mesh from 3DGS (one user), May 2026, https://forums.developer.nvidia.com/t/fvdb-reality-capture-poor-mesh-quality-from-3dgs-parameter-tuning-alternatives/369420
+- DN-Splatter README (last update Nov 2024), https://github.com/maturk/dn-splatter
+- OpenMVS on nixpkgs aarch64 (snippet), https://mynixos.com/nixpkgs/package/openmvs
+- mvs-texturing issue #78, 2017, https://github.com/nmoehrle/mvs-texturing/issues/78
+- MILo issues #20 / #21, 2025-10, https://github.com/Anttwo/MILo/issues/20
+- 2DGS issue #250, 2026-01, https://github.com/hbb1/2d-gaussian-splatting/issues/250
+- aniwaa scanning-spray overview, https://www.aniwaa.com/insight/3d-scanners/3d-scanning-spray-overview/
+- Revopoint forum, dark and shiny objects, https://forum.revopoint3d.com/t/scan-dark-and-shiny-object/22214
+### DO NOT USE
+- "open3d has no aarch64 wheel" (§ 9, § 13 [M30]): superseded by [1].
+- "COLMAP CUDA dense doesn't work on Blackwell": fixed by [4]; only `poisson_mesher` on aarch64 is still broken [5].
+- Running RealityScan or any x86 CUDA tool on the Spark through emulation: not viable [20], [22].
+- "DA3 is under 5% slower without xformers": community claim, unmeasured.
+
+# § 15 Phone → DGX Spark → mesh back on the phone (2026-11-14)
+**Question:** can the iPhone record a scan, send it to the Spark, and get a mesh back for the phone (USDZ) and the
+dashboard (GLB)? Can the phone's own ARKit camera positions skip the slow camera-position step? Asked by Max.
+
+**How this pass was done:** about 20 minutes by Max's agent. Apple docs read through their JSON endpoints; the usd-core
+aarch64 wheel downloaded and inspected.
+
+## Findings
+### ARKit camera positions
+- A non-LiDAR iPhone can save each frame with its camera position and lens data; LiDAR only adds depth (sources: [P5],
+  [P8], [P9]). No ready-made app exports this for non-LiDAR phones in a usable way (NeRFCapture is stale since 2023;
+  Scan4D's non-LiDAR mode is debug-only; nerfstudio's phone paths need LiDAR) (sources: [P1], [P3], [P4]). Our own app
+  can write it: about 100 lines of Swift (estimate).
+- Frames: 1920×1440 at up to 60 fps, or 4K at 30 fps; 12 MP stills with pose via `captureHighResolutionFrame`, but
+  not at video rate (sources: [P5], [P6], [P7]).
+- **Accurate to about a centimetre, not a millimetre:** ARKit was the most accurate phone tracking in one benchmark,
+  about 0.02 m/s drift [P13]; that's good for AR but too loose for a sharp model without refinement [P14]. The
+  standard fix: COLMAP's "known poses" recipe (triangulate, then optionally bundle-adjust), which skips the fragile
+  mapping step and keeps ARKit's real-world scale [P18].
+- ARKit and nerfstudio use the same axes; COLMAP needs Y and Z flipped and the transform inverted (sources: [P9],
+  [P10]). Check one frame visually; double conversion is the classic bug [WEAK].
+### Sending it to the Spark
+- **No code, tonight:** LocalSend (free, open source; iPhone app and an ARM Linux build) over the phone hotspot if venue
+  Wi-Fi isolates devices (sources: [P19], [P20]). Backup: the Files app to a Samba share [WEAK].
+- **In the app:** zip frames + `transforms.json`, one background `URLSession` file upload to a small server on the Spark
+  (sources: [P22], [P23]). About 100–200 MB for 300 frames (estimate).
+### Getting the mesh back
+- usd-core 26.11 (2026-10-21) is the first with aarch64 wheels and includes the USDZ packager, but no glTF reader; a
+  small trimesh → USD script bridges it [P25]. guc has no ARM build [P26].
+- RealityKit doesn't render vertex colours; the mesh needs a UV texture [P29]. pymeshlab (aarch64 wheels) bakes one,
+  best from the original photos when poses are known (sources: [P31], [P32]). Keep it under about 100k triangles and
+  a 2K texture [P30].
+- Phone: download to a file, then `Entity(contentsOf:)` (async) (sources: [P33], [P34]). Dashboard: GLTFLoader;
+  shrink with `gltf-transform optimize` (sources: [P35], [P36]).
+### How long it takes (estimates, nothing measured)
+- Capture 1–2 min, upload 0.5–2 min, known-poses COLMAP 3–10 min, reconstruction dominant (5–15 min for a fast mesh
+  route, over an hour for splat training), conversion under 1 min. About 10–30 min end to end with a fast route.
+
+## Community consensus
+ARKit positions are good enough for AR but need refining for reconstruction; contrasting view: ARKit is more robust
+than COLMAP on textureless scenes [WEAK]. LocalSend is the standard AirDrop substitute; its usual failure is Wi-Fi
+client isolation.
+
+## Final call (professional + community)
+Tonight with no code: LocalSend from the iPhone to the Spark. In the app: frames + ARKit positions → one upload → the
+Spark refines the positions with COLMAP, reconstructs, bakes a texture, and returns USDZ + GLB. "The mesh appears a
+few minutes later" is only honest if a full run has been timed on the Spark first; otherwise show it as REPLAY.
+
+## Source ledger
+### KEEP
+- [P1] NeRFCapture, GitHub (stale since 2023-12), https://github.com/jc211/NeRFCapture
+- [P3] Scan4D iOS README, GitHub, 2026-11-13, https://github.com/WiseLabCMU/scan4d-ios
+- [P4] nerfstudio "Using custom data", https://docs.nerf.studio/quickstart/custom_dataset.html
+- [P5] WWDC22 "Discover ARKit 6", Apple, https://developer.apple.com/videos/play/wwdc2022/10126
+- [P6] `recommendedVideoFormatFor4KResolution`, Apple docs, https://developer.apple.com/documentation/arkit/arconfiguration/recommendedvideoformatfor4kresolution
+- [P7] `captureHighResolutionFrame`, Apple docs, https://developer.apple.com/documentation/arkit/arsession/capturehighresolutionframe(completion:)
+- [P8] `ARFrame.capturedImage`, Apple docs, https://developer.apple.com/documentation/arkit/arframe/capturedimage
+- [P9] `ARCamera.transform`, Apple docs, https://developer.apple.com/documentation/arkit/arcamera/transform
+- [P10] nerfstudio data conventions, https://docs.nerf.studio/quickstart/data_conventions.html
+- [P13] Kim et al., VIO benchmark, Sensors, Dec 2022, https://pmc.ncbi.nlm.nih.gov/articles/PMC9785098
+- [P14] CamP, SIGGRAPH Asia 2023, https://camp-nerf.github.io
+- [P18] COLMAP FAQ, known camera poses, https://colmap.github.io/faq.html
+- [P19] LocalSend README, https://github.com/localsend/localsend
+- [P20] LocalSend v1.18.2 release (linux-arm-64), 2026-08-21, https://github.com/localsend/localsend/releases
+- [P22] `URLSession.uploadTask(with:fromFile:)`, Apple docs, https://developer.apple.com/documentation/foundation/urlsession/uploadtask(with:fromfile:)
+- [P23] `URLSessionConfiguration.background`, Apple docs, https://developer.apple.com/documentation/foundation/urlsessionconfiguration/background(withidentifier:)
+- [P25] usd-core 26.11 on PyPI (aarch64 wheels, inspected), 2026-10-21, https://pypi.org/project/usd-core/
+- [P26] guc releases (no Linux ARM), https://github.com/pablode/guc/releases
+- [P29] Apple Developer Forums 691674, vertex colours unsupported, https://developer.apple.com/forums/thread/691674
+- [P31] PyPI file lists for pymeshlab, open3d, xatlas, trimesh, checked 2026-11-14, https://pypi.org/pypi/open3d/json
+- [P32] PyMeshLab filter list, https://pymeshlab.readthedocs.io/en/latest/filter_list.html
+- [P33] `Entity.init(contentsOf:withName:)`, Apple docs, https://developer.apple.com/documentation/realitykit/entity/init(contentsof:withname:)
+- [P34] `Entity.load(contentsOf:withName:)`, Apple docs, https://developer.apple.com/documentation/realitykit/entity/load(contentsof:withname:)
+- [P35] three.js GLTFLoader, https://threejs.org/docs/pages/GLTFLoader.html
+- [P36] glTF Transform CLI, https://gltf-transform.dev/cli
+### WEAK
+- [P2] instant-ngp dataset tips (old mirror), https://huggingface.co/camenduru/instant-ngp/raw/main/docs/nerf_dataset_tips.md
+- [P11] nerfstudio issue #3101 (summary only), https://github.com/nerfstudio-project/nerfstudio/issues/3101
+- [P12] nerfstudio discussion #3748 (summary only), https://github.com/nerfstudio-project/nerfstudio/discussions/3748
+- [P15] Tampere thesis, ARKit accuracy (summary only), https://trepo.tuni.fi/handle/10024/159133
+- [P16] Record3D/instant-ngp "more robust than COLMAP" (same doc as [P2])
+- [P17] Polycam/Polyform notes (vendor claim), https://www.gitlink.org.cn/dnrops/polyform
+- [P21] Files app SMB guides, https://www.techrepublic.com/article/how-to-use-the-files-app-to-connect-to-a-network-server-from-your-iphone-or-ipad/
+- [P24] MacRumors, iPhone 12 hotspot 5 GHz, 2020, https://www.macrumors.com/2020/10/26/iphone-12-personal-hotspot-over-5ghz-wifi/
+- [P27] BlenderKit on ARM64 Linux, 2024, https://www.blenderkit.com/articles/blenderkit-on-arm64-linux/
+- [P28] Debian blender `debian/rules`, https://sources.debian.org/src/blender/
+- [P30] Apple Developer Forums 693867, 2021, https://developer.apple.com/forums/thread/693867
+### DO NOT USE
+- "ARKit relative pose error under 5 cm" (MobileEgo, arXiv 2605.05945): snippet only.
+- Record3D or Polycam nerfstudio paths on our non-LiDAR phones: refuted by [P4].
+- "Official Blender ARM64 builds since 4.3" (Linaro): no release listing found.
