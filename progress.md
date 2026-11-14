@@ -1,4 +1,4 @@
-# TBD: progress log and conflict board
+# Remote Assist: progress log and conflict board
 
 **Every builder, every prompt:** the Claude hook shows the entries that are new since you last looked (by hand:
 `git fetch && git diff HEAD..origin/main -- progress.md`). If an open `⚠️ Conflicts` line names you, tell your user,
@@ -17,7 +17,7 @@ bottom, pushed to `main` straight away:
 ```
 
 ## Headline
-_The one-line pitch, once it's picked (copied from `PROJECT.md` → NOW)._
+**Remote Assist.** Step-by-step 3D guidance on a phone, built by a remote engineer from a scan of the room, that keeps working when the network is down. The plan: `docs/remote-assist/`.
 
 ## Start here (teammates, first 15 minutes)
 1. **GitHub:** accept the collaborator invite for `github.com/meep-boop/durhack-2026-team-sonic`, then in **Git Bash** on Windows (plain `bash` in
@@ -44,12 +44,13 @@ each builder's brief (`builder-file-<name>.md`, on the `context` branch).
 
 | Who | Role | Branch | Owns (paths / pieces) | How the rest plugs into it |
 |---|---|---|---|---|
-| **Ahmed** `meep-boop` | Docs owner; build role TBD at kickoff | `ahmed-<area>` | The team kit (`scripts/`, `kit/`, `team.conf`), the shared docs on `context` | Add teammates: their key in `team.conf`, a brief, a row here |
-| **Max** `xaw1` | TBD at kickoff | `max-<area>` | TBD | Setup: `bash scripts/setup.sh max` |
-| **Laura** `furtunalaura` | TBD at kickoff | `laura-<area>` | TBD | Setup: `bash scripts/setup.sh laura` |
-| **Salman** `salman-abdulrazaq-ali` | TBD at kickoff | `salman-<area>` | TBD | Setup: `bash scripts/setup.sh salman` |
+| **Ahmed** `meep-boop` | Docs owner; relay, protocol, sync | `ahmed-relay` | `relay/`, `contracts/`, `fixtures/`, the labelling endpoint; the team kit (`scripts/`, `kit/`, `team.conf`) and the shared docs on `context` | Build against `contracts/protocol.ts` and the fake peers in `fixtures/`. Ask Ahmed for protocol changes |
+| **Max** `xaw1` | Dashboard 3D view and the splats | `max-scene` | `dashboard/src/scene/`, the `dashboard/` shell, `splats/`, `pipeline/`, `docs/remote-assist/` | The guide builder calls `dashboard/src/scene/api.ts` |
+| **Laura** `furtunalaura` | Guide builder, models, demo set and hardware, pitch | `laura-guide` | `dashboard/src/guide/`, `assets/` (marker and models), `hardware/`, the README and video | Both apps load `assets/models/`; don't rename or resize a model without flagging |
+| **Salman** `salman-abdulrazaq-ali` | The iPhone app | `salman-ios` | `ios/` | Speaks `contracts/protocol.ts` to the relay; loads the marker and USDZ models from `assets/` |
 
-**Shared** (anyone may edit; flag it): `contracts/*`, `fixtures/*`
+**Shared** (flag every edit): `contracts/*` and `fixtures/*` (Ahmed writes them, everyone builds on them), `dashboard/src/scene/api.ts`
+(the seam between Max and Laura), `assets/models/` (loaded by both apps).
 
 ## How we work (read once)
 - **Code from your own laptop, as yourself.** One branch each (`<name>-<area>`). Per feature: code and test → push
@@ -101,3 +102,25 @@ each builder's brief (`builder-file-<name>.md`, on the `context` branch).
 - 📨 To @ahmed: please add to PROJECT.md → Active tasks: "Pick and get the demo objects (unassigned)" and "Check we have a Mac with Xcode for the iPhone app".
 - ⚠️ Conflicts: none
 - Conflict status: resolved by @max 2026-11-14
+
+### 2026-11-14 20:20 — plan agreed, work split four ways — @ahmed
+- Shipped: every brief now has an owner area and ordered tasks; `PROJECT.md` has the pitch, the decisions and the
+  open questions; `research/ledger.md` § 5 adds to Max's § 2 and § 3. Who owns what (above) is filled in.
+- Touched: `progress.md`; on `context`: `PROJECT.md`, `CLAUDE.md`, all four briefs, `research/ledger.md`
+- Decision: by Ahmed, on top of Max's round 1: printed-marker alignment; WebRTC live view from the start; cut-outs
+  show on the phone as a box plus a built-in model; enter Neptune North, Accenture, Marshall Wace and RS; Scaniverse
+  before Dawn; all four build in parallel against fake peers. Full records: `PROJECT.md` → Decision log.
+- 📨 To @salman: you have the iPhone app (`ios/`). Start with marker detection on a real phone. Ahmed needs your
+  pick of WebRTC library before signalling can be written.
+- 📨 To @max: your research (ledger § 1–4) landed while this was being written, and it cuts against two of
+  Ahmed's calls: cut-outs on the phone (you found RealityKit on iOS 27.2+ can draw splats) and live view (you
+  recommend JPEG first). Both are in `PROJECT.md` → Pending as reopened, not changed. Talk to Ahmed.
+- 📨 To @max: you have the dashboard's 3D view and the splats. Your two requests are in `PROJECT.md` → NOW. Laura
+  needs `dashboard/src/scene/api.ts` from you before her guide builder can start.
+- 📨 To @laura: you have the guide builder, the models, the demo set, the UNO Q rig and the pitch. Salman and Max
+  need the printed marker from you before anything lines up. Yours is the longest list: say so if it's too much.
+- 📨 To @max @laura @salman: Ahmed owes you `contracts/protocol.ts`, a sample guide and the fake peers. Until then
+  use the draft in `docs/remote-assist/architecture.md`.
+- ⚠️ Conflicts: @max @laura @salman — new tasks in your brief, and roles and decisions made without you in the room.
+  Object here before building on them.
+- Conflict status: open
