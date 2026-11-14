@@ -325,8 +325,9 @@ triangles with a picture painted on: less real-looking, but phones, game engines
   [fVDB install](https://fvdb-reality-capture.readthedocs.io/latest/installation.html),
   [FEX-2607](https://fex-emu.com/FEX-2607/).
 
-**The catch for the SSD demo:** black shiny plastic and thin parts leave holes in every method. Make the laptop matte
-for the scan (a vanishing scanning spray; ask Ahmed first, it's his laptop) and use soft, even light.
+**The catch for the SSD demo:** black shiny plastic and thin parts leave holes in every method. Soft, even light
+helps. One option professional scanners use is a temporary matte coating (a "vanishing" scanning spray that
+evaporates after an hour or two); the evidence is weak and nothing is planned. Try a plain scan first.
 Source: [aniwaa: scanning sprays](https://www.aniwaa.com/insight/3d-scanners/3d-scanning-spray-overview/) (weak).
 
 **What a mesh is for here:** a real textured model of a part on the phone instead of a stand-in, exact clicking on
