@@ -1,4 +1,4 @@
-import type { Action, Hello, Message, MessageType, ModelName, Role } from "../contracts/protocol.ts";
+import type { Action, GuideObject, Hello, Message, MessageType, ModelName, Role } from "../contracts/protocol.ts";
 
 type Obj = Record<string, unknown>;
 type Problem = string | null;
@@ -22,6 +22,7 @@ const MODELS = {
   "cable-plug": true,
 } satisfies Record<ModelName, true>;
 const ACTIONS = { unscrew: true, pull: true, push: true, flip: true, rotate90: true } satisfies Record<Action, true>;
+const CABLE_STATES = { in: true, out: true } satisfies Record<NonNullable<GuideObject["expect"]>["cable"], true>;
 
 const isObj = (x: unknown): x is Obj => typeof x === "object" && x !== null && !Array.isArray(x);
 const isNum = (x: unknown): x is number => typeof x === "number" && Number.isFinite(x);
@@ -67,6 +68,12 @@ const checkMarker = (x: unknown, path: string): Problem =>
     ? text(x.name, `${path}.name`) ?? positive(x.width, `${path}.width`) ?? positive(x.height, `${path}.height`)
     : `${path}: expected an object`;
 
+const checkExpect = (x: unknown, path: string): Problem => {
+  if (x === undefined) return null;
+  if (!isObj(x)) return `${path}: expected an object`;
+  return text(x.port, `${path}.port`) ?? oneOf(CABLE_STATES, x.cable, `${path}.cable`);
+};
+
 const checkObject = (x: unknown, path: string): Problem => {
   if (!isObj(x)) return `${path}: expected an object`;
   return (
@@ -80,7 +87,8 @@ const checkObject = (x: unknown, path: string): Problem => {
       : `${path}.action: expected null or one of ${Object.keys(ACTIONS).join(", ")}`) ??
     unit(x.axis, 3, "vector", `${path}.axis`) ??
     optionalText(x.label, `${path}.label`) ??
-    optionalText(x.cutoutId, `${path}.cutoutId`)
+    optionalText(x.cutoutId, `${path}.cutoutId`) ??
+    checkExpect(x.expect, `${path}.expect`)
   );
 };
 

@@ -210,4 +210,85 @@ each builder's brief (`builder-file-<name>.md`, on the `context` branch).
   (that's what closes my task 1); the "TOP" edge on the sheet is upright for the +X/+Z check. @max — the marker is
   printed; the demo set it goes on isn't built yet. @ahmed — `fixtures/sample-guide.json` still says 0.16 m and
   `sample-marker`; fine for a SAMPLE, but the real guide needs 0.18.
+- Conflict status: open (the @ahmed part resolved by @ahmed 2026-11-14 in `f28411b`)
+
+### 2026-11-14 21:34 — sample guide sized for the printed marker — @ahmed
+- Shipped: `fixtures/sample-guide.json` and the example `guide.set` in `fixtures/messages.json` now use Laura's
+  marker: `{ "name": "marker", "width": 0.18, "height": 0.18 }`. Still labelled SAMPLE; positions unchanged.
+  Commit `f28411b`.
+- Touched: `fixtures/sample-guide.json`, `fixtures/messages.json`
+- ⚠️ Conflicts: @salman — if you bundled the sample guide or decode `messages.json` in a test, pull again
 - Conflict status: open
+
+### 2026-11-14 21:47 — RS kit complete — @ahmed
+- Shipped: the RS challenge's mandatory kit is in hand: the Arduino UNO Q, the **Nicla Vision as the camera** (the
+  RS staff confirmed it counts) and a USB-C hub. Next: research how the Nicla, the UNO Q and the relay connect.
+- Touched: on `context`: `PROJECT.md`, `EVENT.md`, `builder-file-ahmed.md`
+- Decision: the RS camera is the Nicla Vision (Ahmed; RS staff confirmed).
+- 📨 To @laura: the rig is the UNO Q plus the Nicla Vision, both small. Keep a spot on the set where the Nicla can see
+  the patch panel's ports.
+- ⚠️ Conflicts: none
+- Conflict status: resolved by @ahmed 2026-11-14
+
+### 2026-11-14 21:54 — the UNO Q rig is planned, and guides can say what it should see — @ahmed
+- Shipped: `contracts/protocol.ts` gains an optional `expect: { port, cable: "in" | "out" }` on guide objects, checked
+  by the relay; the sample guide's cable steps carry it. Additive: older readers ignore it. 32 tests and a type-check
+  pass. Commit `29bafd3`. Plan and research for the rig: `research/ledger.md` § 10.
+- Touched: `contracts/protocol.ts`, `relay/validate.ts`, `fixtures/`; on `context`: `PROJECT.md`, three briefs,
+  `research/ledger.md`
+- Decision: by Ahmed: the Nicla Vision finds the cable by colour, one region per port; USB through the hub to the UNO
+  Q; the UNO Q joins the relay as `rig` with `websocket-client` and shows ✓/✗ on its LED matrix; the `expect` field.
+- 📨 To @laura: the cable that moves needs a brightly coloured plug boot, and your guide builder can set `expect` on
+  cable steps (your brief, tasks 2 and 3).
+- 📨 To @salman: `expect` is optional; your Swift decoder can ignore it.
+- 📨 To anyone: the rig needs a micro-USB **data** cable for the Nicla Vision. Got one? Tell Ahmed.
+- ⚠️ Conflicts: @laura @salman @max — an additive change to the contract you build on
+- Conflict status: open
+
+
+### 2026-11-14 22:15 — dashboard stack picked, splat on screen — @max
+- Shipped: research in `research/ledger.md` § 7 (splat renderer), § 8 (dashboard shell), § 9 (training splats on
+  the DGX Spark). `dashboard/` scaffolded on `max-scene` (`49342b3`, not merged yet): Vite + React, the scene in
+  plain three.js + Spark 2.4 behind `dashboard/src/scene/`. Shows Spark's SAMPLE splat, or a dropped .spz/.ply.
+  Run: `cd dashboard && npm install && npm run dev` · test: `npm test && npm run typecheck`.
+- Touched: `dashboard/` (new, branch `max-scene`); on `context`: `research/ledger.md`
+- Decision: by Max: Spark on three.js, proven by a short spike with a kill test (30 fps or more on the weakest laptop,
+  a click-pick under 300 ms, a cut-out under 2 s), PlayCanvas only if it fails; Vite 8 + React 19 + TypeScript,
+  plain three.js behind `scene/api.ts`, no React Three Fiber, a shared zustand store when one is needed.
+- 📨 To @ahmed: we have a DGX Spark, not Dawn access. Max's task 9 should read "train the set's splat on the DGX
+  Spark" (ledger § 9 has the pipeline). Please also fill Stack in `CLAUDE.md` with the dashboard line above. *(done by @ahmed 2026-11-14 22:20)*
+- 📨 To @laura: the dashboard is React, so your guide builder is React components. `scene/api.ts` is next; I'll
+  flag it here for you to agree before you build on it.
+- ⚠️ Conflicts: @laura — the app shell you build inside is now fixed (React)
+- Conflict status: open
+
+### 2026-11-14 22:40 — scene API for the guide builder, PR open — @max
+- Shipped: `dashboard/src/scene/api.ts` (what the guide builder can ask the 3D view, types only) and
+  `docs/remote-assist/scene-api.md` (why, and what's open), on `max-scene`. PR:
+  https://github.com/meep-boop/durhack-2026-team-sonic/pull/6 (not merged). 8 dashboard tests, relay's 32 still pass.
+- Touched: `dashboard/` (new), `docs/remote-assist/scene-api.md` (new)
+- Decision: by Max: the guide builder keeps the only copy of the guide and hands the 3D view a whole step; the 3D view
+  reports edits back. Alternative not picked: both halves keep a copy and send changes one at a time (two copies can
+  drift apart).
+- Decision: **not decided** (Max + Ahmed, after calibration works): what happens before the marker is calibrated:
+  block placing until calibrated, or place in scan coordinates and convert later. Only `dashboard/src/scene/` changes
+  either way. Please add it to `PROJECT.md` → Pending. *(done by @ahmed 2026-11-14 22:27)*
+- 📨 To @laura: read `api.ts` and `scene-api.md`, and say here if anything is missing. Your guide builder sends the
+  3D view the step's `GuideObject[]` and listens for moves and clicks; it never converts positions.
+- ⚠️ Conflicts: @laura — `dashboard/src/scene/api.ts` is the seam with `dashboard/src/guide/`; agree it before
+  building on it
+- Conflict status: open
+
+### 2026-11-14 22:27 — the UNO Q rig's code is on main, not yet on hardware — @ahmed
+- Shipped: `hardware/nicla/main.py` (the Nicla prints which ports hold the coloured cable) and `hardware/unoq/` (the
+  UNO Q app joins the relay as `rig`, follows the guide, and sends `step.verified` for steps with `expect`; a cable in
+  the wrong port warns, the right one ticks). 13 rig tests; end to end through the real relay with typed-in Nicla
+  lines it reported "cable in port 16, expected 17", then "correct". Commit `4db2ce6`. How to run: `hardware/README.md`.
+- Not done yet: running it on the Nicla and the UNO Q (the regions and colour in the Nicla script are examples), and
+  the ✓ / ✗ on the LED matrix.
+- Touched: `hardware/` (new); on `context`: `PROJECT.md`, `CLAUDE.md`, `builder-file-ahmed.md`
+- 📨 To @max @laura @salman: if the rig is running, `step.verified` arrives for steps with `expect`. `ok: false` comes
+  with a `detail` like "cable in port 16, expected 17" to show the user.
+- ⚠️ Conflicts: none (new files in Ahmed's area)
+- Conflict status: resolved by @ahmed 2026-11-14
+
