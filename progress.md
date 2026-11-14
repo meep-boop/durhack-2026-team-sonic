@@ -87,3 +87,9 @@ each builder's brief (`builder-file-<name>.md`, on the `context` branch).
 - Touched: `progress.md`, `builder-file-salman.md` on `context`
 - ⚠️ Conflicts: @max @laura @salman — clone, then `bash scripts/setup.sh <your key>` (Start here, step 1)
 - Conflict status: open
+
+### 2026-11-14 19:00 — Remote Assist plan docs — @max
+- Shipped: `docs/remote-assist/` with the idea (demo, pitch, challenge fit) and the planned architecture (components, calibration, message protocol). Plan only, no code; everything marked proposed is open for kickoff.
+- Touched: `docs/remote-assist/README.md`, `docs/remote-assist/architecture.md`
+- ⚠️ Conflicts: none
+- Conflict status: resolved by @max 2026-11-14
