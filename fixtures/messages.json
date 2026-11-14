@@ -21,7 +21,8 @@
               "action": "pull",
               "axis": [0, 1, 0],
               "label": "Port 14",
-              "cutoutId": "cut-7"
+              "cutoutId": "cut-7",
+              "expect": { "port": "14", "cable": "out" }
             }
           ]
         }

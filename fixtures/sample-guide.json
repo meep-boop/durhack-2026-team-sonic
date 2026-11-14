@@ -48,7 +48,8 @@
           "size": [0.014, 0.016, 0.012],
           "action": "pull",
           "axis": [0, 1, 0],
-          "label": "Port 14"
+          "label": "Port 14",
+          "expect": { "port": "14", "cable": "out" }
         }
       ]
     },
@@ -64,7 +65,8 @@
           "size": [0.014, 0.016, 0.012],
           "action": "push",
           "axis": [0, -1, 0],
-          "label": "Port 17"
+          "label": "Port 17",
+          "expect": { "port": "17", "cable": "in" }
         }
       ]
     }
