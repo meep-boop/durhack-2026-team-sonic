@@ -5,7 +5,7 @@ import Observation
 /// (task 6) can't shift which step is current.
 @Observable
 final class GuidePlayer {
-  let guide: Guide
+  private(set) var guide: Guide
   private(set) var currentStepId: String?
 
   init(guide: Guide) {
@@ -25,6 +25,19 @@ final class GuidePlayer {
 
   func restart() {
     currentStepId = guide.steps.first?.id
+  }
+
+  /// `guide.set` always carries the whole guide. Stay on the current step if it still exists (ids, not positions,
+  /// so an inserted step doesn't move us); a new guide starts from its first step.
+  func replace(with newGuide: Guide) {
+    let keep = newGuide.id == guide.id && newGuide.steps.contains { $0.id == currentStepId }
+    guide = newGuide
+    if !keep { currentStepId = newGuide.steps.first?.id }
+  }
+
+  func jump(to stepId: String) {
+    guard guide.steps.contains(where: { $0.id == stepId }) else { return }
+    currentStepId = stepId
   }
 
   static func loadBundled(named name: String = "sample-guide", bundle: Bundle = .main) throws -> Guide {

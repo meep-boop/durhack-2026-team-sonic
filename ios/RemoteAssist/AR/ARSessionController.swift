@@ -15,6 +15,11 @@ final class ARSessionController: NSObject, ARSessionDelegate {
     didSet { if step != oldValue { renderStep() } }
   }
 
+  /// Camera poses in the marker frame, about 5 a second, once the marker has been seen.
+  @ObservationIgnored var onPose: ((PoseUpdate) -> Void)?
+  @ObservationIgnored private var markerTransform: simd_float4x4?
+  @ObservationIgnored private var lastPoseTime: TimeInterval = 0
+
   @ObservationIgnored let arView = ARView(frame: .zero, cameraMode: .ar, automaticallyConfigureSession: false)
   @ObservationIgnored private var markerAnchor: AnchorEntity?
   @ObservationIgnored private let stepRoot = Entity()
@@ -31,6 +36,11 @@ final class ARSessionController: NSObject, ARSessionDelegate {
 
     let reference = ARReferenceImage(cgImage, orientation: .up, physicalWidth: CGFloat(MarkerSpec.widthMeters))
     reference.name = MarkerSpec.imageName
+    // The runtime version of Xcode's AR resource warnings: too little detail or too uniform a pattern to track.
+    reference.validate { [weak self] error in
+      guard let error else { return }
+      DispatchQueue.main.async { self?.errorMessage = "Marker image problem: \(error.localizedDescription)" }
+    }
 
     // World tracking (not image-only tracking) keeps the guide where it was when the marker leaves the frame.
     // One tracked image keeps its anchor updating every frame instead of only on detection.
@@ -56,9 +66,23 @@ final class ARSessionController: NSObject, ARSessionDelegate {
   }
 
   func session(_ session: ARSession, didUpdate anchors: [ARAnchor]) {
-    for case let image as ARImageAnchor in anchors where markerTracked != image.isTracked {
-      markerTracked = image.isTracked
+    for case let image as ARImageAnchor in anchors {
+      markerTransform = image.transform
+      if markerTracked != image.isTracked { markerTracked = image.isTracked }
     }
+  }
+
+  func session(_ session: ARSession, didUpdate frame: ARFrame) {
+    guard let onPose, let markerTransform, frame.timestamp - lastPoseTime >= 0.2 else { return }
+    lastPoseTime = frame.timestamp
+    // The contract's frame is the marker's, so the camera is expressed relative to the marker anchor.
+    let camera = markerTransform.inverse * frame.camera.transform
+    let position = SIMD3(camera.columns.3.x, camera.columns.3.y, camera.columns.3.z)
+    onPose(PoseUpdate(
+      t: Int64(Date().timeIntervalSince1970 * 1000),
+      camera: Pose(p: Vec3(position), q: Quat(simd_quatf(camera))),
+      markerTracked: markerTracked
+    ))
   }
 
   func session(_ session: ARSession, didFailWithError error: Error) {
@@ -78,6 +102,7 @@ final class ARSessionController: NSObject, ARSessionDelegate {
     arView.scene.addAnchor(anchor)
 
     markerAnchor = anchor
+    markerTransform = image.transform
     markerSeen = true
     markerTracked = image.isTracked
   }

@@ -5,7 +5,8 @@ final class GuideDecodingTests: XCTestCase {
   func testSampleGuideDecodes() throws {
     let guide = try GuidePlayer.loadBundled()
     XCTAssertEqual(guide.id, "sample-cable-move")
-    XCTAssertEqual(guide.marker.width, 0.16, accuracy: 0.0001)
+    XCTAssertEqual(guide.marker.width, 0.18, accuracy: 0.0001)
+    XCTAssertEqual(guide.marker.width, MarkerSpec.widthMeters, accuracy: 0.0001)
     XCTAssertEqual(guide.steps.map(\.id), ["s1", "s2", "s3", "s4"])
 
     let plug = try XCTUnwrap(guide.steps.last?.objects.first)

@@ -18,9 +18,18 @@ targets:
     platform: iOS
     sources:
       - path: RemoteAssist
-      # Ahmed's fixture, bundled as-is so the contract has one source of truth.
+      # Bundled straight from the shared folders, so each has one source of truth: Ahmed's fixture, Laura's marker.
       - path: ../fixtures/sample-guide.json
         buildPhase: resources
+      - path: ../assets/marker/marker.png
+        buildPhase: resources
+    info:
+      path: RemoteAssist/Info.plist
+      properties:
+        # The relay is plain ws:// on the team hotspot (Ahmed's call), which ATS blocks unless local networking is allowed.
+        NSAppTransportSecurity:
+          NSAllowsLocalNetworking: true
+        NSLocalNetworkUsageDescription: Remote Assist connects to the team's relay on this network to receive the guide.
     settings:
       base:
         PRODUCT_BUNDLE_IDENTIFIER: com.teamsonic.remoteassist
@@ -36,6 +45,8 @@ targets:
     platform: iOS
     sources:
       - path: RemoteAssistTests
+      - path: ../fixtures/messages.json
+        buildPhase: resources
     dependencies:
       - target: RemoteAssist
     settings:
