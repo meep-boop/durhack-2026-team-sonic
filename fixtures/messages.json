@@ -6,7 +6,7 @@
       "id": "sample-one-step",
       "rev": 3,
       "title": "SAMPLE: one step",
-      "marker": { "name": "sample-marker", "width": 0.16, "height": 0.16 },
+      "marker": { "name": "marker", "width": 0.18, "height": 0.18 },
       "steps": [
         {
           "id": "s1",

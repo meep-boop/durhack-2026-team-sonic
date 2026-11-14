@@ -2,7 +2,7 @@
   "id": "sample-cable-move",
   "rev": 1,
   "title": "SAMPLE: move a cable from port 14 to port 17",
-  "marker": { "name": "sample-marker", "width": 0.16, "height": 0.16 },
+  "marker": { "name": "marker", "width": 0.18, "height": 0.18 },
   "steps": [
     {
       "id": "s1",
