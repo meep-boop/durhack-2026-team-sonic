@@ -230,3 +230,18 @@ each builder's brief (`builder-file-<name>.md`, on the `context` branch).
 - ⚠️ Conflicts: none
 - Conflict status: resolved by @ahmed 2026-11-14
 
+### 2026-11-14 21:54 — the UNO Q rig is planned, and guides can say what it should see — @ahmed
+- Shipped: `contracts/protocol.ts` gains an optional `expect: { port, cable: "in" | "out" }` on guide objects, checked
+  by the relay; the sample guide's cable steps carry it. Additive: older readers ignore it. 32 tests and a type-check
+  pass. Commit `29bafd3`. Plan and research for the rig: `research/ledger.md` § 10.
+- Touched: `contracts/protocol.ts`, `relay/validate.ts`, `fixtures/`; on `context`: `PROJECT.md`, three briefs,
+  `research/ledger.md`
+- Decision: by Ahmed: the Nicla Vision finds the cable by colour, one region per port; USB through the hub to the UNO
+  Q; the UNO Q joins the relay as `rig` with `websocket-client` and shows ✓/✗ on its LED matrix; the `expect` field.
+- 📨 To @laura: the cable that moves needs a brightly coloured plug boot, and your guide builder can set `expect` on
+  cable steps (your brief, tasks 2 and 3).
+- 📨 To @salman: `expect` is optional; your Swift decoder can ignore it.
+- 📨 To anyone: the rig needs a micro-USB **data** cable for the Nicla Vision. Got one? Tell Ahmed.
+- ⚠️ Conflicts: @laura @salman @max — an additive change to the contract you build on
+- Conflict status: open
+
