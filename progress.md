@@ -199,3 +199,15 @@ each builder's brief (`builder-file-<name>.md`, on the `context` branch).
   a camera pose round the marker. Its poses are SIMULATED: never demo them.
 - ⚠️ Conflicts: none (all new files in Ahmed's area)
 - Conflict status: resolved by @ahmed 2026-11-14
+
+### 2026-11-14 21:31 — the printed marker is on main — @laura
+- Shipped: `assets/marker/marker.png` (300 dpi), `marker-print-A4.pdf` (print sheet with a TOP mark and a 100 mm
+  scale ruler) and `assets/marker/README.md`. Printed on matte paper and measured with a ruler: **180 mm × 180 mm**
+  (outer black frame), so the guide's `marker` is `{ "name": "marker", "width": 0.18, "height": 0.18 }`. Random,
+  asymmetric pattern, not a checkerboard, so ARKit can tell its corners and its orientation apart. Commit `eca6c24`.
+- Touched: `assets/marker/` (new)
+- ⚠️ Conflicts: @salman — add `marker.png` as an ARKit reference image at 0.18 m and check Xcode gives no warnings
+  (that's what closes my task 1); the "TOP" edge on the sheet is upright for the +X/+Z check. @max — the marker is
+  printed; the demo set it goes on isn't built yet. @ahmed — `fixtures/sample-guide.json` still says 0.16 m and
+  `sample-marker`; fine for a SAMPLE, but the real guide needs 0.18.
+- Conflict status: open
