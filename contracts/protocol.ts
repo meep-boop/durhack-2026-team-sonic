@@ -18,10 +18,14 @@ export type Quat = [number, number, number, number];
 export type Role = "expert" | "user" | "rig";
 
 // Must match the file names in assets/models/ (glTF for the dashboard, USDZ for the phone). Adding a model is a
-// contract change: flag it to Max, Laura and Salman.
+// contract change: flag it to Max, Laura and Salman. Every model is in metres, +Y up, with its working tip (screw
+// point, arrow point, fingertip, plug contacts) at the origin, so the tip lands exactly on `pos`
+// (assets/models/README.md).
 export type ModelName = "screw" | "bolt" | "arrow" | "screwdriver" | "hand" | "cable-plug";
 
-// Every action moves or turns the model along `axis` and loops until the user taps Next.
+// Every action moves or turns the model along `axis` and loops until the user taps Next. `axis` decides the
+// direction; the guide builder fills it from the model's own +Y after rotation (pull +Y, push -Y, turns around Y)
+// and the expert can change it.
 export type Action = "unscrew" | "pull" | "push" | "flip" | "rotate90";
 
 // The phone compares this with the marker it's tracking; a wrong printed size puts everything off by that ratio.
@@ -61,7 +65,8 @@ export type Step = {
 
 export type Guide = {
   id: string;
-  // Goes up by one on every edit. Offline resync compares it with the rev a `step.done` was made against.
+  // Goes up by one on every edit. On reconnect the latest guide wins: the phone switches to it and keeps its place
+  // and its done steps by step id, and its taps made on an older rev are still accepted.
   rev: number;
   title: string;
   marker: Marker;
@@ -84,7 +89,8 @@ export type Hello = {
 // an edit.
 export type GuideSet = { type: "guide.set"; guide: Guide };
 
-// Expert → user: jump to a step.
+// Expert → user: jump to a step. On connect the relay replays the current step to dashboards and the rig, never to
+// phones: the phone owns its position, so one that worked offline isn't sent backwards before its queued taps land.
 export type StepSet = { type: "step.set"; guideId: string; stepId: string };
 
 // Expert → relay, replayed to experts only and never sent to the phone. Kept so a reloaded dashboard doesn't lose
@@ -138,6 +144,24 @@ export type RtcSignal = {
     | { kind: "candidate"; candidate: string; sdpMid: string | null; sdpMLineIndex: number | null };
 };
 
+// Expert → relay, answered only to that expert, never stored. A snapshot of the dashboard's current 3D view for Claude
+// to label. Keep it at most 1280 px on the long side: a bigger image may be scaled down before Claude sees it, and the
+// positions it returns would no longer match. The relay labels one snapshot at a time, since each one costs money.
+export type LabelsRequest = {
+  type: "labels.request";
+  requestId: string;
+  image: { mediaType: "image/jpeg" | "image/png"; data: string };
+  width: number;
+  height: number;
+};
+
+// A part Claude read in the snapshot, at pixel (x, y) from the image's top-left. The dashboard turns the pixel into a
+// 3D point with its click-pick. Made by AI: show it as such and let the expert fix or delete it.
+export type Label = { text: string; x: number; y: number };
+
+// Relay → the expert that asked. `model` is the Claude model that answered, for the "made by AI" note.
+export type LabelsResult = { type: "labels.result"; requestId: string; model: string; labels: Label[] };
+
 // Relay → every client, on every connect and disconnect, so the dashboard can show "phone offline" during the
 // link-down demo.
 export type Presence = {
@@ -162,6 +186,8 @@ export type Message =
   | PoseUpdate
   | StepVerified
   | RtcSignal
+  | LabelsRequest
+  | LabelsResult
   | Presence
   | ErrorMessage;
 

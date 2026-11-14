@@ -271,3 +271,110 @@ each builder's brief (`builder-file-<name>.md`, on the `context` branch).
 - ⚠️ Conflicts: @ahmed @laura @max — the demo-scope and prize proposals above | @max — the call page overlaps your
   dashboard's future video panel
 - Conflict status: open
+### 2026-11-14 22:15 — dashboard stack picked, splat on screen — @max
+- Shipped: research in `research/ledger.md` § 7 (splat renderer), § 8 (dashboard shell), § 9 (training splats on
+  the DGX Spark). `dashboard/` scaffolded on `max-scene` (`49342b3`, not merged yet): Vite + React, the scene in
+  plain three.js + Spark 2.4 behind `dashboard/src/scene/`. Shows Spark's SAMPLE splat, or a dropped .spz/.ply.
+  Run: `cd dashboard && npm install && npm run dev` · test: `npm test && npm run typecheck`.
+- Touched: `dashboard/` (new, branch `max-scene`); on `context`: `research/ledger.md`
+- Decision: by Max: Spark on three.js, proven by a short spike with a kill test (30 fps or more on the weakest laptop,
+  a click-pick under 300 ms, a cut-out under 2 s), PlayCanvas only if it fails; Vite 8 + React 19 + TypeScript,
+  plain three.js behind `scene/api.ts`, no React Three Fiber, a shared zustand store when one is needed.
+- 📨 To @ahmed: we have a DGX Spark, not Dawn access. Max's task 9 should read "train the set's splat on the DGX
+  Spark" (ledger § 9 has the pipeline). Please also fill Stack in `CLAUDE.md` with the dashboard line above. *(done by @ahmed 2026-11-14 22:20)*
+- 📨 To @laura: the dashboard is React, so your guide builder is React components. `scene/api.ts` is next; I'll
+  flag it here for you to agree before you build on it.
+- ⚠️ Conflicts: @laura — the app shell you build inside is now fixed (React)
+- Conflict status: open
+
+### 2026-11-14 22:40 — scene API for the guide builder, PR open — @max
+- Shipped: `dashboard/src/scene/api.ts` (what the guide builder can ask the 3D view, types only) and
+  `docs/remote-assist/scene-api.md` (why, and what's open), on `max-scene`. PR:
+  https://github.com/meep-boop/durhack-2026-team-sonic/pull/6 (not merged). 8 dashboard tests, relay's 32 still pass.
+- Touched: `dashboard/` (new), `docs/remote-assist/scene-api.md` (new)
+- Decision: by Max: the guide builder keeps the only copy of the guide and hands the 3D view a whole step; the 3D view
+  reports edits back. Alternative not picked: both halves keep a copy and send changes one at a time (two copies can
+  drift apart).
+- Decision: **not decided** (Max + Ahmed, after calibration works): what happens before the marker is calibrated:
+  block placing until calibrated, or place in scan coordinates and convert later. Only `dashboard/src/scene/` changes
+  either way. Please add it to `PROJECT.md` → Pending. *(done by @ahmed 2026-11-14 22:27)*
+- 📨 To @laura: read `api.ts` and `scene-api.md`, and say here if anything is missing. Your guide builder sends the
+  3D view the step's `GuideObject[]` and listens for moves and clicks; it never converts positions.
+- ⚠️ Conflicts: @laura — `dashboard/src/scene/api.ts` is the seam with `dashboard/src/guide/`; agree it before
+  building on it
+- Conflict status: open
+
+### 2026-11-14 22:27 — the UNO Q rig's code is on main, not yet on hardware — @ahmed
+- Shipped: `hardware/nicla/main.py` (the Nicla prints which ports hold the coloured cable) and `hardware/unoq/` (the
+  UNO Q app joins the relay as `rig`, follows the guide, and sends `step.verified` for steps with `expect`; a cable in
+  the wrong port warns, the right one ticks). 13 rig tests; end to end through the real relay with typed-in Nicla
+  lines it reported "cable in port 16, expected 17", then "correct". Commit `4db2ce6`. How to run: `hardware/README.md`.
+- Not done yet: running it on the Nicla and the UNO Q (the regions and colour in the Nicla script are examples), and
+  the ✓ / ✗ on the LED matrix.
+- Touched: `hardware/` (new); on `context`: `PROJECT.md`, `CLAUDE.md`, `builder-file-ahmed.md`
+- 📨 To @max @laura @salman: if the rig is running, `step.verified` arrives for steps with `expect`. `ok: false` comes
+  with a `detail` like "cable in port 16, expected 17" to show the user.
+- ⚠️ Conflicts: none (new files in Ahmed's area)
+- Conflict status: resolved by @ahmed 2026-11-14
+
+
+### 2026-11-14 22:30 — the six built-in models are on main — @laura
+- Shipped: `assets/models/{screw,bolt,arrow,screwdriver,hand,cable-plug}.{glb,usdz}`, built from one source by
+  `assets/models/build_models.py`, so glTF and USDZ hold identical geometry. Low poly, one orange material, no
+  textures: every file is under 7 KB. 7 tests check the names against `ModelName`, tip at origin, sizes, outward
+  faces, glb/usdz parity and USD's package checks: `python -m unittest discover assets/models` (needs `usd-core`,
+  rebuild only; neither app depends on it). Commit `3ab2d07`.
+- Touched: `assets/models/` (new)
+- Decision: by Laura: **model conventions**: metres, +Y up, the working tip (screw point, arrow point, fingertip,
+  plug contacts) at the origin, each model rising along +Y from it, so with an identity `rot` the arrow points
+  straight down at `pos`; `pull` = +Y, `push` = -Y, `unscrew` spins around Y. Also by Laura: commit the build
+  script so anyone can rebuild (dev-only dependency `usd-core==26.11`). Details: `assets/models/README.md`.
+- 📨 To @ahmed: please fold the conventions into `PROJECT.md` and the `ModelName` comment in the contract.
+- ⚠️ Conflicts: @salman — load the `.usdz` files as-is and place each model's origin at `pos`; tell me if RealityKit
+  shows them the wrong size or way up. @max — same for the `.glb` files in the scene; the tip, not the centre, sits
+  at `pos`.
+- Conflict status: open
+
+### 2026-11-14 23:03 — the demo is now an SSD swap on Ahmed's laptop — @laura
+- Shipped: no code. Records a team decision that changes several tasks.
+- Touched: nothing yet
+- Decision: by the whole team (Ahmed, Max, Salman, Laura): the demo set is **Ahmed's laptop, and the guide walks
+  the user through replacing its SSD**, instead of a network cabinet. The marker is taped to the same board as the
+  laptop, next to the SSD cover, so the two can't move apart.
+- 📨 To @ahmed: please (1) update `PROJECT.md` and the briefs (my task 2 is now "fix the laptop and the marker to one
+  board", and the coloured cable boot is no longer needed); (2) add `"ssd"` to `ModelName` in
+  `contracts/protocol.ts`, and I'll build `ssd.glb`/`ssd.usdz` with the same conventions as the other six
+  (`cable-plug` and `bolt` stay, just unused for now); (3) decide what the UNO Q rig checks now that there's no cable,
+  since `expect: { port, cable }` no longer fits. Suggestion: back up the laptop first, and in the demo take its own
+  SSD out and put the same one back, so it still boots.
+- 📨 To @max: the splat to scan is the laptop on its board (laptops are dark and shiny, so expect a harder scan than
+  the cabinet).
+- 📨 To @salman: the marker sits on a board beside the laptop, not on equipment; nothing changes in the app.
+- ⚠️ Conflicts: @ahmed — the `expect` field and the rig's port regions; @max @salman — the demo scene changes
+- Conflict status: open
+
+### 2026-11-14 23:04 — review of the scene API (PR #6) — @laura
+- Shipped: no code. Reviewed `dashboard/src/scene/api.ts` and `docs/remote-assist/scene-api.md` at `6a6753b`
+  against my task 3. The one-copy design works for the guide builder: agreed.
+- Touched: nothing
+- 📨 To @max: four asks before I build on it:
+  1. How `dashboard/src/guide/` gets the `SceneApi` instance, and where the guide panel mounts in the shell
+     (`main.tsx` renders only `<Viewport />` today). This one blocks me.
+  2. `pickPoint()` also returns the surface normal, so a new model's +Y can point out of the surface. The models
+     stand on their tip and rise along +Y (`assets/models/README.md`); without a normal every new arrow points
+     straight down, even at the side of the laptop.
+  3. A calibrated flag plus a change event, so Send can block or warn until positions are in the marker frame. Your
+     notes say pre-calibration positions are wrong on a real phone; this keeps a wrong guide away from the demo.
+  4. If highlight boxes are resizable in 3D, report `size` in `onObjectMoved` too (it only carries `pos` and
+     `rot`); otherwise I'll edit sizes as numbers.
+  Smaller: what calls made before the splat has loaded do (ideally nothing), and how a cut-out's id reaches the guide
+  builder (your task 5).
+- ⚠️ Conflicts: @max — asks against `dashboard/src/scene/api.ts` (yours); nothing changed on my side
+- Conflict status: open
+
+### 2026-11-14 23:35 — open questions brought up to date, with sources — @max
+- Shipped: `docs/remote-assist/open-questions.md` on `max-docs` (PR https://github.com/meep-boop/durhack-2026-team-sonic/pull/1, not merged). Questions 1–4 now show what Ahmed decided (marker, WebRTC, Scaniverse; cut-outs reopened); six new answered questions (splat renderer, dashboard stack, scan apps, video to mesh, splat to mesh, phone to DGX Spark), 57 source links, all checked. Research behind it: `research/ledger.md` § 7–15.
+- Touched: `docs/remote-assist/open-questions.md` (Max's)
+- 📨 To @ahmed: this answers your 20:28 ask: the file now matches `PROJECT.md` on questions 1–3. Cut-outs (2) stays reopened between us. Also: the DGX Spark can make a textured mesh from an iPhone video (question 8); scanning your laptop will need it made matte first (a vanishing scan spray), so ask before anyone sprays it.
+- ⚠️ Conflicts: none (docs in Max's area)
+- Conflict status: resolved by @max 2026-11-14
