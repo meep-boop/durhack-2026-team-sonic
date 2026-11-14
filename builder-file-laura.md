@@ -89,7 +89,7 @@ them, so a renamed or resized model breaks two apps).
    - *Done when:* a three-step guide built in the UI appears in the fake phone's log, and its `step.done` ticks the
      step.
    - `[⚠ conflicts with @max: dashboard/src/scene/api.ts]` `[⚠ conflicts with @ahmed: the guide shape in contracts/protocol.ts]`
-4. ⬜ **The built-in models** 🟠
+4. 🟡 **The built-in models** 🟠 (all six on main `3ab2d07`, conventions decided; waiting on @max and @salman to load them)
    - Screw, bolt, arrow, screwdriver, hand, cable plug, as glTF for the dashboard and USDZ for the phone. Decide
      first: author once and convert, or keep both by hand. Same names, sizes and origins in both.
    - *Done when:* each model loads in the dashboard and in @salman's app, the same size and the same way up.
@@ -104,13 +104,14 @@ them, so a renamed or resized model breaks two apps).
    - *Done when:* `bash scripts/submission-check.sh` passes and the submission is in.
 
 ## 4. Done log (newest first)
+- 2026-11-14 22:30 · 🟡 Six built-in models (glb + usdz, one build script, 7 tests) on main. Decided: metres, +Y up, tip at origin, script committed. Closes when @max and @salman see them the right size and way up.
 - 2026-11-14 21:31 · 🟡 Marker printed on matte paper, measured 180 × 180 mm, image + print sheet in `assets/marker/` on main. Closes when @salman confirms Xcode accepts it.
 
 ## 5. Waiting on / owed to others
 - 📥 **Waiting on @max:** `dashboard/src/scene/api.ts` and the dashboard shell.
 - 📥 **Waiting on @ahmed:** nothing right now. The contract, relay and fake phone are on `main`
   (`node fixtures/fake-phone.ts ws://<relay>:8080`), and the deadlines are in `PROJECT.md` → Clock.
-- 📤 **Owed to @salman and @max:** the marker image and width are on main (task 1, 180 mm); the models still owed.
+- 📤 **Owed to @salman and @max:** the marker image and width are on main (task 1, 180 mm); the six models are on main too (`assets/models/`).
 - 📤 **Owed to @max:** the finished demo set, to scan.
 - 📤 **Owed to @ahmed:** a spot on the set for his UNO Q rig, agreed before the scan.
 
