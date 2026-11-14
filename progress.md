@@ -59,7 +59,7 @@ each builder's brief (`builder-file-<name>.md`, on the `context` branch).
 - **Shared docs** (`CLAUDE.md`, `PROJECT.md`, `EVENT.md`, briefs, research, skills) are **never** committed to
   `main`. They live on the `context` branch. Edit, then `bash scripts/publish-context.sh "what changed"`,
   and every agent picks it up on its next prompt.
-- **Deploy:** _blank_ (where it runs, who restarts it, how).
+- **Deploy:** The relay runs on the laptop that starts it (Ahmed's for now), on the team hotspot, port 8080. No cloud. State in `relay/state.json` (git-ignored). Ask Ahmed to restart it.
 
 ## Latest
 - **The volatile facts live here only:** the current commit, test counts, what's merged vs. local-only, and deploy
@@ -153,4 +153,211 @@ each builder's brief (`builder-file-<name>.md`, on the `context` branch).
 - 📨 To @salman: please check the Mac's Xcode version and the demo iPhone's iOS version, and post them.
 - ⚠️ Conflicts: @laura — your brief changed (two tasks removed) | @max — your open-questions file disagrees with
   `PROJECT.md` on questions 1 to 3
+- Conflict status: open
+
+### 2026-11-14 20:30 — event rules and the Clock — @ahmed
+- Shipped: `EVENT.md` and `PROJECT.md` → Clock are filled. **Devpost deadline: Sun 15 Nov, 12:00. Judges visit
+  tables from 12:30.** Rules that bite: code must be written during the event, and AI tools must be credited on
+  Devpost. Hall Wi-Fi is slow, so plan on a hotspot. All from one notes file, not yet checked against Devpost.
+- Touched: on `context`: `EVENT.md`, `PROJECT.md`, `builder-file-ahmed.md`
+- 📨 To @laura: nobody knows if the venue has a paper printer. The marker needs one, so find out early.
+- 📨 To @max: Dawn access isn't mentioned in the event notes. Who offered it?
+- ⚠️ Conflicts: none
+- Conflict status: resolved by @ahmed 2026-11-14
+
+### 2026-11-14 20:45 — phone stack and protocol decisions — @ahmed
+- Shipped: three decisions for the protocol, and `research/ledger.md` § 6 on which frame guide positions travel in.
+- Touched: `progress.md`; on `context`: `PROJECT.md`, `builder-file-salman.md`, `research/ledger.md`
+- Decision: by Ahmed: the phone app is **pure native Swift, no Expo**; the protocol contract is **TypeScript types
+  only** (`contracts/protocol.ts`) plus JSON examples; live video **stays WebRTC**, with signalling over the relay
+  websocket.
+- 📨 To @salman: your Expo branches are superseded. Port `SonicArView.swift` into a plain Xcode project in `ios/`
+  (your brief, task 1). Also post which printed edge the anchor's +x and +z point to (an axis marker on the anchor):
+  the protocol depends on it. If you think Expo is the better call, say so here.
+- 📨 To @max @laura: the dashboard imports `contracts/protocol.ts` with `import type`. It holds no runtime code.
+- ⚠️ Conflicts: @salman — the phone stack changes under you (Expo out)
+- Conflict status: open
+
+### 2026-11-14 20:59 — the protocol contract is on main — @ahmed
+- Shipped: `contracts/protocol.ts` (every websocket message, as TypeScript types), `fixtures/sample-guide.json` (a
+  4-step SAMPLE guide), `fixtures/messages.json` (one example of every message) and `relay/validate.ts` (the relay's
+  check of incoming messages). 15 tests and a type-check pass: `cd relay && npm install && npm test && npm run
+  typecheck`. Commit `1fcc4c3`.
+- Touched: `contracts/`, `fixtures/`, `relay/` (all new); on `context`: `PROJECT.md`, `CLAUDE.md`, four briefs
+- Decision: by Ahmed: **positions travel in the marker's frame, in metres; the dashboard converts from splat
+  coordinates and the phone does no maths.** The contract's shape (Ahmed, as proposed): steps and objects referred to
+  by id; `guide.set` sends the whole guide; guides carry `rev` and the marker's printed size; calibration goes
+  dashboard → relay only; `step.done` carries a unique `doneId` and the tap time; the UNO Q joins as a third role,
+  `rig`; `hello` carries `protocol: 1`; a fixed list of model names; `presence` and `error` from the relay.
+  `typescript` is a dev-only dependency of `relay/`.
+- 📨 To @salman: the frame is at the top of `contracts/protocol.ts`. Pin objects to the image anchor straight from
+  the JSON. Please check which printed edge +x and +z point to: they're marked provisional until you do.
+- 📨 To @max: your dashboard converts splat → marker frame (brief task 3, rewritten). Max's draft differs in two
+  places: ids instead of indexes, and the corners no longer go to the phone.
+- 📨 To @laura: build the guide builder against `Guide` in the contract, with `import type`.
+- ⚠️ Conflicts: @salman @max @laura — the contract you build on is now fixed; any change is flagged to all three
+- Conflict status: open
+
+### 2026-11-14 21:29 — the relay and the fakes are on main — @ahmed
+- Shipped: `relay/relay.ts` routes every message by role, replays the guide, current step, calibration and progress
+  to anyone who reconnects, and saves them to `relay/state.json` so a restart loses nothing. A heartbeat drops a
+  phone that silently loses Wi-Fi from presence within about 10 seconds. `fixtures/fake-phone.ts` and
+  `fixtures/fake-expert.ts` stand in for the phone and the dashboard. 31 tests and a type-check pass. Commit `97cde98`.
+- Run it: `cd relay && npm install && npm start` (prints the `ws://` address to use). Fakes need only Node 24:
+  `node fixtures/fake-expert.ts ws://<relay>:8080`, `node fixtures/fake-phone.ts ws://<relay>:8080`.
+- Touched: `relay/`, `fixtures/`, `.gitignore`; on `context`: `PROJECT.md`, `CLAUDE.md`, four briefs
+- Decision: by Ahmed: the `ws` package; state saved to a JSON file; plain `ws://` on the team hotspot; role rules
+  with no login; keep the fakes.
+- 📨 To @salman: plain `ws://` means one Info.plist setting, `NSAllowsLocalNetworking` (your brief, task 3). Test
+  your app against `node fixtures/fake-expert.ts`.
+- 📨 To @max @laura: test the dashboard against `node fixtures/fake-phone.ts`. It taps Next every 3 seconds and walks
+  a camera pose round the marker. Its poses are SIMULATED: never demo them.
+- ⚠️ Conflicts: none (all new files in Ahmed's area)
+- Conflict status: resolved by @ahmed 2026-11-14
+
+### 2026-11-14 21:31 — the printed marker is on main — @laura
+- Shipped: `assets/marker/marker.png` (300 dpi), `marker-print-A4.pdf` (print sheet with a TOP mark and a 100 mm
+  scale ruler) and `assets/marker/README.md`. Printed on matte paper and measured with a ruler: **180 mm × 180 mm**
+  (outer black frame), so the guide's `marker` is `{ "name": "marker", "width": 0.18, "height": 0.18 }`. Random,
+  asymmetric pattern, not a checkerboard, so ARKit can tell its corners and its orientation apart. Commit `eca6c24`.
+- Touched: `assets/marker/` (new)
+- ⚠️ Conflicts: @salman — add `marker.png` as an ARKit reference image at 0.18 m and check Xcode gives no warnings
+  (that's what closes my task 1); the "TOP" edge on the sheet is upright for the +X/+Z check. @max — the marker is
+  printed; the demo set it goes on isn't built yet. @ahmed — `fixtures/sample-guide.json` still says 0.16 m and
+  `sample-marker`; fine for a SAMPLE, but the real guide needs 0.18.
+- Conflict status: open (the @ahmed part resolved by @ahmed 2026-11-14 in `f28411b`)
+
+### 2026-11-14 21:34 — sample guide sized for the printed marker — @ahmed
+- Shipped: `fixtures/sample-guide.json` and the example `guide.set` in `fixtures/messages.json` now use Laura's
+  marker: `{ "name": "marker", "width": 0.18, "height": 0.18 }`. Still labelled SAMPLE; positions unchanged.
+  Commit `f28411b`.
+- Touched: `fixtures/sample-guide.json`, `fixtures/messages.json`
+- ⚠️ Conflicts: @salman — if you bundled the sample guide or decode `messages.json` in a test, pull again
+- Conflict status: open
+
+### 2026-11-14 21:47 — RS kit complete — @ahmed
+- Shipped: the RS challenge's mandatory kit is in hand: the Arduino UNO Q, the **Nicla Vision as the camera** (the
+  RS staff confirmed it counts) and a USB-C hub. Next: research how the Nicla, the UNO Q and the relay connect.
+- Touched: on `context`: `PROJECT.md`, `EVENT.md`, `builder-file-ahmed.md`
+- Decision: the RS camera is the Nicla Vision (Ahmed; RS staff confirmed).
+- 📨 To @laura: the rig is the UNO Q plus the Nicla Vision, both small. Keep a spot on the set where the Nicla can see
+  the patch panel's ports.
+- ⚠️ Conflicts: none
+- Conflict status: resolved by @ahmed 2026-11-14
+
+### 2026-11-14 21:54 — the UNO Q rig is planned, and guides can say what it should see — @ahmed
+- Shipped: `contracts/protocol.ts` gains an optional `expect: { port, cable: "in" | "out" }` on guide objects, checked
+  by the relay; the sample guide's cable steps carry it. Additive: older readers ignore it. 32 tests and a type-check
+  pass. Commit `29bafd3`. Plan and research for the rig: `research/ledger.md` § 10.
+- Touched: `contracts/protocol.ts`, `relay/validate.ts`, `fixtures/`; on `context`: `PROJECT.md`, three briefs,
+  `research/ledger.md`
+- Decision: by Ahmed: the Nicla Vision finds the cable by colour, one region per port; USB through the hub to the UNO
+  Q; the UNO Q joins the relay as `rig` with `websocket-client` and shows ✓/✗ on its LED matrix; the `expect` field.
+- 📨 To @laura: the cable that moves needs a brightly coloured plug boot, and your guide builder can set `expect` on
+  cable steps (your brief, tasks 2 and 3).
+- 📨 To @salman: `expect` is optional; your Swift decoder can ignore it.
+- 📨 To anyone: the rig needs a micro-USB **data** cable for the Nicla Vision. Got one? Tell Ahmed.
+- ⚠️ Conflicts: @laura @salman @max — an additive change to the contract you build on
+- Conflict status: open
+
+
+### 2026-11-14 22:15 — dashboard stack picked, splat on screen — @max
+- Shipped: research in `research/ledger.md` § 7 (splat renderer), § 8 (dashboard shell), § 9 (training splats on
+  the DGX Spark). `dashboard/` scaffolded on `max-scene` (`49342b3`, not merged yet): Vite + React, the scene in
+  plain three.js + Spark 2.4 behind `dashboard/src/scene/`. Shows Spark's SAMPLE splat, or a dropped .spz/.ply.
+  Run: `cd dashboard && npm install && npm run dev` · test: `npm test && npm run typecheck`.
+- Touched: `dashboard/` (new, branch `max-scene`); on `context`: `research/ledger.md`
+- Decision: by Max: Spark on three.js, proven by a short spike with a kill test (30 fps or more on the weakest laptop,
+  a click-pick under 300 ms, a cut-out under 2 s), PlayCanvas only if it fails; Vite 8 + React 19 + TypeScript,
+  plain three.js behind `scene/api.ts`, no React Three Fiber, a shared zustand store when one is needed.
+- 📨 To @ahmed: we have a DGX Spark, not Dawn access. Max's task 9 should read "train the set's splat on the DGX
+  Spark" (ledger § 9 has the pipeline). Please also fill Stack in `CLAUDE.md` with the dashboard line above. *(done by @ahmed 2026-11-14 22:20)*
+- 📨 To @laura: the dashboard is React, so your guide builder is React components. `scene/api.ts` is next; I'll
+  flag it here for you to agree before you build on it.
+- ⚠️ Conflicts: @laura — the app shell you build inside is now fixed (React)
+- Conflict status: open
+
+### 2026-11-14 22:40 — scene API for the guide builder, PR open — @max
+- Shipped: `dashboard/src/scene/api.ts` (what the guide builder can ask the 3D view, types only) and
+  `docs/remote-assist/scene-api.md` (why, and what's open), on `max-scene`. PR:
+  https://github.com/meep-boop/durhack-2026-team-sonic/pull/6 (not merged). 8 dashboard tests, relay's 32 still pass.
+- Touched: `dashboard/` (new), `docs/remote-assist/scene-api.md` (new)
+- Decision: by Max: the guide builder keeps the only copy of the guide and hands the 3D view a whole step; the 3D view
+  reports edits back. Alternative not picked: both halves keep a copy and send changes one at a time (two copies can
+  drift apart).
+- Decision: **not decided** (Max + Ahmed, after calibration works): what happens before the marker is calibrated:
+  block placing until calibrated, or place in scan coordinates and convert later. Only `dashboard/src/scene/` changes
+  either way. Please add it to `PROJECT.md` → Pending. *(done by @ahmed 2026-11-14 22:27)*
+- 📨 To @laura: read `api.ts` and `scene-api.md`, and say here if anything is missing. Your guide builder sends the
+  3D view the step's `GuideObject[]` and listens for moves and clicks; it never converts positions.
+- ⚠️ Conflicts: @laura — `dashboard/src/scene/api.ts` is the seam with `dashboard/src/guide/`; agree it before
+  building on it
+- Conflict status: open
+
+### 2026-11-14 22:27 — the UNO Q rig's code is on main, not yet on hardware — @ahmed
+- Shipped: `hardware/nicla/main.py` (the Nicla prints which ports hold the coloured cable) and `hardware/unoq/` (the
+  UNO Q app joins the relay as `rig`, follows the guide, and sends `step.verified` for steps with `expect`; a cable in
+  the wrong port warns, the right one ticks). 13 rig tests; end to end through the real relay with typed-in Nicla
+  lines it reported "cable in port 16, expected 17", then "correct". Commit `4db2ce6`. How to run: `hardware/README.md`.
+- Not done yet: running it on the Nicla and the UNO Q (the regions and colour in the Nicla script are examples), and
+  the ✓ / ✗ on the LED matrix.
+- Touched: `hardware/` (new); on `context`: `PROJECT.md`, `CLAUDE.md`, `builder-file-ahmed.md`
+- 📨 To @max @laura @salman: if the rig is running, `step.verified` arrives for steps with `expect`. `ok: false` comes
+  with a `detail` like "cable in port 16, expected 17" to show the user.
+- ⚠️ Conflicts: none (new files in Ahmed's area)
+- Conflict status: resolved by @ahmed 2026-11-14
+
+
+### 2026-11-14 22:30 — the six built-in models are on main — @laura
+- Shipped: `assets/models/{screw,bolt,arrow,screwdriver,hand,cable-plug}.{glb,usdz}`, built from one source by
+  `assets/models/build_models.py`, so glTF and USDZ hold identical geometry. Low poly, one orange material, no
+  textures: every file is under 7 KB. 7 tests check the names against `ModelName`, tip at origin, sizes, outward
+  faces, glb/usdz parity and USD's package checks: `python -m unittest discover assets/models` (needs `usd-core`,
+  rebuild only; neither app depends on it). Commit `3ab2d07`.
+- Touched: `assets/models/` (new)
+- Decision: by Laura: **model conventions**: metres, +Y up, the working tip (screw point, arrow point, fingertip,
+  plug contacts) at the origin, each model rising along +Y from it, so with an identity `rot` the arrow points
+  straight down at `pos`; `pull` = +Y, `push` = -Y, `unscrew` spins around Y. Also by Laura: commit the build
+  script so anyone can rebuild (dev-only dependency `usd-core==26.11`). Details: `assets/models/README.md`.
+- 📨 To @ahmed: please fold the conventions into `PROJECT.md` and the `ModelName` comment in the contract.
+- ⚠️ Conflicts: @salman — load the `.usdz` files as-is and place each model's origin at `pos`; tell me if RealityKit
+  shows them the wrong size or way up. @max — same for the `.glb` files in the scene; the tip, not the centre, sits
+  at `pos`.
+- Conflict status: open
+
+### 2026-11-14 23:03 — the demo is now an SSD swap on Ahmed's laptop — @laura
+- Shipped: no code. Records a team decision that changes several tasks.
+- Touched: nothing yet
+- Decision: by the whole team (Ahmed, Max, Salman, Laura): the demo set is **Ahmed's laptop, and the guide walks
+  the user through replacing its SSD**, instead of a network cabinet. The marker is taped to the same board as the
+  laptop, next to the SSD cover, so the two can't move apart.
+- 📨 To @ahmed: please (1) update `PROJECT.md` and the briefs (my task 2 is now "fix the laptop and the marker to one
+  board", and the coloured cable boot is no longer needed); (2) add `"ssd"` to `ModelName` in
+  `contracts/protocol.ts`, and I'll build `ssd.glb`/`ssd.usdz` with the same conventions as the other six
+  (`cable-plug` and `bolt` stay, just unused for now); (3) decide what the UNO Q rig checks now that there's no cable,
+  since `expect: { port, cable }` no longer fits. Suggestion: back up the laptop first, and in the demo take its own
+  SSD out and put the same one back, so it still boots.
+- 📨 To @max: the splat to scan is the laptop on its board (laptops are dark and shiny, so expect a harder scan than
+  the cabinet).
+- 📨 To @salman: the marker sits on a board beside the laptop, not on equipment; nothing changes in the app.
+- ⚠️ Conflicts: @ahmed — the `expect` field and the rig's port regions; @max @salman — the demo scene changes
+- Conflict status: open
+
+### 2026-11-14 23:04 — review of the scene API (PR #6) — @laura
+- Shipped: no code. Reviewed `dashboard/src/scene/api.ts` and `docs/remote-assist/scene-api.md` at `6a6753b`
+  against my task 3. The one-copy design works for the guide builder: agreed.
+- Touched: nothing
+- 📨 To @max: four asks before I build on it:
+  1. How `dashboard/src/guide/` gets the `SceneApi` instance, and where the guide panel mounts in the shell
+     (`main.tsx` renders only `<Viewport />` today). This one blocks me.
+  2. `pickPoint()` also returns the surface normal, so a new model's +Y can point out of the surface. The models
+     stand on their tip and rise along +Y (`assets/models/README.md`); without a normal every new arrow points
+     straight down, even at the side of the laptop.
+  3. A calibrated flag plus a change event, so Send can block or warn until positions are in the marker frame. Your
+     notes say pre-calibration positions are wrong on a real phone; this keeps a wrong guide away from the demo.
+  4. If highlight boxes are resizable in 3D, report `size` in `onObjectMoved` too (it only carries `pos` and
+     `rot`); otherwise I'll edit sizes as numbers.
+  Smaller: what calls made before the splat has loaded do (ideally nothing), and how a cut-out's id reaches the guide
+  builder (your task 5).
+- ⚠️ Conflicts: @max — asks against `dashboard/src/scene/api.ts` (yours); nothing changed on my side
 - Conflict status: open
