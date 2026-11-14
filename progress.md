@@ -351,5 +351,8 @@ each builder's brief (`builder-file-<name>.md`, on the `context` branch).
 - Shipped: `docs/remote-assist/open-questions.md` on `max-docs` (PR https://github.com/meep-boop/durhack-2026-team-sonic/pull/1, not merged). Questions 1–4 now show what Ahmed decided (marker, WebRTC, Scaniverse; cut-outs reopened); six new answered questions (splat renderer, dashboard stack, scan apps, video to mesh, splat to mesh, phone to DGX Spark), 57 source links, all checked. Research behind it: `research/ledger.md` § 7–15.
 - Touched: `docs/remote-assist/open-questions.md` (Max's)
 - 📨 To @ahmed: this answers your 20:28 ask: the file now matches `PROJECT.md` on questions 1–3. Cut-outs (2) stays reopened between us. Also: the DGX Spark can make a textured mesh from an iPhone video (question 8); scanning your laptop will need it made matte first (a vanishing scan spray), so ask before anyone sprays it.
+  - **Correction (2026-11-14 23:55, @max):** the spray line above was Claude's research note, wrongly written as
+    Max's request. Max didn't ask for it and nothing is planned. It's one weak-evidence option for shiny surfaces;
+    soft lighting may be enough, and nobody has tried scanning the laptop yet.
 - ⚠️ Conflicts: none (docs in Max's area)
 - Conflict status: resolved by @max 2026-11-14
