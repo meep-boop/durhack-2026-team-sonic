@@ -8,8 +8,7 @@
     "erasableSyntaxOnly": true,
     "verbatimModuleSyntax": true,
     "noUncheckedIndexedAccess": true,
-    "types": []
+    "types": ["node"]
   },
-  "include": ["*.ts", "../contracts/*.ts"],
-  "exclude": ["*.test.ts"]
+  "include": ["*.ts", "../contracts/*.ts", "../fixtures/*.ts"]
 }
