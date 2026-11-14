@@ -44,9 +44,9 @@ each builder's brief (`builder-file-<name>.md`, on the `context` branch).
 
 | Who | Role | Branch | Owns (paths / pieces) | How the rest plugs into it |
 |---|---|---|---|---|
-| **Ahmed** `meep-boop` | Docs owner; relay, protocol, sync | `ahmed-relay` | `relay/`, `contracts/`, `fixtures/`, the labelling endpoint; the team kit (`scripts/`, `kit/`, `team.conf`) and the shared docs on `context` | Build against `contracts/protocol.ts` and the fake peers in `fixtures/`. Ask Ahmed for protocol changes |
+| **Ahmed** `meep-boop` | Docs owner; relay, protocol, sync, UNO Q rig | `ahmed-relay` | `relay/`, `contracts/`, `fixtures/`, `hardware/` (the UNO Q rig), the labelling endpoint; the team kit (`scripts/`, `kit/`, `team.conf`) and the shared docs on `context` | Build against `contracts/protocol.ts` and the fake peers in `fixtures/`. Ask Ahmed for protocol changes |
 | **Max** `xaw1` | Dashboard 3D view and the splats | `max-scene` | `dashboard/src/scene/`, the `dashboard/` shell, `splats/`, `pipeline/`, `docs/remote-assist/` | The guide builder calls `dashboard/src/scene/api.ts` |
-| **Laura** `furtunalaura` | Guide builder, models, demo set and hardware, pitch | `laura-guide` | `dashboard/src/guide/`, `assets/` (marker and models), `hardware/`, the README and video | Both apps load `assets/models/`; don't rename or resize a model without flagging |
+| **Laura** `furtunalaura` | Guide builder, models, demo set, pitch | `laura-guide` | `dashboard/src/guide/`, `assets/` (marker and models), the demo set, the README and video | Both apps load `assets/models/`; don't rename or resize a model without flagging |
 | **Salman** `salman-abdulrazaq-ali` | The iPhone app | `salman-ios` | `ios/` | Speaks `contracts/protocol.ts` to the relay; loads the marker and USDZ models from `assets/` |
 
 **Shared** (flag every edit): `contracts/*` and `fixtures/*` (Ahmed writes them, everyone builds on them), `dashboard/src/scene/api.ts`
@@ -123,4 +123,19 @@ each builder's brief (`builder-file-<name>.md`, on the `context` branch).
   use the draft in `docs/remote-assist/architecture.md`.
 - ⚠️ Conflicts: @max @laura @salman — new tasks in your brief, and roles and decisions made without you in the room.
   Object here before building on them.
+- Conflict status: open
+
+### 2026-11-14 20:28 — UNO Q rig moves to Ahmed — @ahmed
+- Shipped: Ahmed builds the UNO Q rig himself (`hardware/`), so it's off Laura's list. Briefs, `PROJECT.md` and Who
+  owns what are updated. Ahmed also confirmed the phone app is native, built in Xcode.
+- Touched: `progress.md`; on `context`: `PROJECT.md`, the briefs
+- Decision: the UNO Q rig is Ahmed's, not Laura's (Ahmed).
+- 📨 To @laura: the two UNO Q tasks are gone from your brief (archived at the bottom). Keep a spot on the demo set
+  for the rig, and agree it with Ahmed before the set is scanned.
+- 📨 To @max: `docs/remote-assist/open-questions.md` is out of step with `PROJECT.md`. Question 1 is decided (option
+  B, the printed marker, by Ahmed). Questions 2 and 3 are still open between you and Ahmed: he chose the box-and-model
+  stand-in and WebRTC before seeing your recommendations. Please update your file once you two have talked.
+- 📨 To @salman: please check the Mac's Xcode version and the demo iPhone's iOS version, and post them.
+- ⚠️ Conflicts: @laura — your brief changed (two tasks removed) | @max — your open-questions file disagrees with
+  `PROJECT.md` on questions 1 to 3
 - Conflict status: open
