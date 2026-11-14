@@ -318,7 +318,7 @@ test("a new guide clears progress, an edit of the same guide keeps it", async (t
   assert.equal(ofType(afterSwap, "step.set")[0]?.stepId, "s1");
 });
 
-test("the fake expert can jump straight to a step, for testing the rig on a cable step", async (t) => {
+test("the fake expert can jump straight to a step, for testing the rig on a checked step", async (t) => {
   const { port } = await relay(t);
   const expert = await startFakeExpert({ url: `ws://127.0.0.1:${port}`, guide: sampleGuide, stepId: "s4", log: quiet });
   t.after(async () => expert.close());
@@ -340,7 +340,7 @@ test("a dashboard's snapshot is labelled and answered to that dashboard only", a
   const asked: unknown[] = [];
   const labeller: Labeller = async (request) => {
     asked.push(request);
-    return { model: "fake-model", labels: [{ text: "Port 14", x: 100, y: 200 }] };
+    return { model: "fake-model", labels: [{ text: "SSD", x: 100, y: 200 }] };
   };
   const { port } = await relay(t, { labeller });
   const expert = await connect(port, "expert");
@@ -353,7 +353,7 @@ test("a dashboard's snapshot is labelled and answered to that dashboard only", a
     type: "labels.result",
     requestId: "snap-1",
     model: "fake-model",
-    labels: [{ text: "Port 14", x: 100, y: 200 }],
+    labels: [{ text: "SSD", x: 100, y: 200 }],
   });
   assert.equal(asked.length, 1);
 

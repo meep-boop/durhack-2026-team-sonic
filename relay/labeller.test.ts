@@ -41,7 +41,7 @@ test("asks Claude with the snapshot, a fixed answer shape and refusal fallback",
 test("keeps labels inside the picture and drops blank or outside ones", async () => {
   const { client } = fakeClient(
     answer([
-      { text: "Port 14", x: 100, y: 200 },
+      { text: "SSD", x: 100, y: 200 },
       { text: "  ", x: 10, y: 10 },
       { text: "Port 99", x: 640, y: 10 },
       { text: "Screw", x: -1, y: 5 },
@@ -49,7 +49,7 @@ test("keeps labels inside the picture and drops blank or outside ones", async ()
   );
   assert.deepEqual(await claudeLabeller(client)(request), {
     model: "claude-opus-5-5",
-    labels: [{ text: "Port 14", x: 100, y: 200 }],
+    labels: [{ text: "SSD", x: 100, y: 200 }],
   });
 });
 
