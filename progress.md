@@ -219,3 +219,45 @@ each builder's brief (`builder-file-<name>.md`, on the `context` branch).
 - Touched: `fixtures/sample-guide.json`, `fixtures/messages.json`
 - ⚠️ Conflicts: @salman — if you bundled the sample guide or decode `messages.json` in a test, pull again
 - Conflict status: open
+
+### 2026-11-14 21:47 — RS kit complete — @ahmed
+- Shipped: the RS challenge's mandatory kit is in hand: the Arduino UNO Q, the **Nicla Vision as the camera** (the
+  RS staff confirmed it counts) and a USB-C hub. Next: research how the Nicla, the UNO Q and the relay connect.
+- Touched: on `context`: `PROJECT.md`, `EVENT.md`, `builder-file-ahmed.md`
+- Decision: the RS camera is the Nicla Vision (Ahmed; RS staff confirmed).
+- 📨 To @laura: the rig is the UNO Q plus the Nicla Vision, both small. Keep a spot on the set where the Nicla can see
+  the patch panel's ports.
+- ⚠️ Conflicts: none
+- Conflict status: resolved by @ahmed 2026-11-14
+
+### 2026-11-14 21:54 — the UNO Q rig is planned, and guides can say what it should see — @ahmed
+- Shipped: `contracts/protocol.ts` gains an optional `expect: { port, cable: "in" | "out" }` on guide objects, checked
+  by the relay; the sample guide's cable steps carry it. Additive: older readers ignore it. 32 tests and a type-check
+  pass. Commit `29bafd3`. Plan and research for the rig: `research/ledger.md` § 10.
+- Touched: `contracts/protocol.ts`, `relay/validate.ts`, `fixtures/`; on `context`: `PROJECT.md`, three briefs,
+  `research/ledger.md`
+- Decision: by Ahmed: the Nicla Vision finds the cable by colour, one region per port; USB through the hub to the UNO
+  Q; the UNO Q joins the relay as `rig` with `websocket-client` and shows ✓/✗ on its LED matrix; the `expect` field.
+- 📨 To @laura: the cable that moves needs a brightly coloured plug boot, and your guide builder can set `expect` on
+  cable steps (your brief, tasks 2 and 3).
+- 📨 To @salman: `expect` is optional; your Swift decoder can ignore it.
+- 📨 To anyone: the rig needs a micro-USB **data** cable for the Nicla Vision. Got one? Tell Ahmed.
+- ⚠️ Conflicts: @laura @salman @max — an additive change to the contract you build on
+- Conflict status: open
+
+
+### 2026-11-14 22:15 — dashboard stack picked, splat on screen — @max
+- Shipped: research in `research/ledger.md` § 7 (splat renderer), § 8 (dashboard shell), § 9 (training splats on
+  the DGX Spark). `dashboard/` scaffolded on `max-scene` (`49342b3`, not merged yet): Vite + React, the scene in
+  plain three.js + Spark 2.4 behind `dashboard/src/scene/`. Shows Spark's SAMPLE splat, or a dropped .spz/.ply.
+  Run: `cd dashboard && npm install && npm run dev` · test: `npm test && npm run typecheck`.
+- Touched: `dashboard/` (new, branch `max-scene`); on `context`: `research/ledger.md`
+- Decision: by Max: Spark on three.js, proven by a short spike with a kill test (30 fps or more on the weakest laptop,
+  a click-pick under 300 ms, a cut-out under 2 s), PlayCanvas only if it fails; Vite 8 + React 19 + TypeScript,
+  plain three.js behind `scene/api.ts`, no React Three Fiber, a shared zustand store when one is needed.
+- 📨 To @ahmed: we have a DGX Spark, not Dawn access. Max's task 9 should read "train the set's splat on the DGX
+  Spark" (ledger § 9 has the pipeline). Please also fill Stack in `CLAUDE.md` with the dashboard line above. *(done by @ahmed 2026-11-14 22:20)*
+- 📨 To @laura: the dashboard is React, so your guide builder is React components. `scene/api.ts` is next; I'll
+  flag it here for you to agree before you build on it.
+- ⚠️ Conflicts: @laura — the app shell you build inside is now fixed (React)
+- Conflict status: open

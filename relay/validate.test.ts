@@ -72,6 +72,14 @@ test("unknown models and actions are refused", () => {
   assert.ok(parseMessage(JSON.stringify(guideMessage((g) => (g.steps[0].objects[0].action = null)))).ok);
 });
 
+test("a rig expectation must name a port and whether the cable is in or out", () => {
+  const expect = (value: unknown) => guideMessage((g) => (g.steps[3].objects[0].expect = value));
+  assert.match(refusal(expect({ port: "17", cable: "maybe" })), /guide\.steps\[3\]\.objects\[0\]\.expect\.cable/);
+  assert.match(refusal(expect({ cable: "in" })), /expect\.port/);
+  assert.match(refusal(expect("port 17")), /expect: expected an object/);
+  assert.ok(parseMessage(JSON.stringify(expect(undefined))).ok);
+});
+
 test("duplicate step or object ids are refused", () => {
   assert.match(refusal(guideMessage((g) => (g.steps[1].id = g.steps[0].id))), /duplicate step id/);
   assert.match(

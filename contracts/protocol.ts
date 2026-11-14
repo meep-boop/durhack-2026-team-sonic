@@ -46,6 +46,9 @@ export type GuideObject = {
   label?: string;
   // A part lifted out of the scan on the dashboard. The phone may ignore it and draw `model`.
   cutoutId?: string;
+  // What the UNO Q rig should see once the step is done: the cable now "in" port "17", or "out" of port "14". Port
+  // names match the regions set up on the Nicla Vision. Without it, the rig doesn't check this object.
+  expect?: { port: string; cable: "in" | "out" };
 };
 
 export type Step = {
