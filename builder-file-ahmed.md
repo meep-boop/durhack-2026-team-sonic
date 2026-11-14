@@ -1,5 +1,5 @@
-# ahmed: _role_ (_the pieces this builder owns, in a few words_)
-**GitHub:** `_login_` · **Branch:** `ahmed-_area_` · **Brief last updated:** 2026-11-14 by _docs owner_
+# Ahmed: docs owner; build role set at kickoff (_the pieces this builder owns, in a few words_)
+**GitHub:** `meep-boop` · **Branch:** `ahmed-_area_` · **Brief last updated:** 2026-11-14 by ahmed
 **Spec:** `PROJECT.md` (NOW first); the § numbers below refer to it. **Deadlines:** `PROJECT.md` → NOW → Clock.
 
 ## 0. How the agent reads this brief (every task)
