@@ -17,6 +17,29 @@ Then, on any phone, anywhere:
 To send it to a friend, screenshot the QR code or copy the `exp://…` link the terminal prints. **Your laptop has to
 stay on with `npm run share` running** while they use it. Every file you save reloads live on their phone.
 
+**iPhone error "signed in to Expo CLI as X and to Expo Go as Y":** on iPhones, Expo Go must be signed in to the same
+Expo account as the laptop running `npm run share`. Either sign in to Expo Go with that account, or run
+`npm run share` from your own laptop with `npx expo login` as yourself. Android phones don't have this rule.
+
+## AR (needs the dev build, iPhone only)
+The **AR** tab uses ARKit through our own native module (`modules/sonic-ar`, Swift + RealityKit). It has three modes:
+**Place** (tap a surface to drop a cube), **Image** (track `assets/ar/marker.png`, shown on a screen or printed
+15 cm wide) and **Measure** (tap two points; uses LiDAR on Pro iPhones). Expo Go can't run native code, so in Expo
+Go the AR tab only shows a notice. Everything else still works there.
+
+To put the AR build on your own iPhone (free Apple ID, no paid account):
+1. Plug the iPhone into the Mac. On the phone, turn on Settings → Privacy & Security → **Developer Mode** and restart.
+2. `npx expo prebuild --platform ios`, then open `ios/TeamSonic.xcworkspace` in Xcode → TeamSonic target →
+   Signing & Capabilities → Team: **your Apple ID (Personal Team)**. If the bundle ID is taken, change it there
+   to something unique like `com.<yourname>.teamsonic`.
+3. `npm run ios:device` and pick your iPhone. On the phone: Settings → General → VPN & Device Management → trust
+   your developer profile.
+4. After that, `npm run dev` starts the server for the installed dev build. JS changes reload live; Swift changes
+   need step 3 again.
+
+With a free Apple ID the app stops opening after **7 days** (rebuild to renew), and you can only install it on
+phones plugged into your Mac. Sending friends an install link needs the paid Apple Developer account ($99/yr).
+
 ## If it breaks
 - **"Cannot find native module …"** or a red screen on first open: update Expo Go from the store (it must support
   SDK 58), then shake the phone → **Reload**.
