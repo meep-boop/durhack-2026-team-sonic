@@ -1,6 +1,7 @@
-# Laura: _role_ (_the pieces this builder owns, in a few words_)
-**GitHub:** `furtunalaura` · **Branch:** `laura-_area_` · **Brief last updated:** 2026-11-14 by ahmed
+# Laura: the guide builder, the 3D models, the demo set and hardware, and the pitch
+**GitHub:** `furtunalaura` · **Branch:** `laura-guide` · **Brief last updated:** 2026-11-14 by ahmed
 **Spec:** `PROJECT.md` (NOW first); the § numbers below refer to it. **Deadlines:** `PROJECT.md` → NOW → Clock.
+**The plan in full:** `docs/remote-assist/README.md` and `architecture.md` (on `main`, written by @max).
 
 ## 0. How the agent reads this brief (every task)
 1. Read the project `CLAUDE.md` in full, then this brief. Follow both.
@@ -15,51 +16,107 @@
 **Conflict tags:** `[⚠ conflicts with @name: what]` marks a task that touches someone else's area or a shared contract.
 Agree with them before merging.
 
+**START HERE (2026-11-14, from @ahmed):** the split and the decisions in `PROJECT.md` → NOW were made by Ahmed on
+top of Max's round-1 plan. If you disagree with your role or with a decision, say so in a `progress.md` entry
+(`📨 To @ahmed`) before building on it. All four of us build at once, each against the fake peers in `fixtures/`,
+so nobody waits for anybody. Until `contracts/protocol.ts` lands, use the draft in
+`docs/remote-assist/architecture.md` and expect small changes.
+
 ---
 
 ## 1. Ownership
 **Owns:**
-- _paths, services, pieces_
+- `dashboard/src/guide/`: the step timeline the expert builds the guide in, and the live video panel.
+- `assets/`: the printed marker and the built-in 3D models, in both formats.
+- The physical demo set, and `hardware/` (the UNO Q rig on it).
+- What judges see: the README, the video, the submission (`pitch` skill).
 
 **Does NOT touch:**
 
 | Area | Owner |
 |---|---|
-| _path_ | @_name_ |
+| `ios/` | @salman |
+| `relay/`, `contracts/`, `fixtures/` | @ahmed |
+| `dashboard/src/scene/`, the dashboard shell, the splat files | @max |
 
-**Shared** (flag every edit in `progress.md` → `⚠️ Conflicts`): _contracts, fixtures, compose files_
+**Shared** (flag every edit in `progress.md` → `⚠️ Conflicts`): `contracts/protocol.ts` (ask @ahmed for changes),
+`fixtures/*`, `dashboard/src/scene/api.ts` (the seam with @max), and `assets/models/` (@salman and @max both load
+them, so a renamed or resized model breaks two apps).
 
 ## 2. Contract and guardrails
 **Scope contract.** laura is building:
-- _the finished state, in plain words_
+- The panel where the expert builds a guide: add, reorder and remove steps, write the instruction, pick a model and
+  one preset action per object, send it, and watch the user's progress.
+- The set of built-in models (screw, bolt, arrow, screwdriver, hand, cable plug) that both apps load.
+- The demo set itself: a small "comms cupboard" with the marker fixed next to the ports.
+- The sensor on the set that notices the cable really moved, and everything the judges read and watch.
 
-**Out of scope:** _what not to build, even if it's tempting_
+**Out of scope:** the 3D view itself (call @max's scene API). The phone app. The relay.
 
-**Guardrails:** _hard rules for this area: privacy, platform limits, labels for anything simulated_
+**Guardrails:**
+- **The guide must never depend on video, the AI labels or the hardware.**
+- This is the longest list on the team. If it's too much, say so early on the board; the hardware rig is the first
+  thing to drop.
+- Every new package or downloaded model is a 🟠 decision for you. Record each model's licence and source.
+- The marker goes **right next to the ports**: alignment gets worse with distance from it (`research/ledger.md`
+  § 3 and § 5).
+- Everything simulated or mocked is labelled in the UI, the README and the video. No number nobody measured.
 
 ---
 
 ## 3. ▶ Current tasks (2026-11-14), in order
 *Status: ⬜ not started · 🟡 in progress · ⏸ blocked · ✅ done*
 
-1. ⬜ **_Task name_**
-   - _what, specifically_
-   - *Done when:* _a check anyone can run_
-   - `[⚠ conflicts with @name: what]` _(if any)_
+1. ⬜ **The marker** (do this first: @salman and @max are both waiting on it)
+   - A high-contrast, detailed, non-repeating image, 15 to 20 cm wide (small ones track badly), printed flat and
+     matte. Measure the printed width with a ruler and commit the image to `assets/marker/` with that width in mm
+     beside it: ARKit needs the exact size. Print spares.
+   - *Done when:* the file and its width are on `main`, and @salman confirms Xcode accepts it with no warnings.
+2. ⬜ **Ask about the UNO Q today** 🟠
+   - The RS challenge needs an Arduino UNO Q and a camera. Find out now whether we can borrow them.
+   - *Done when:* a board entry says we have the kit, or that we don't and the RS feature is parked.
+3. ⬜ **Pick and get the demo objects** 🟠 (asked for by @max)
+   - What the set is made of (a real switch or router, a patch panel, a cover with screws), who brings or borrows
+     it, and whether it can be carried to any table and scanned once.
+   - *Done when:* the set is built with the marker fixed on it, and @max has been told it's ready to scan.
+4. ⬜ **The guide builder**
+   - Build against the fake phone in `fixtures/` and @max's scene API. Step list, instruction text, model and
+     action pickers, send the guide, jump to a step, tick steps as `step.done` arrives.
+   - *Done when:* a three-step guide built in the UI appears in the fake phone's log, and its `step.done` ticks the
+     step.
+   - `[⚠ conflicts with @max: dashboard/src/scene/api.ts]` `[⚠ conflicts with @ahmed: the guide shape in contracts/protocol.ts]`
+5. ⬜ **The built-in models** 🟠
+   - Screw, bolt, arrow, screwdriver, hand, cable plug, as glTF for the dashboard and USDZ for the phone. Decide
+     first: author once and convert, or keep both by hand. Same names, sizes and origins in both.
+   - *Done when:* each model loads in the dashboard and in @salman's app, the same size and the same way up.
+   - `[⚠ conflicts with @salman and @max: both load these]`
+6. ⬜ **The live video panel**
+   - Show the phone's camera in the dashboard.
+   - *Done when:* the stream from the phone (or a fake sender) plays in the panel, and the guide builder still
+     works with it switched off.
+   - `[⚠ conflicts with @ahmed and @salman: WebRTC signalling]`
+7. ⬜ **The hardware check** (the RS feature, only if task 2 found a kit) 🟠
+   - The UNO Q and camera notice which port the cable is in and report it. Decide the detection method first.
+   - *Done when:* moving the cable to the right port ticks the step on the dashboard, and a wrong port warns.
+   - `[⚠ conflicts with @ahmed: the step.verified message path]`
+8. ⬜ **What the judges see**
+   - README, demo video, submission form (`pitch` skill). Start once a guide plays end to end.
+   - *Done when:* `bash scripts/submission-check.sh` passes and the submission is in.
 
 ## 4. Done log (newest first)
 - _(empty)_
 
 ## 5. Waiting on / owed to others
-- 📤 **Owed to @_name_:** _blank_
-- 📥 **Waiting on @_name_:** _blank_
+- 📥 **Waiting on @max:** `dashboard/src/scene/api.ts` and the dashboard shell.
+- 📥 **Waiting on @ahmed:** `contracts/protocol.ts`, the fake phone, the event's rules and deadlines.
+- 📤 **Owed to @salman and @max:** the marker image and printed width (task 1), then the models.
+- 📤 **Owed to @max:** the finished demo set, to scan.
 
 ## 6. Working-style notes for the agent
-- Verbosity: _the project level, or this builder's own_
-- _Strengths, what to explain carefully, preferences_
+- Verbosity: project level (Level 0) unless Laura changes it.
 
 ## 7. Reference (no secrets, ever)
-- _API docs, endpoints, datasets, where keys live (a location, never the value)_
+- The demo and the challenge fit: `docs/remote-assist/README.md`. Marker evidence: `research/ledger.md` § 3 and § 5.
 
 ---
 ── Archived (superseded — do NOT action) ──

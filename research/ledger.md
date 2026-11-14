@@ -12,6 +12,7 @@ The one research file for this project (`research-ledger` skill). Every source g
 | 2 | Live iPhone camera to a browser (2026-11-14) | Picking the live video path |
 | 3 | Aligning a splat with the real room on a non-LiDAR iPhone (2026-11-14) | Marker vs ARKit poses vs tap points; accuracy |
 | 4 | Scan-to-splat pipeline, Spark cut-outs, RealityKit splat format (2026-11-14) | Scaniverse vs Dawn; cutting parts out; loading on iOS |
+| 5 | Add-ons to § 2 and § 3: marker under world tracking, ARKit holding the camera (2026-11-14) | Which ARKit configuration to use; why the stock WebRTC capturer fails |
 
 ---
 
@@ -237,3 +238,58 @@ parsed into RealityKit buffers on the phone; animate transforms, not opacity. As
 - Spark v2.3.0 writeSpz, radiancefields.com, https://radiancefields.com/spark-v2.3.0-fixes-on-demand-rendering-for-paged-lod
 ### DO NOT USE
 - Dawn's IPEX conda env as the gsplat base ([4]): superseded by upstream PyTorch XPU wheels per [1]. Tombstone.
+
+# § 5 Add-ons to § 2 and § 3: marker under world tracking, ARKit holding the camera (2026-11-14)
+**Question:** the same two as § 2 and § 3, asked separately by Ahmed's agent in the same hour. Only the points those
+sections don't already make are kept here. Read § 2 and § 3 first.
+
+**How this pass was done:** about 15 minutes, web search only. Sources were read through search summaries, **not
+opened page by page**. Treat each line as a pointer to check on a real phone.
+
+## Findings
+### Alignment (adds to § 3)
+- Use world tracking with `detectionImages`, not image-only tracking. Image-only tracking has no world tracking and
+  needs the image fully visible; under world tracking, content stays anchored when the image leaves the frame
+  (sources: [1], [2], [3]).
+- A detected image keeps getting pose updates under world tracking, described as infrequent (source: [4]).
+- One image anchor is precise near itself and pose error grows with distance from it (source: [5]). So the marker
+  goes right next to the parts being worked on.
+- An unconfirmed report says world tracking drifts on LiDAR iPhones on iOS 26.4 and later (source: [6]). Our demo
+  phone is said to be non-LiDAR; check its iOS version if drift shows up.
+### Live camera (adds to § 2)
+- Why a custom capturer is needed at all: ARKit starts and holds the camera's capture session, so WebRTC's standard
+  `RTCCameraVideoCapturer` stops working while AR runs (sources: [7], [8]).
+- One write-up of the full chain, `CVPixelBuffer` to `RTCCVPixelBuffer` to `RTCVideoFrame` (source: [9]).
+
+## Community consensus
+Apple Developer Forums and the discuss-webrtc list only, each a thread with few replies. No Reddit or Hacker News
+pass.
+
+## Final call (professional + community)
+Agrees with § 3: a printed marker, as a detection image **under world tracking**, placed next to the ports. Agrees
+with § 2 that WebRTC needs a custom source and that snapshots over the websocket are the low-effort path. The team's
+standing decision is still WebRTC from the start (`PROJECT.md` → Decision log); § 2 and this section are the case
+for reopening it.
+
+## Source ledger
+### KEEP
+- [1] ARImageTrackingConfiguration, Apple Developer Documentation,
+  https://developer.apple.com/documentation/arkit/arimagetrackingconfiguration : image-only tracking has no world tracking.
+- [2] ARWorldTrackingConfiguration, Apple Developer Documentation,
+  https://developer.apple.com/documentation/arkit/arworldtrackingconfiguration : world tracking can detect images.
+- [3] "How can I increase the image tracking accuracy?", Apple Developer Forums,
+  https://developer.apple.com/forums/thread/685469 : content stays anchored when the image leaves view.
+- [7] discuss-webrtc thread, https://groups.google.com/g/discuss-webrtc/c/WpVhJ1lRrRE : ARKit holds the capture session.
+- [8] rn-webrtc-arkit-integration (open source),
+  https://awesome.ecosyste.ms/projects/github.com%2Fjhen0409%2Frn-webrtc-arkit-integration : built to work round [7].
+### WEAK
+- [4] "Do detected images track motion by default in iOS 12?", Apple Developer Forums,
+  https://developer.apple.com/forums/thread/110844 : one thread, about iOS 12.
+- [5] "Real world anchors", Apple Developer Forums, https://origin-devforums.apple.com/forums/thread/820424 : one
+  reply; the only basis for "error grows with distance".
+- [6] "ARKit World Tracking Drift Regression on LiDAR-Equipped Devices - iOS 26.4+", Apple Developer Forums,
+  https://developer.apple.com/forums/thread/827240 : one developer's report, not confirmed by Apple.
+- [9] "iOS ARKit推流到WebRTC", CSDN blog (2018), https://blog.csdn.net/sonysuqin/article/details/82788424 : a
+  blog, and old.
+### DO NOT USE
+- _(none)_

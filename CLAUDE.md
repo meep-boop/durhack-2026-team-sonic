@@ -1,4 +1,4 @@
-# TBD: Working Charter
+# Remote Assist: Working Charter
 
 *Team Sonic at DurHack 2026. Every builder's Claude Code reads this file on every prompt. It holds the rules that always
 apply; the step-by-step protocols live in the skills it names (§ Triggers).*
@@ -9,8 +9,8 @@ apply; the step-by-step protocols live in the skills it names (§ Triggers).*
 
 | Slot | Value |
 |---|---|
-| Project | **TBD** (DurHack 2026) · team **Team Sonic** |
-| One-line pitch | _blank_ |
+| Project | **Remote Assist** (working name, from Max's plan; DurHack 2026) · team **Team Sonic** |
+| One-line pitch | Step-by-step 3D guidance on a phone, built by a remote engineer from a scan of the room, that keeps working when the network is down. |
 | Repo · main branch | `github.com/meep-boop/durhack-2026-team-sonic` · `main`. Builder branches: `<name>-<area>` |
 | Team | `progress.md` → **Who owns what** (names, GitHub logins, roles, branches). Docs owners: **ahmed** (`team.conf`) |
 | Shared docs | The **`context` branch** (docs only, never on `main`). Pull: `bash scripts/sync-context.sh` · publish: `bash scripts/publish-context.sh "what changed"` |
@@ -19,7 +19,7 @@ apply; the step-by-step protocols live in the skills it names (§ Triggers).*
 | Research | `research/ledger.md` (every source rated KEEP / WEAK / DO NOT USE) |
 | Briefs | `builder-file-<name>.md`, one per builder: what their agent builds from |
 | Progress | `progress.md` on `main`: build log + conflict board |
-| Stack | _blank_ (§5) |
+| Stack | Phone: native Swift, ARKit + RealityKit. Dashboard (browser) and relay (Node): libraries proposed, not decided (§5) |
 | Run · Test | _blank_ |
 | Deploy | _blank_ |
 | Expected scale | _blank_ (until set, `no-slop` designs for 10× the real load) |
@@ -198,9 +198,12 @@ never behind. `progress.md` and `team.conf` are the only files committed straigh
 ---
 
 ## 5. Stack and current architecture *(fill as decided; empty is fine)*
-**Stack:** _blank_. Full table: `PROJECT.md` §6.
+**Stack:** the iPhone app is native Swift with ARKit + RealityKit (decided). The expert dashboard is a browser app and the
+relay is a Node server; their libraries (three.js, Spark, Vite, `ws`) are proposed, not decided. Full table: `PROJECT.md` §6.
+**The plan:** `docs/remote-assist/` on `main`.
 **Runtime shape:** `PROJECT.md` §5 diagram.
-**Known gaps:** _what's simulated, mocked or hard-coded, so the pitch never overclaims (§7)._
+**Known gaps:** no project code yet (2026-11-14). Nothing has been trained on Dawn. No alignment accuracy has been measured.
+The fake peers in `fixtures/` are test tools, never demo content.
 
 ## 6. Locked decisions *(starts empty)*
 _None yet._ Add one only when the user says it's locked.

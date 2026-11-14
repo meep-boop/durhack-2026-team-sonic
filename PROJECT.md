@@ -1,4 +1,4 @@
-# TBD: the project doc
+# Remote Assist: the project doc
 *Team Sonic · DurHack 2026 · repo `github.com/meep-boop/durhack-2026-team-sonic` · started 2026-11-14.*
 
 **How to read this:** **NOW** is what's true and in progress today, so start there. **Part A** is the spec. **Part B**
@@ -14,9 +14,16 @@ the system is shaped this way, and **History** says how we got here.
 ## NOW (updated 2026-11-14)
 
 ### Headline
-*The one sentence we pitch, plus what we must never claim. Fill it once the idea is picked (`idea-forge`).*
+**Step-by-step 3D guidance on a phone, built by a remote engineer from a scan of the room, that keeps working when the network is down.**
 
-**Never pitch:** _blank_
+The idea is Max's (`docs/remote-assist/` on `main` has the full plan). It was taken forward by Max and Ahmed on
+2026-11-14 without an `idea-forge` scoring round; Laura and Salman haven't weighed in yet.
+
+**Never pitch:**
+- "Trained on the Dawn supercomputer", unless the splat on screen really was. Nobody has logged in to Dawn yet.
+- Any accuracy or speed number we haven't measured on our own set (alignment error, "x times faster than a call").
+- The market notes in `docs/remote-assist/README.md` → Parked (Dynamics 365 Remote Assist ending, what rival tools
+  do). They aren't in `research/ledger.md` yet.
 
 ### Clock
 *The single home for every deadline. Briefs and chat point here and never copy the times.*
@@ -35,30 +42,77 @@ the system is shaped this way, and **History** says how we got here.
 
 | Date | Decision |
 |---|---|
+| 2026-11-14 | All four build in parallel from the first hour, each against fake peers (Ahmed) |
+| 2026-11-14 | Enter Neptune North, Accenture, Marshall Wace and RS (Ahmed) |
+| 2026-11-14 | Scaniverse is the main splat route; Dawn is an upgrade once someone has logged in (Ahmed) |
+| 2026-11-14 | A cut-out shows on the phone as a highlight box plus the closest built-in model (Ahmed) |
+| 2026-11-14 | Live view is WebRTC from the start (Ahmed, against the recommendation) |
+| 2026-11-14 | The scan is lined up with the room by a printed marker under world tracking (Ahmed) |
+| 2026-11-14 | The split: Salman phone app, Max dashboard 3D view and splats, Laura guide builder, assets, set and pitch, Ahmed relay, protocol and sync (Ahmed) |
+| 2026-11-14 | The phone app is native Swift, ARKit + RealityKit (Max round 1; confirmed by Ahmed) |
+| 2026-11-14 | Round 1: the expert builds the guide and the user follows it; guides can be live or prepared; built-in models plus cut-outs; preset actions; the user taps Next; boxes stay alongside models (Max; agreed by Ahmed) |
+
+**Agreement so far:** Max and Ahmed. Laura and Salman haven't confirmed their roles or these decisions; their
+briefs ask them to object on the board before building.
 
 ### Pending decisions
 *Open questions, each with an owner and what it's waiting on. Unconfirmed leanings go here too, marked **not decided**.*
-- _none yet_
+- **Reopen: cut-outs on the phone.** Ahmed chose "box plus a built-in model" on the premise that RealityKit can't
+  draw splats. Max's research (`research/ledger.md` § 1, § 4), published the same hour, says RealityKit on iOS 27.2+
+  can, and recommends real splat cut-outs with the model as the fallback. Owner: Ahmed + Max. **Not decided** whether
+  to change it; the box-and-model path is being built either way.
+- **Reopen: live view.** Ahmed chose WebRTC from the start. Max's research (`research/ledger.md` § 2) recommends
+  JPEG frames over the websocket first and LiveKit Cloud as the upgrade, and warns that 4G may need a TURN server.
+  Owner: Ahmed + Max + Salman. The decision stands until Ahmed changes it.
+- **WebRTC library on iOS, and whether signalling rides the existing websocket.** Owner: Salman + Ahmed. **Not
+  decided.** Waiting on Salman's pick.
+- **Which side solves the alignment, and what units positions travel in.** Owner: Ahmed, in `contracts/protocol.ts`.
+  **Not decided.**
+- **Offline conflict rule:** what happens if the expert edits the guide while the phone is offline. Owner: Ahmed.
+  **Not decided.**
+- **LLM provider for labelling, and what it looks at** (renders of the splat, or camera frames). Owner: Ahmed + Max.
+  **Not decided.**
+- **Dashboard and relay libraries** (three.js, Spark, Vite, Node `ws`). Proposed in the plan; each is its builder's
+  call. **Not decided.**
+- **Model formats:** author once and convert, or keep glTF and USDZ by hand. Owner: Laura. **Not decided.**
+- **Demo objects for the set.** Owner: Laura, with the team. **Not decided.**
+- **UNO Q detection method,** and whether we can borrow a kit at all. Owner: Laura. **Not decided.** No kit means
+  the RS feature is parked.
+- **May one project enter four sponsor challenges?** Owner: Ahmed, from the event rules. **Not checked.**
+- **Live or prepared guides first?** (Max's open question.) Overtaken by "all in parallel": the phone plays a
+  prepared sample guide from its first task, and live building arrives with the guide builder.
 
 ### Active tasks (details in each brief)
 | Who | Now |
 |---|---|
+| Ahmed | The event's rules and Clock; then `contracts/protocol.ts`, the sample guide and the fake peers |
+| Salman | App skeleton and marker detection on a real iPhone |
+| Max | Dashboard shell with a splat on screen, and the scene API for Laura |
+| Laura | The printed marker (Salman and Max are waiting on it); ask about the UNO Q; pick and get the demo objects |
+
+Asked for by Max (19:40 board entry): "Pick and get the demo objects" is Laura's task 3. "Check we have a Mac with
+Xcode" is answered: yes, per Ahmed.
 
 ### Blockers only humans can clear
 *Accounts, API keys, access, team registration, hardware, asking the organisers.*
-- _none yet_
+- **The Clock is empty.** Nobody has written down the submission deadline. Ahmed to paste the schedule.
+- **Dawn login.** Promised by the event, untested by us. Max to try.
+- **An UNO Q and camera** for the RS challenge. Laura to ask today.
+- **The demo objects.** A switch or router, a patch panel, a cover with screws: someone has to bring or borrow them.
+- **Printing the marker,** flat and matte, with spares.
 
 ---
 
 # Part A: Spec
 
 ## 0. One page
-- **One-liner:** _blank_
+- **One-liner:** Step-by-step 3D guidance on a phone, built by a remote engineer from a scan of the room, that keeps working when the network is down.
 - **The person it's for, and the harm or pain:** _a named persona and a sourced number_
 - **What it does:** _3–5 bullets_
 - **What's real in the demo vs. simulated:** _a list: be exact, because judges ask_
 - **Novelty line:** _what exists today, and the one thing none of it does that we do_
-- **Track / challenges entered:** _blank_
+- **Track / challenges entered:** Neptune North, Accenture, Marshall Wace, RS (decided by Ahmed; the fit for each is in
+  `docs/remote-assist/README.md`). Whether one project may enter all four is not checked yet.
 
 ## 1. Problem and evidence
 *Cite `research/ledger.md` by section. Only KEEP sources carry a load-bearing number.*
@@ -75,16 +129,41 @@ the system is shaped this way, and **History** says how we got here.
 ## 4. Features
 | # | Feature | Owner | Priority | Status |
 |---|---|---|---|---|
-| F1 | _blank_ | | P0 | ⬜ |
+| F1 | Marker alignment: the guide sits on the real equipment | Salman, Max | P0 | ⬜ |
+| F2 | Step player on the phone: box, animated model, Next | Salman | P0 | ⬜ |
+| F3 | Protocol, fake peers and relay | Ahmed | P0 | ⬜ |
+| F4 | Dashboard 3D view: splat, click to place | Max | P0 | ⬜ |
+| F5 | Guide builder: step timeline, model and action pickers | Laura | P0 | ⬜ |
+| F6 | Built-in models in glTF and USDZ | Laura | P0 | ⬜ |
+| F7 | The demo set, scanned | Laura, Max | P0 | ⬜ |
+| F8 | Offline play and resync (Neptune North) | Salman, Ahmed | P0 | ⬜ |
+| F9 | Live camera over WebRTC | Salman, Ahmed, Laura | P1 | ⬜ |
+| F10 | Cut-outs from the scan | Max | P1 | ⬜ |
+| F11 | Find a part by name, AI labels (Accenture) | Max, Ahmed | P1 | ⬜ |
+| F12 | Hardware check with the UNO Q (RS) | Laura, Ahmed | P1 | ⬜ |
+| F13 | The user's position shown in the scan | Max | P1 | ⬜ |
+
+**The rule across all of them:** the guide (F1–F8) must never depend on video, the AI labels or the hardware.
 
 *P0 = the demo fails without it. P1 = it makes the demo better. Parked = doable, decided against (see Parked).*
 
 ## 5. Architecture
-*A diagram (Mermaid or ASCII) of the runtime shape: inputs → processing → outputs, and where each part runs.*
+The diagram, components, alignment maths and draft protocol are in `docs/remote-assist/architecture.md` on `main`
+(owner: Max). It isn't copied here, so there's one version. Changed since it was written: alignment is decided
+(printed marker), live video is decided (WebRTC), and Scaniverse comes before Dawn. The agreed protocol will live in
+`contracts/protocol.ts`.
 
 ## 6. Tech stack
 | Layer | Choice | Why | Checked on the platform? |
 |---|---|---|---|
+| Phone app | Native Swift, ARKit + RealityKit (**decided**) | iPhone Safari has no WebXR AR; Salman is confident in Swift | No: first build pending |
+| Alignment | Printed marker, 15 to 20 cm, as an ARKit detection image under world tracking (**decided**) | `research/ledger.md` § 3, § 5 | No: error to be measured on our set |
+| Live video | WebRTC with a custom source fed from AR frames (**decided**); library **not decided** | Ahmed's call | No |
+| Splat | Scaniverse export (**decided** as main route); Dawn + gsplat as an upgrade | Dawn untested | No |
+| Dashboard | Browser app; three.js + Spark + Vite **proposed, not decided** | Max's planning session | No |
+| Relay | Node + `ws` over HTTPS **proposed, not decided** | Max's planning session | No |
+| AI labelling | Provider **not decided** | | No |
+| Hardware check | Arduino UNO Q + camera (the RS challenge requires them); method **not decided** | | No kit yet |
 
 ## 7. Data
 | Source | What | Licence | Where it lives | Real / simulated |
@@ -99,8 +178,9 @@ the system is shaped this way, and **History** says how we got here.
 ## 10. Team, timeline, cut order
 - **Who owns what:** `progress.md` → Who owns what.
 - **Timeline:** NOW → Clock.
-- **Cut order (first to go → last):** _blank_
-- **Never cut:** _blank_
+- **Cut order (first to go → last):** proposed by Ahmed's agent, **not decided**: hardware check (F12), cut-outs (F10),
+  AI labels (F11), the user's position (F13), live video (F9).
+- **Never cut:** proposed, **not decided**: F1–F8, a guide that lines up, plays, and survives the link going down.
 
 ## 11. Risks and judge questions
 | Question a judge will ask | Our answer |
@@ -139,6 +219,77 @@ the system is shaped this way, and **History** says how we got here.
 
 ## Decision log
 *Full records, newest first. NOW → Decisions in force holds the one-line versions.*
+
+## 2026-11-14 — Build order
+- Chose: all four build in parallel from the first hour, each against fake peers (Ahmed)
+- Because: four people each have their own Claude running, and nobody should wait
+- Rejected: prepared guide first as a walking skeleton (the recommendation: it proves alignment, the riskiest part,
+  before anything else is built on it); live editing first; video first
+- Revisit if: alignment isn't working on a real phone a few hours in. Then everyone helps there first.
+- Made safe by: `contracts/protocol.ts`, a sample guide and fake peers landing in the first hour
+
+## 2026-11-14 — Sponsor challenges
+- Chose: Neptune North, Accenture, Marshall Wace and RS (Ahmed)
+- Because: enter everything the idea can reach
+- Rejected: Neptune North and Accenture only (Max's suggested priority); skipping RS (the recommendation: it needs
+  borrowed hardware and several hours of one person)
+- Revisit if: no UNO Q can be borrowed, the rules cap how many challenges one project enters, or Laura's list is
+  too long
+
+## 2026-11-14 — Splat route
+- Chose: Scaniverse on the phone as the main route; Dawn as an upgrade (Ahmed)
+- Because: Dawn access is promised but nobody has logged in
+- Rejected: Dawn first (a failed login would leave us with no splat)
+- Revisit if: Max logs in and one job runs
+
+## 2026-11-14 — Cut-outs on the phone
+- Chose: highlight box plus the closest built-in model; the cut-out itself stays on the dashboard (Ahmed)
+- Because: at the time, the plan said RealityKit can't draw splats, and this needs no new format work
+- **Premise now in doubt:** `research/ledger.md` § 1 (Max, published the same hour) says RealityKit on iOS 27.2+
+  can draw splats. Reopened in NOW → Pending.
+- Rejected: box and arrow only (weakest visual); a rough mesh or point cloud of the cut-out (a new pipeline stage,
+  the riskiest piece for the time left)
+- Revisit if: everything else is done before the freeze
+
+## 2026-11-14 — Live view
+- Chose: WebRTC from the start (Ahmed, against the recommendation)
+- Because: Ahmed wants real live video, a stated requirement in Max's plan
+- Rejected: JPEG snapshots over the existing websocket (the recommendation: no new dependency, about an hour);
+  snapshots first with WebRTC as a stretch; cutting live view
+- Known cost: ARKit holds the camera, so the phone needs a custom video source fed from AR frames, plus signalling
+  on the relay and a panel on the dashboard (`research/ledger.md` § 2, § 5). No official end-to-end sample was
+  found. Max's research, published the same hour, also recommends snapshots first. Flagged in NOW → Pending.
+- Revisit if: it isn't streaming by the feature freeze. Snapshots are the fallback.
+
+## 2026-11-14 — Lining up the scan with the room
+- Chose: one printed marker, detected as an ARKit image under world tracking; the expert clicks its four corners in
+  the splat (Ahmed)
+- Because: content stays put when the marker leaves the frame, the marker keeps re-locking drift, and its known
+  printed size gives the scale (`research/ledger.md` § 3, § 5). Max's research reached the same answer on its own,
+  and adds: 15 to 20 cm wide, exact printed size given to ARKit
+- Rejected: four stickers tapped on screen (four fiddly taps, raycast error, no re-lock); the same ARKit session for
+  scan and guide (breaks on restart, and can't use a splat made ahead of time); marker plus a sticker fallback
+  (about two more hours)
+- Revisit if: the measured error on our set is too big to tell neighbouring ports apart
+
+## 2026-11-14 — The split
+- Chose: Salman the phone app; Max the dashboard 3D view and the splats; Laura the guide builder, assets, set,
+  hardware and pitch; Ahmed the relay, protocol, sync, labelling endpoint and docs (Ahmed)
+- Because: Salman is the confident Swift person, Max wrote the plan and knows the splat side, and the relay sits
+  between the two apps, which suits the integrator
+- Rejected: Expo with an AR library (thin AR support); an Expo shell with a Swift AR view (bridge glue)
+- Note: assigning the AI labelling to Max and Ahmed, and the UNO Q rig to Laura, was proposed by Ahmed's agent and
+  approved by Ahmed with the plan. Laura's list is the longest.
+- Revisit if: Laura or Salman object to their role
+
+## 2026-11-14 — Round 1 (the shape of the product)
+- Chose: the remote expert builds the guide and the on-site user follows it on an iPhone; guides can be made live or
+  ahead; built-in models plus cut-outs from the scan; preset actions; the user taps Next; boxes stay alongside
+  models (Max; agreed by Ahmed)
+- Because: see `docs/remote-assist/README.md` → Decisions so far
+- Rejected: the Quest 2 as the on-site device (we don't have one with us); the ISS and Mars framing
+- Revisit if: a Quest turns up and the phone version is done
+
 ```
 ## <date> — <decision name>
 - Chose: <option> (<who>)
@@ -149,3 +300,8 @@ the system is shaped this way, and **History** says how we got here.
 
 ## History
 *How the idea and the plan changed, and why. Superseded plans move here, never deleted.*
+- **2026-11-14, before the event:** Max's first plan: a technician in a Quest 2, guided on a foam-board "ISS panel"
+  by an expert clicking in a splat. Superseded the same evening; kept in `docs/remote-assist/README.md` → Parked.
+- **2026-11-14 19:40:** Max's round 1: an on-site user with an iPhone, a remote MSP engineer, stepped 3D guides.
+- **2026-11-14, later:** Ahmed's planning session settled alignment, live view, cut-outs, challenges, the build
+  order and the four-way split (Decision log above).
