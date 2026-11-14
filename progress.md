@@ -162,3 +162,23 @@ each builder's brief (`builder-file-<name>.md`, on the `context` branch).
 - 📨 To @max @laura: the dashboard imports `contracts/protocol.ts` with `import type`. It holds no runtime code.
 - ⚠️ Conflicts: @salman — the phone stack changes under you (Expo out)
 - Conflict status: open
+
+### 2026-11-14 20:59 — the protocol contract is on main — @ahmed
+- Shipped: `contracts/protocol.ts` (every websocket message, as TypeScript types), `fixtures/sample-guide.json` (a
+  4-step SAMPLE guide), `fixtures/messages.json` (one example of every message) and `relay/validate.ts` (the relay's
+  check of incoming messages). 15 tests and a type-check pass: `cd relay && npm install && npm test && npm run
+  typecheck`. Commit `1fcc4c3`.
+- Touched: `contracts/`, `fixtures/`, `relay/` (all new); on `context`: `PROJECT.md`, `CLAUDE.md`, four briefs
+- Decision: by Ahmed: **positions travel in the marker's frame, in metres; the dashboard converts from splat
+  coordinates and the phone does no maths.** The contract's shape (Ahmed, as proposed): steps and objects referred to
+  by id; `guide.set` sends the whole guide; guides carry `rev` and the marker's printed size; calibration goes
+  dashboard → relay only; `step.done` carries a unique `doneId` and the tap time; the UNO Q joins as a third role,
+  `rig`; `hello` carries `protocol: 1`; a fixed list of model names; `presence` and `error` from the relay.
+  `typescript` is a dev-only dependency of `relay/`.
+- 📨 To @salman: the frame is at the top of `contracts/protocol.ts`. Pin objects to the image anchor straight from
+  the JSON. Please check which printed edge +x and +z point to: they're marked provisional until you do.
+- 📨 To @max: your dashboard converts splat → marker frame (brief task 3, rewritten). Max's draft differs in two
+  places: ids instead of indexes, and the corners no longer go to the phone.
+- 📨 To @laura: build the guide builder against `Guide` in the contract, with `import type`.
+- ⚠️ Conflicts: @salman @max @laura — the contract you build on is now fixed; any change is flagged to all three
+- Conflict status: open
