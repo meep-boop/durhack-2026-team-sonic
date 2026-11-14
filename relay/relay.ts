@@ -2,7 +2,17 @@ import { once } from "node:events";
 import { existsSync, readFileSync, renameSync, writeFileSync } from "node:fs";
 import type { AddressInfo } from "node:net";
 import { WebSocketServer, type WebSocket } from "ws";
-import type { CalibSet, Guide, Message, MessageType, Role, StepDone, StepVerified } from "../contracts/protocol.ts";
+import type {
+  CalibSet,
+  Guide,
+  LabelsRequest,
+  Message,
+  MessageType,
+  Role,
+  StepDone,
+  StepVerified,
+} from "../contracts/protocol.ts";
+import type { Labeller } from "./labeller.ts";
 import { parseMessage } from "./validate.ts";
 
 export type RelayOptions = {
@@ -12,6 +22,8 @@ export type RelayOptions = {
   statePath?: string;
   fresh?: boolean;
   heartbeatMs?: number;
+  // Without one, the relay refuses `labels.request`.
+  labeller?: Labeller;
   log?: (line: string) => void;
 };
 
@@ -28,7 +40,8 @@ type State = {
 type Peer = { role: Role; client: string };
 type Connection = { peer: Peer | null; alive: boolean };
 
-type ForwardedType = Exclude<MessageType, "hello" | "presence" | "error">;
+type RelayOnly = "presence" | "error" | "labels.result";
+type ForwardedType = Exclude<MessageType, "hello" | RelayOnly>;
 type Forwarded = Extract<Message, { type: ForwardedType }>;
 
 // Guides are a few KB and SDP offers a few more; anything near this size is a bug or an attack.
@@ -46,6 +59,8 @@ const ROUTES: Record<ForwardedType, { from: Role[]; to: (sender: Role) => Role[]
   pose: { from: ["user"], to: () => ["expert"] },
   "step.verified": { from: ["rig"], to: () => ["expert", "user"] },
   "rtc.signal": { from: ["user", "expert"], to: (sender) => [sender === "user" ? "expert" : "user"] },
+  // Answered by the relay itself, to the asking dashboard only.
+  "labels.request": { from: ["expert"], to: () => [] },
 };
 
 const reaches = (type: ForwardedType, sender: Role, role: Role) => ROUTES[type].to(sender).includes(role);
@@ -68,7 +83,7 @@ function writeAtomically(path: string, text: string) {
 }
 
 export async function startRelay(options: RelayOptions): Promise<Relay> {
-  const { statePath, heartbeatMs = 5000, log = console.log } = options;
+  const { statePath, heartbeatMs = 5000, labeller, log = console.log } = options;
   const state = loadState(statePath, options.fresh ?? false);
   const save = () => {
     if (statePath) writeAtomically(statePath, JSON.stringify(state));
@@ -79,7 +94,10 @@ export async function startRelay(options: RelayOptions): Promise<Relay> {
   const server = new WebSocketServer({ port: options.port, host: options.host, maxPayload: MAX_MESSAGE_BYTES });
   await once(server, "listening");
 
-  const send = (socket: WebSocket, message: Message) => socket.send(JSON.stringify(message));
+  // A labelling answer can come back after its dashboard has gone.
+  const send = (socket: WebSocket, message: Message) => {
+    if (socket.readyState === socket.OPEN) socket.send(JSON.stringify(message));
+  };
 
   const refuse = (socket: WebSocket, error: string, about?: string) => {
     log(`! ${connections.get(socket)?.peer?.client ?? "unnamed client"}: ${error}`);
@@ -102,11 +120,30 @@ export async function startRelay(options: RelayOptions): Promise<Relay> {
     const { guide, stepId, calib } = state;
     if (calib && reaches("calib.set", "expert", role)) send(socket, calib);
     if (guide && reaches("guide.set", "expert", role)) send(socket, { type: "guide.set", guide });
-    if (guide && stepId && reaches("step.set", "expert", role)) {
+    // The phone owns its own position. Its taps made offline arrive only after this replay, so replaying the
+    // relay's step would send a phone that worked offline backwards (decided 2026-11-14, PROJECT.md).
+    if (guide && stepId && role !== "user" && reaches("step.set", "expert", role)) {
       send(socket, { type: "step.set", guideId: guide.id, stepId });
     }
     if (reaches("step.done", "user", role)) state.done.forEach((done) => send(socket, done));
     if (reaches("step.verified", "rig", role)) state.verified.forEach((verified) => send(socket, verified));
+  };
+
+  let labelling = false;
+  const answerLabels = async (socket: WebSocket, request: LabelsRequest) => {
+    if (!labeller) return refuse(socket, "labelling is off on this relay (start it with --labels)", request.type);
+    // Each snapshot is a paid Claude call, so a dashboard stuck in a loop can only run one at a time.
+    if (labelling) return refuse(socket, "still labelling the last snapshot", request.type);
+    labelling = true;
+    try {
+      const { model, labels } = await labeller(request);
+      send(socket, { type: "labels.result", requestId: request.requestId, model, labels });
+      log(`labelled snapshot ${request.requestId}: ${labels.length} labels from ${model}`);
+    } catch (error) {
+      refuse(socket, `labelling failed: ${(error as Error).message}`, request.type);
+    } finally {
+      labelling = false;
+    }
   };
 
   const handle = (socket: WebSocket, sender: Peer, message: Forwarded) => {
@@ -153,6 +190,8 @@ export async function startRelay(options: RelayOptions): Promise<Relay> {
       case "pose":
       case "rtc.signal":
         return forward(message, route.to(sender.role), socket);
+      case "labels.request":
+        return void answerLabels(socket, message);
     }
     save();
     forward(message, route.to(sender.role), socket);
@@ -177,7 +216,7 @@ export async function startRelay(options: RelayOptions): Promise<Relay> {
         return broadcastPresence();
       }
       if (!connection.peer) return refuse(socket, "say hello first", message.type);
-      if (message.type === "presence" || message.type === "error") {
+      if (message.type === "presence" || message.type === "error" || message.type === "labels.result") {
         return refuse(socket, `only the relay sends ${message.type}`, message.type);
       }
       handle(socket, connection.peer, message);

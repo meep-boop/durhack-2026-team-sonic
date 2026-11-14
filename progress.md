@@ -59,13 +59,16 @@ each builder's brief (`builder-file-<name>.md`, on the `context` branch).
 - **Shared docs** (`CLAUDE.md`, `PROJECT.md`, `EVENT.md`, briefs, research, skills) are **never** committed to
   `main`. They live on the `context` branch. Edit, then `bash scripts/publish-context.sh "what changed"`,
   and every agent picks it up on its next prompt.
-- **Deploy:** The relay runs on the laptop that starts it (Ahmed's for now), on the team hotspot, port 8080. No cloud. State in `relay/state.json` (git-ignored). Ask Ahmed to restart it.
+- **Deploy:** The relay runs on the dashboard laptop (Ahmed's is opened up in the demo), on the team hotspot, port 8080. No cloud. State in `relay/state.json` (git-ignored). Ask Ahmed to restart it.
 
 ## Latest
 - **The volatile facts live here only:** the current commit, test counts, what's merged vs. local-only, and deploy
   status.
-- **As of 2026-11-14 18:45:** `main` has the team kit, and the `context` branch is seeded. Kit tests are
-  green locally (`test-context-scripts.sh`, `test-git-hooks.sh`). No project code yet. All four of us have repo access.
+- **As of 2026-11-14 23:40:** `main` has the contract, fixtures and fakes, the relay (41 tests, type-check clean), the
+  UNO Q rig code (13 tests, not yet run on its hardware), Laura's marker and six models, and `fixtures/video-test.html`.
+  **Not on `main` yet:** the iPhone app (PR #4, draft), the dashboard and scene API (PR #6), the guide builder
+  (`laura-guide`), Max's research answers (PR #1), Salman's board entries (PR #5). Relay deploy: the dashboard laptop
+  from the demo on; Ahmed's until then.
 
 ---
 
@@ -309,3 +312,77 @@ each builder's brief (`builder-file-<name>.md`, on the `context` branch).
   shows them the wrong size or way up. @max — same for the `.glb` files in the scene; the tip, not the centre, sits
   at `pos`.
 - Conflict status: open
+
+### 2026-11-14 23:03 — the demo is now an SSD swap on Ahmed's laptop — @laura
+- Shipped: no code. Records a team decision that changes several tasks.
+- Touched: nothing yet
+- Decision: by the whole team (Ahmed, Max, Salman, Laura): the demo set is **Ahmed's laptop, and the guide walks
+  the user through replacing its SSD**, instead of a network cabinet. The marker is taped to the same board as the
+  laptop, next to the SSD cover, so the two can't move apart.
+- 📨 To @ahmed: please (1) update `PROJECT.md` and the briefs (my task 2 is now "fix the laptop and the marker to one
+  board", and the coloured cable boot is no longer needed); (2) add `"ssd"` to `ModelName` in
+  `contracts/protocol.ts`, and I'll build `ssd.glb`/`ssd.usdz` with the same conventions as the other six
+  (`cable-plug` and `bolt` stay, just unused for now); (3) decide what the UNO Q rig checks now that there's no cable,
+  since `expect: { port, cable }` no longer fits. Suggestion: back up the laptop first, and in the demo take its own
+  SSD out and put the same one back, so it still boots.
+- 📨 To @max: the splat to scan is the laptop on its board (laptops are dark and shiny, so expect a harder scan than
+  the cabinet).
+- 📨 To @salman: the marker sits on a board beside the laptop, not on equipment; nothing changes in the app.
+- ⚠️ Conflicts: @ahmed — the `expect` field and the rig's port regions; @max @salman — the demo scene changes
+- Conflict status: open
+
+### 2026-11-14 23:04 — review of the scene API (PR #6) — @laura
+- Shipped: no code. Reviewed `dashboard/src/scene/api.ts` and `docs/remote-assist/scene-api.md` at `6a6753b`
+  against my task 3. The one-copy design works for the guide builder: agreed.
+- Touched: nothing
+- 📨 To @max: four asks before I build on it:
+  1. How `dashboard/src/guide/` gets the `SceneApi` instance, and where the guide panel mounts in the shell
+     (`main.tsx` renders only `<Viewport />` today). This one blocks me.
+  2. `pickPoint()` also returns the surface normal, so a new model's +Y can point out of the surface. The models
+     stand on their tip and rise along +Y (`assets/models/README.md`); without a normal every new arrow points
+     straight down, even at the side of the laptop.
+  3. A calibrated flag plus a change event, so Send can block or warn until positions are in the marker frame. Your
+     notes say pre-calibration positions are wrong on a real phone; this keeps a wrong guide away from the demo.
+  4. If highlight boxes are resizable in 3D, report `size` in `onObjectMoved` too (it only carries `pos` and
+     `rot`); otherwise I'll edit sizes as numbers.
+  Smaller: what calls made before the splat has loaded do (ideally nothing), and how a cut-out's id reaches the guide
+  builder (your task 5).
+- ⚠️ Conflicts: @max — asks against `dashboard/src/scene/api.ts` (yours); nothing changed on my side
+- Conflict status: open
+
+### 2026-11-14 23:35 — open questions brought up to date, with sources — @max
+- Shipped: `docs/remote-assist/open-questions.md` on `max-docs` (PR https://github.com/meep-boop/durhack-2026-team-sonic/pull/1, not merged). Questions 1–4 now show what Ahmed decided (marker, WebRTC, Scaniverse; cut-outs reopened); six new answered questions (splat renderer, dashboard stack, scan apps, video to mesh, splat to mesh, phone to DGX Spark), 57 source links, all checked. Research behind it: `research/ledger.md` § 7–15.
+- Touched: `docs/remote-assist/open-questions.md` (Max's)
+- 📨 To @ahmed: this answers your 20:28 ask: the file now matches `PROJECT.md` on questions 1–3. Cut-outs (2) stays reopened between us. Also: the DGX Spark can make a textured mesh from an iPhone video (question 8); scanning your laptop will need it made matte first (a vanishing scan spray), so ask before anyone sprays it.
+  - **Correction (2026-11-14 23:55, @max):** the spray line above was Claude's research note, wrongly written as
+    Max's request. Max didn't ask for it and nothing is planned. It's one weak-evidence option for shiny surfaces;
+    soft lighting may be enough, and nobody has tried scanning the laptop yet.
+- ⚠️ Conflicts: none (docs in Max's area)
+- Conflict status: resolved by @max 2026-11-14
+
+### 2026-11-14 23:40 — task sweep: every brief updated, and five new decisions — @ahmed
+- Shipped: every brief brought up to date from this board, the open PRs and the branches (Salman's `salman-ios` and
+  `salman-board`, Max's `max-scene` and `max-docs`, Laura's `laura-guide`). Code since my last entry, all on `main`:
+  offline resync (`32ff3e8`), the video test page (`03827d1`, now the dashboard calls, `6afbfa5`), Claude labelling
+  (`63b4be1`), the rig and the sample guide reworked for the SSD swap (`b3a2d0f`). 41 relay tests and 13 rig tests pass.
+- Slip: `6afbfa5` was committed straight to `main` instead of through `ahmed-relay` first. Tests passed first;
+  noted so nobody copies it.
+- Touched: on `context`: `PROJECT.md`, `CLAUDE.md`, `EVENT.md`, all four briefs
+- Decision: by Ahmed: the expert calls the phone (reverses "the phone offers"); `expect` is `{ region, present }` with a
+  sticker on the SSD; the relay runs on the dashboard laptop in the demo; Salman's Gemini and ElevenLabs extras stay,
+  entered for MLH; the Clock's 02:00 / 07:00 / 10:00 / 11:30; nobody sprays the laptop. Also logged: the offline rule,
+  Claude labelling, motion along `axis`. Folded in: the team's SSD swap (Laura), Laura's model conventions, Salman's
+  WebRTC library.
+- 📨 To @salman: four new items at the top of your brief. Mirror `expect: { region, present }` (a struct that
+  requires `port` and `cable` now fails to decode the sample guide); keep the phone's own place on reconnect; merge
+  PR #4 before the walking skeleton; post the +X/+Z edges. Your 22:10 and 23:25 entries are only on `salman-board`:
+  put board entries straight on `main`.
+- 📨 To @max: run the relay on the dashboard laptop for the demo (your brief, item A, with Ahmed); merge PR #6 before
+  the walking skeleton; the labels are `labels.request` / `labels.result` in the contract (task 7).
+- 📨 To @laura: task 2 is now the laptop and marker on one board, plus a bright sticker on the SSD for the rig. Add
+  `"ssd"` to `ModelName` and to `MODELS` in `relay/validate.ts` in the same commit as the model files. The expert
+  calls the phone, and Salman's `ios/expert-call/` is the base for your video panel.
+- ⚠️ Conflicts: @salman — `expect` changed shape, and phones no longer get the current step on reconnect | @laura —
+  `ModelName` and `relay/validate.ts` to edit with the `ssd` model | @max — the relay moves to the dashboard laptop
+- Conflict status: open
+
