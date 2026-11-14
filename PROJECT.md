@@ -44,6 +44,9 @@ Source: `EVENT.md` §1 (one notes file, not yet checked against Devpost). The th
 
 | Date | Decision |
 |---|---|
+| 2026-11-14 | Live view stays WebRTC, re-confirmed after reading Max's research; signalling rides the relay websocket (Ahmed) |
+| 2026-11-14 | The protocol contract is TypeScript types only, plus JSON examples; the Swift app mirrors them by hand (Ahmed) |
+| 2026-11-14 | The phone app is pure native Swift; Salman's Expo app is dropped (Ahmed) |
 | 2026-11-14 | Ahmed builds the UNO Q rig, not Laura (Ahmed) |
 | 2026-11-14 | All four build in parallel from the first hour, each against fake peers (Ahmed) |
 | 2026-11-14 | Enter Neptune North, Accenture, Marshall Wace and RS (Ahmed) |
@@ -64,13 +67,14 @@ briefs ask them to object on the board before building.
   draw splats. Max's research (`research/ledger.md` § 1, § 4), published the same hour, says RealityKit on iOS 27.2+
   can, and recommends real splat cut-outs with the model as the fallback. Owner: Ahmed + Max. **Not decided** whether
   to change it; the box-and-model path is being built either way.
-- **Reopen: live view.** Ahmed chose WebRTC from the start. Max's research (`research/ledger.md` § 2) recommends
+- **Settled 20:45: live view stays WebRTC** (Ahmed, after reading § 2; see the Decision log). The original note:
+  Ahmed chose WebRTC from the start. Max's research (`research/ledger.md` § 2) recommends
   JPEG frames over the websocket first and LiveKit Cloud as the upgrade, and warns that 4G may need a TURN server.
   Owner: Ahmed + Max + Salman. The decision stands until Ahmed changes it.
-- **WebRTC library on iOS, and whether signalling rides the existing websocket.** Owner: Salman + Ahmed. **Not
-  decided.** Waiting on Salman's pick.
+- **WebRTC library on iOS.** Owner: Salman. **Not decided.** (Signalling settled: it rides the relay websocket as a
+  pass-through message.)
 - **Which side solves the alignment, and what units positions travel in.** Owner: Ahmed, in `contracts/protocol.ts`.
-  **Not decided.**
+  **Not decided.** Researched: `research/ledger.md` § 6.
 - **Offline conflict rule:** what happens if the expert edits the guide while the phone is offline. Owner: Ahmed.
   **Not decided.**
 - **LLM provider for labelling, and what it looks at** (renders of the splat, or camera frames). Owner: Ahmed + Max.
@@ -173,9 +177,9 @@ The diagram, components, alignment maths and draft protocol are in `docs/remote-
 ## 6. Tech stack
 | Layer | Choice | Why | Checked on the platform? |
 |---|---|---|---|
-| Phone app | Native Swift, ARKit + RealityKit (**decided**) | iPhone Safari has no WebXR AR; Salman is confident in Swift | No: first build pending |
+| Phone app | Pure native Swift, ARKit + RealityKit, no Expo (**decided**) | iPhone Safari has no WebXR AR; Salman is confident in Swift | No: first build pending |
 | Alignment | Printed marker, 15 to 20 cm, as an ARKit detection image under world tracking (**decided**) | `research/ledger.md` § 3, § 5 | No: error to be measured on our set |
-| Live video | WebRTC with a custom source fed from AR frames (**decided**); library **not decided** | Ahmed's call | No |
+| Live video | WebRTC with a custom source fed from AR frames, signalling over the relay websocket (**decided**); library **not decided** | Ahmed's call | No |
 | Splat | Scaniverse export (**decided** as main route); Dawn + gsplat as an upgrade | Dawn untested | No |
 | Dashboard | Browser app; three.js + Spark + Vite **proposed, not decided** | Max's planning session | No |
 | Relay | Node + `ws` over HTTPS **proposed, not decided** | Max's planning session | No |
@@ -236,6 +240,31 @@ The diagram, components, alignment maths and draft protocol are in `docs/remote-
 
 ## Decision log
 *Full records, newest first. NOW → Decisions in force holds the one-line versions.*
+
+## 2026-11-14 20:45 — Live view, second look
+- Chose: keep WebRTC; signalling rides the relay websocket as a pass-through message (Ahmed)
+- Because: Ahmed wants real video. With the phone back to pure Swift, the custom capturer is the standard route
+  (`research/ledger.md` § 2, § 5)
+- Rejected: JPEG frames over the websocket first, with WebRTC or LiveKit later (the recommendation, and Max's in
+  `docs/remote-assist/open-questions.md` § 3)
+- Revisit if: video isn't streaming by the feature freeze. JPEG frames are the fallback.
+
+## 2026-11-14 20:45 — How the apps share the protocol
+- Chose: `contracts/protocol.ts` holds TypeScript types only, no runtime code, plus JSON examples in `fixtures/`
+  (Ahmed)
+- Because: one file and no new dependency. The dashboard imports it as types; the relay runs it directly on Node 24
+  (tested); Salman mirrors it as Swift `Codable` structs from the JSON examples
+- Rejected: zod schemas (a new dependency in every app)
+- Known cost: nothing checks messages at runtime, so the relay gets a small hand-written check
+
+## 2026-11-14 20:45 — The phone app is pure native Swift
+- Chose: a plain Xcode project in `ios/`, no Expo or React Native (Ahmed)
+- Because: Ahmed's call, confirming the earlier decision after Salman built an Expo app with a Swift ARKit module
+  (`salman-mobile`, `salman-ar`, not flagged on the board)
+- Rejected: keeping Expo plus the Swift module (the recommendation: his marker detection already worked, and its
+  TypeScript layer could have imported the protocol)
+- Cost: Salman ports his ARKit code to a new project and hand-writes the protocol types in Swift
+- Revisit if: Salman makes a case on the board
 
 ## 2026-11-14 — Build order
 - Chose: all four build in parallel from the first hour, each against fake peers (Ahmed)

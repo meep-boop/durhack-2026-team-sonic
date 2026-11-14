@@ -66,25 +66,36 @@ splats until that's settled. Training splats in the app (the scan is taken in Sc
 *Status: ⬜ not started · 🟡 in progress · ⏸ blocked · ✅ done*
 
 1. ⬜ **App skeleton and marker detection**
+   - **2026-11-14 20:45, decided by @ahmed: pure native Swift, not Expo.** Your `salman-mobile` and `salman-ar` branches
+     are superseded: keep them, don't merge them to `main`. Port the ARKit code from
+     `mobile/modules/sonic-ar/ios/SonicArView.swift`. It already does what Apple's docs ask for: world tracking,
+     the exact printed width, and `maximumNumberOfTrackedImages = 1`, which keeps the anchor updating every frame
+     (`research/ledger.md` § 6).
    - A new Xcode project in `ios/`. World tracking with the marker from `assets/marker/` as a detection image
      (use any printed test image until @laura's lands). Draw an outline on the detected marker.
    - *Done when:* on a real iPhone the outline sits on the printed marker's edges, stays in place when the marker
      leaves the frame, and snaps back when it returns. In the `progress.md` entry, note the offset you see in mm,
      the phone's iOS version and the Mac's Xcode version (both matter for `research/ledger.md` § 1 and § 5).
+     Also put a small axis marker (red x, green y, blue z) on the image anchor and post which printed edge +x and
+     +z point to. Apple's docs say the image lies in the anchor's X–Z plane but not which way each axis points,
+     and the protocol depends on it (`research/ledger.md` § 6).
 2. ⬜ **Play the sample guide, lined up by the marker**
    - Load `fixtures/sample-guide.json` from the app bundle. Convert each position into the phone's world using the
      marker's pose. Draw the highlight box and a placeholder shape per object. **Next** moves on.
    - *Done when:* each step's box lands on the spot measured from the marker with a ruler, and Next walks through
      all the steps.
-   - `[⚠ conflicts with @ahmed: which side solves the alignment, and the units positions arrive in, is settled in contracts/protocol.ts. Until then assume splat coordinates plus the marker's four corners in the same frame.]`
+   - `[⚠ conflicts with @ahmed: which side solves the alignment, and the units positions arrive in, is being decided now (`research/ledger.md` § 6) and lands in contracts/protocol.ts.]`
 3. ⬜ **Talk to the relay**
    - WebSocket client: `hello`, receive `guide.set` and `step.set`, send `step.done` and `pose`. Reconnect on drop.
+   - The contract is TypeScript types only (`contracts/protocol.ts`). Mirror the messages as Swift `Codable`
+     structs, using the JSON examples in `fixtures/` as your test data.
    - *Done when:* with the fake expert from `fixtures/` running, its guide shows on the phone and each Next appears
      in its log.
 4. ⬜ **Live camera over WebRTC** 🟠
    - ARKit holds the camera, so WebRTC's own camera capturer won't work. Feed `ARFrame.capturedImage` into a custom
-     video source (`research/ledger.md` § 2 and § 5). First decide the library and the signalling route with
-     @ahmed; Max's research compares the plain WebRTC framework with LiveKit Cloud, and flags that 4G may need TURN.
+     video source (`research/ledger.md` § 2 and § 5). **Settled by @ahmed: WebRTC stays, and signalling rides the
+     relay websocket** as a pass-through message. Still yours to pick: the library. Max's research compares the
+     plain WebRTC framework with LiveKit Cloud, and flags that 4G may need TURN.
    - *Done when:* a browser test page shows the phone's camera while the AR boxes keep tracking on the phone.
    - `[⚠ conflicts with @ahmed: signalling messages in contracts/protocol.ts]` `[⚠ conflicts with @laura: the dashboard's video panel]`
 5. ⬜ **Preset animations**
@@ -120,5 +131,6 @@ splats until that's settled. Training splats in the app (the scan is taken in Sc
 - Evidence and sources: `research/ledger.md` § 1 (splats on iPhone), § 2 and § 5 (live video), § 3 and § 5 (alignment).
 
 ---
-── Archived (superseded — do NOT action) ──
-- _(empty)_
+── Archived (superseded 2026-11-14 — do NOT action) ──
+- **The Expo app with a Swift ARKit module** (`salman-mobile`, `salman-ar`). Superseded 2026-11-14 20:45 by Ahmed's call
+  for pure native Swift. Would come back only if you make the case on the board and Ahmed agrees.

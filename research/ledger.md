@@ -13,6 +13,7 @@ The one research file for this project (`research-ledger` skill). Every source g
 | 3 | Aligning a splat with the real room on a non-LiDAR iPhone (2026-11-14) | Marker vs ARKit poses vs tap points; accuracy |
 | 4 | Scan-to-splat pipeline, Spark cut-outs, RealityKit splat format (2026-11-14) | Scaniverse vs Dawn; cutting parts out; loading on iOS |
 | 5 | Add-ons to § 2 and § 3: marker under world tracking, ARKit holding the camera (2026-11-14) | Which ARKit configuration to use; why the stock WebRTC capturer fails |
+| 6 | Which frame guide positions travel in: the marker's or the splat's (2026-11-14) | The protocol's coordinate rules; what the phone must check on device |
 
 ---
 
@@ -293,3 +294,79 @@ for reopening it.
   blog, and old.
 ### DO NOT USE
 - _(none)_
+
+# § 6 Which frame guide positions travel in: the marker's or the splat's (2026-11-14)
+**Question:** should a guide's positions travel in the printed marker's own frame (metres, the dashboard converts
+from the splat), or in splat coordinates plus the marker's corners (the phone converts)? Shapes
+`contracts/protocol.ts`.
+
+**How this pass was done:** about 10 minutes by Ahmed's agent. The three Apple pages were **opened and read in
+full**. The rest were read through search summaries only.
+
+## Findings
+### What ARKit gives the phone
+- An image anchor sits at the image's centre, and ARKit treats the image as **horizontal in the anchor's local
+  space**: it lies in the X–Z plane, with Y as its normal. Apple's sample rotates a vertical plane by -90° about X to
+  match (source: [1]). Salman's overlay code already assumes the same.
+- Which way +X and +Z point across the printed image is **not stated** by Apple, and one developer reports the axes
+  weren't what they expected (sources: [1], [7]). Check on the device with an axis marker.
+- With `maximumNumberOfTrackedImages` above zero, ARKit checks the image every frame and updates the anchor if it
+  moves. At zero, updates come only "once every couple of seconds" (source: [2]).
+- Distance and scale come from the printed size you give ARKit: "Entering an incorrect physical size will result in
+  an ARImageAnchor that's the wrong distance from the camera" (sources: [1], [3]).
+### Authoring content in the marker's frame is the normal pattern
+- Apple: "Use detected images to set a frame of reference for the AR scene", and `setWorldOrigin(relativeTransform:)`
+  can make the detected image the world origin (source: [1]).
+- Vuforia's default pose "places content in the center of the target with X to the right, Y to the top, and Z coming
+  out of the target": content is placed relative to the target (source: [4]). Its axes differ from ARKit's, so the
+  axis convention has to be written down, never assumed.
+- RealityKit developers parent content to the image's anchor entity and position it relative to it (source: [8]).
+### Converting splat coordinates to the marker's frame
+- Matching points between two frames with scale, rotation and translation is Umeyama's least-squares method, which
+  also avoids returning a mirror image instead of a rotation (sources: [5], [6]).
+- **Our own reasoning, not from a source:** with four corners of a rectangle of known size, the frame can also be
+  built directly: origin at their centre, two edge directions as axes, scale from the edge lengths. Either way it's a
+  few dozen lines, and **the maths is identical wherever it runs**. The real question is which side runs it.
+- Splat files don't share one axis convention: SPZ is reported as right-up-back and PLY as right-down-forward
+  (source: [9]). In both designs the dashboard must load the splat consistently.
+
+## Community consensus
+Apple Developer Forums and Stack Overflow only. They agree on parenting content to the image anchor, and that the
+axes need checking on a device. No Reddit or Hacker News pass.
+
+## Final call (professional + community)
+Placing content relative to the detected image is the platform pattern (Apple, Vuforia). Research doesn't pick which
+side converts from splat coordinates: that's an engineering choice for Ahmed (`PROJECT.md` → Pending). Both designs
+need two things checked on the phone: which way the anchor's axes point across the printed image, and the exact
+printed width.
+
+## Source ledger
+### KEEP
+- [1] "Detecting Images in an AR Experience", Apple Developer Documentation (sample code article),
+  https://developer.apple.com/documentation/arkit/detecting-images-in-an-ar-experience : image horizontal in the
+  anchor's space; use detected images as a frame of reference; `setWorldOrigin`; exact physical size.
+- [2] `maximumNumberOfTrackedImages`, Apple Developer Documentation,
+  https://developer.apple.com/documentation/arkit/arworldtrackingconfiguration/maximumnumberoftrackedimages : nonzero
+  means per-frame updates; zero means every couple of seconds.
+- [3] `ARImageAnchor`, Apple Developer Documentation, https://developer.apple.com/documentation/arkit/arimageanchor :
+  the extent comes from `transform` plus `physicalSize`.
+- [4] "Working with Vuforia Engine and OpenGL ES", Vuforia library,
+  https://library-archive.vuforia.com/articles/Solution/Working-with-Vuforia-and-OpenGL-ES.html : content placed at
+  the target's centre, in the target's frame.
+- [5] S. Umeyama, "Least-squares estimation of transformation parameters between two point patterns", IEEE TPAMI
+  13(4), 376–380, 1991, DOI 10.1109/34.88573 : similarity transform, reflection-safe.
+- [6] Eigen `Umeyama.h`, https://git.mfoi.dev/ocean-simulation.git/tree/Eigen/src/Geometry/Umeyama.h : an
+  implementation of [5], with scaling optional.
+### WEAK
+- [7] "About AR Anchor's Orientation", Apple Developer Forums, https://developer.apple.com/forums/thread/718223 :
+  one developer surprised by the axes.
+- [8] "How do I specify a child node location relative to ARImageAnchor", Stack Overflow (mirror),
+  https://kaweah.freedombox.rocks/kiwix/stackoverflow.com_en_all_2023-11/questions/71241779/how-do-i-specify-a-child-node-location-relative-to-arimageanchor
+  : the parent and child pattern.
+- [9] SPZ format notes, https://polyvia3d.pages.dev/formats/spz and PlayCanvas,
+  https://developer.playcanvas.com/user-manual/gaussian-splatting/formats/spz/ : SPZ and PLY axis conventions differ.
+  Third-party, not Scaniverse's own docs.
+### DO NOT USE
+- "Image anchors are not tracked after initial detection" and "ARKit doesn't track changes to the position or
+  orientation of each detected image", from the iOS 11.3-era sample [1]. Refuted for iOS 12 and later by Apple's own
+  [2] when `maximumNumberOfTrackedImages` is above zero. Tombstone, so it isn't re-litigated.
