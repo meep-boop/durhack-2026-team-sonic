@@ -18,10 +18,10 @@
 <body>
 <h1>Video test <span class="tag" id="mode"></span></h1>
 <p>
-  Tests the phone-to-dashboard video through the relay (task 6). Open it as is to <b>receive</b>, like the dashboard.
-  Add <code>?role=send</code> to <b>send</b> a SIMULATED test pattern like the phone, or
-  <code>?role=send&amp;source=camera</code> to send this laptop's webcam. Relay: <code>&amp;relay=ws://host:8080</code>.
-  Same network only. Keep the sending tab visible: browsers slow down hidden tabs.
+  Tests the phone-to-dashboard video through the relay (task 6). Open it as is to <b>receive</b>, like the dashboard:
+  it calls the phone as soon as one connects. Add <code>?role=send</code> to <b>send</b> a SIMULATED test pattern like
+  the phone, or <code>?role=send&amp;source=camera</code> to send this laptop's webcam. Relay:
+  <code>&amp;relay=ws://host:8080</code>. Same network only. Keep the sending tab visible: browsers slow down hidden tabs.
 </p>
 <p id="status">Starting…</p>
 <video id="video" autoplay playsinline muted></video>
@@ -45,7 +45,7 @@ const setStatus = (text) => {
 let socket = null;
 let peer = null;
 let stream = null;
-let dashboardConnected = false;
+let phoneConnected = false;
 // Candidates can arrive before the description they belong to has been applied; they wait here until it has.
 let waitingCandidates = [];
 // Messages are handled one at a time, so a candidate never overtakes the offer or answer before it.
@@ -72,26 +72,29 @@ async function applyWaitingCandidates() {
   for (const candidate of waitingCandidates.splice(0)) await peer.addIceCandidate(candidate);
 }
 
-async function makeOffer() {
+// The dashboard calls the phone, as Salman's app expects (decided 2026-11-14 23:30).
+async function callThePhone() {
   const current = newPeer();
-  stream.getTracks().forEach((track) => current.addTrack(track, stream));
+  current.addTransceiver("video", { direction: "recvonly" });
+  current.ontrack = ({ track }) => {
+    video.srcObject = new MediaStream([track]);
+    setStatus("receiving video");
+  };
   await current.setLocalDescription(await current.createOffer());
   signal({ kind: "offer", sdp: current.localDescription.sdp });
-  setStatus("offer sent; waiting for the dashboard's answer");
+  setStatus("called the phone; waiting for it to answer");
 }
 
 async function onSignal(body) {
-  if (body.kind === "offer" && !sending) {
+  if (body.kind === "offer" && sending) {
     const current = newPeer();
-    current.ontrack = ({ streams }) => {
-      video.srcObject = streams[0];
-      setStatus("receiving video");
-    };
     await current.setRemoteDescription({ type: "offer", sdp: body.sdp });
     await applyWaitingCandidates();
+    stream.getTracks().forEach((track) => current.addTrack(track, stream));
     await current.setLocalDescription(await current.createAnswer());
     signal({ kind: "answer", sdp: current.localDescription.sdp });
-  } else if (body.kind === "answer" && sending && peer?.signalingState === "have-local-offer") {
+    setStatus("the dashboard called; answered with video");
+  } else if (body.kind === "answer" && !sending && peer?.signalingState === "have-local-offer") {
     await peer.setRemoteDescription({ type: "answer", sdp: body.sdp });
     await applyWaitingCandidates();
   } else if (body.kind === "candidate" && peer) {
@@ -104,12 +107,12 @@ async function onSignal(body) {
 async function handle(message) {
   if (message.type === "rtc.signal") return onSignal(message.signal);
   if (message.type === "error") return log(`relay refused ${message.about ?? "a message"}: ${message.message}`);
-  if (message.type === "presence" && sending) {
-    // The phone offers whenever a dashboard appears, including after the dashboard reloads (decided 2026-11-14).
-    const present = message.clients.some(({ role }) => role === "expert");
-    if (present && !dashboardConnected) await makeOffer();
-    if (!present) setStatus("waiting for a dashboard to connect");
-    dashboardConnected = present;
+  if (message.type === "presence" && !sending) {
+    // Call again whenever a phone appears, including after the phone's app restarts.
+    const present = message.clients.some(({ role }) => role === "user");
+    if (present && !phoneConnected) await callThePhone();
+    if (!present) setStatus("waiting for a phone to connect");
+    phoneConnected = present;
   }
 }
 
@@ -124,7 +127,7 @@ function connect() {
     queue = queue.then(() => handle(JSON.parse(data))).catch((error) => log(`error: ${error.message}`));
   };
   socket.onclose = () => {
-    dashboardConnected = false;
+    phoneConnected = false;
     setStatus(`can't reach the relay at ${relayUrl}; retrying in 2 s`);
     setTimeout(connect, 2000);
   };

@@ -137,7 +137,7 @@ export type StepVerified = {
 };
 
 // User ↔ expert. WebRTC signalling rides this websocket; the relay passes it to the other side without reading or
-// storing it.
+// storing it. The expert calls: the dashboard sends the offer and the phone answers.
 export type RtcSignal = {
   type: "rtc.signal";
   signal:
