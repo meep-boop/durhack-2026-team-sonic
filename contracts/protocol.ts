@@ -144,6 +144,24 @@ export type RtcSignal = {
     | { kind: "candidate"; candidate: string; sdpMid: string | null; sdpMLineIndex: number | null };
 };
 
+// Expert → relay, answered only to that expert, never stored. A snapshot of the dashboard's current 3D view for Claude
+// to label. Keep it at most 1280 px on the long side: a bigger image may be scaled down before Claude sees it, and the
+// positions it returns would no longer match. The relay labels one snapshot at a time, since each one costs money.
+export type LabelsRequest = {
+  type: "labels.request";
+  requestId: string;
+  image: { mediaType: "image/jpeg" | "image/png"; data: string };
+  width: number;
+  height: number;
+};
+
+// A part Claude read in the snapshot, at pixel (x, y) from the image's top-left. The dashboard turns the pixel into a
+// 3D point with its click-pick. Made by AI: show it as such and let the expert fix or delete it.
+export type Label = { text: string; x: number; y: number };
+
+// Relay → the expert that asked. `model` is the Claude model that answered, for the "made by AI" note.
+export type LabelsResult = { type: "labels.result"; requestId: string; model: string; labels: Label[] };
+
 // Relay → every client, on every connect and disconnect, so the dashboard can show "phone offline" during the
 // link-down demo.
 export type Presence = {
@@ -168,6 +186,8 @@ export type Message =
   | PoseUpdate
   | StepVerified
   | RtcSignal
+  | LabelsRequest
+  | LabelsResult
   | Presence
   | ErrorMessage;
 

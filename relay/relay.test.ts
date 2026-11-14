@@ -8,6 +8,7 @@ import { WebSocket as WsClient } from "ws";
 import type { Guide, Message, Role } from "../contracts/protocol.ts";
 import { startFakeExpert } from "../fixtures/fake-expert.ts";
 import { runFakePhone } from "../fixtures/fake-phone.ts";
+import type { Labeller } from "./labeller.ts";
 import { startRelay, type RelayOptions } from "./relay.ts";
 
 const sampleGuide: Guide = JSON.parse(readFileSync(new URL("../fixtures/sample-guide.json", import.meta.url), "utf8"));
@@ -325,6 +326,77 @@ test("the fake expert can jump straight to a step, for testing the rig on a cabl
   const rig = await connect(port, "rig");
   await until(() => ofType(rig, "step.set").length === 1, "the replayed step");
   assert.equal(ofType(rig, "step.set")[0]!.stepId, "s4");
+});
+
+const snapshot = {
+  type: "labels.request",
+  requestId: "snap-1",
+  image: { mediaType: "image/jpeg", data: "aGVsbG8=" },
+  width: 640,
+  height: 360,
+};
+
+test("a dashboard's snapshot is labelled and answered to that dashboard only", async (t) => {
+  const asked: unknown[] = [];
+  const labeller: Labeller = async (request) => {
+    asked.push(request);
+    return { model: "fake-model", labels: [{ text: "Port 14", x: 100, y: 200 }] };
+  };
+  const { port } = await relay(t, { labeller });
+  const expert = await connect(port, "expert");
+  const otherExpert = await connect(port, "expert", "second dashboard");
+  const user = await connect(port, "user");
+
+  expert.send(snapshot);
+  await until(() => ofType(expert, "labels.result").length === 1, "the labels");
+  assert.deepEqual(ofType(expert, "labels.result")[0], {
+    type: "labels.result",
+    requestId: "snap-1",
+    model: "fake-model",
+    labels: [{ text: "Port 14", x: 100, y: 200 }],
+  });
+  assert.equal(asked.length, 1);
+
+  user.send(pose);
+  await until(() => ofType(expert, "pose").length === 1 && ofType(otherExpert, "pose").length === 1, "a later message");
+  assert.equal(ofType(otherExpert, "labels.result").length, 0);
+  assert.equal(ofType(user, "labels.result").length, 0);
+});
+
+test("labelling refuses phones, overlapping snapshots, failures and a relay without it", async (t) => {
+  let finish: () => void = () => {};
+  const slow: Labeller = () =>
+    new Promise((resolve) => (finish = () => resolve({ model: "fake-model", labels: [] })));
+  const { port } = await relay(t, { labeller: slow });
+  const expert = await connect(port, "expert");
+  const user = await connect(port, "user");
+
+  user.send(snapshot);
+  user.send({ type: "labels.result", requestId: "x", model: "made-up", labels: [] });
+  await until(() => ofType(user, "error").length === 2, "both refusals");
+  assert.deepEqual(
+    ofType(user, "error").map(({ message }) => message),
+    ["a user can't send labels.request", "only the relay sends labels.result"],
+  );
+
+  expert.send(snapshot);
+  expert.send({ ...snapshot, requestId: "snap-2" });
+  await until(() => ofType(expert, "error").length === 1, "the second snapshot's refusal");
+  assert.match(ofType(expert, "error")[0]!.message, /still labelling/);
+  finish();
+  await until(() => ofType(expert, "labels.result").length === 1, "the first snapshot's labels");
+
+  const failing = await relay(t, { labeller: async () => { throw new Error("credit exhausted"); } });
+  const failingExpert = await connect(failing.port, "expert");
+  failingExpert.send(snapshot);
+  await until(() => ofType(failingExpert, "error").length === 1, "the failure");
+  assert.match(ofType(failingExpert, "error")[0]!.message, /labelling failed: credit exhausted/);
+
+  const off = await relay(t);
+  const offExpert = await connect(off.port, "expert");
+  offExpert.send(snapshot);
+  await until(() => ofType(offExpert, "error").length === 1, "the refusal");
+  assert.match(ofType(offExpert, "error")[0]!.message, /labelling is off/);
 });
 
 test("a phone that taps Next with the link down catches up when it returns", async (t) => {

@@ -1,4 +1,13 @@
-import type { Action, GuideObject, Hello, Message, MessageType, ModelName, Role } from "../contracts/protocol.ts";
+import type {
+  Action,
+  GuideObject,
+  Hello,
+  LabelsRequest,
+  Message,
+  MessageType,
+  ModelName,
+  Role,
+} from "../contracts/protocol.ts";
 
 type Obj = Record<string, unknown>;
 type Problem = string | null;
@@ -23,6 +32,7 @@ const MODELS = {
 } satisfies Record<ModelName, true>;
 const ACTIONS = { unscrew: true, pull: true, push: true, flip: true, rotate90: true } satisfies Record<Action, true>;
 const CABLE_STATES = { in: true, out: true } satisfies Record<NonNullable<GuideObject["expect"]>["cable"], true>;
+const IMAGE_TYPES = { "image/jpeg": true, "image/png": true } satisfies Record<LabelsRequest["image"]["mediaType"], true>;
 
 const isObj = (x: unknown): x is Obj => typeof x === "object" && x !== null && !Array.isArray(x);
 const isNum = (x: unknown): x is number => typeof x === "number" && Number.isFinite(x);
@@ -166,6 +176,24 @@ const checks = {
   "step.verified": (m) =>
     text(m.guideId, "guideId") ?? text(m.stepId, "stepId") ?? flag(m.ok, "ok") ?? optionalText(m.detail, "detail"),
   "rtc.signal": (m) => checkSignal(m.signal),
+  "labels.request": (m) =>
+    text(m.requestId, "requestId") ??
+    (isObj(m.image)
+      ? oneOf(IMAGE_TYPES, m.image.mediaType, "image.mediaType") ?? text(m.image.data, "image.data")
+      : "image: expected an object") ??
+    positive(m.width, "width") ??
+    positive(m.height, "height"),
+  "labels.result": (m) =>
+    text(m.requestId, "requestId") ??
+    text(m.model, "model") ??
+    firstProblem(
+      m.labels,
+      (label, path) =>
+        isObj(label)
+          ? text(label.text, `${path}.text`) ?? (isNum(label.x) && isNum(label.y) ? null : `${path}: expected x and y`)
+          : `${path}: expected an object`,
+      "labels",
+    ),
   presence: (m) =>
     firstProblem(
       m.clients,

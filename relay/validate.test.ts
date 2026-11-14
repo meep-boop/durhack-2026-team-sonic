@@ -123,6 +123,15 @@ test("pose, verification, presence and error messages are checked field by field
   assert.match(refusal({ type: "error", about: "hello" }), /message/);
 });
 
+test("a snapshot to label must be a JPEG or PNG with a real size", () => {
+  const request = examples.find((m) => m.type === "labels.request") as any;
+  assert.match(refusal({ ...request, image: { ...request.image, mediaType: "image/gif" } }), /image\.mediaType/);
+  assert.match(refusal({ ...request, image: "base64" }), /image: expected an object/);
+  assert.match(refusal({ ...request, width: 0 }), /width/);
+  const result = examples.find((m) => m.type === "labels.result") as any;
+  assert.match(refusal({ ...result, labels: [{ text: "Port 14", x: 1 }] }), /labels\[0\]: expected x and y/);
+});
+
 test("calibration needs exactly four corners", () => {
   const calib = examples.find((m) => m.type === "calib.set") as any;
   assert.match(refusal({ ...calib, corners: calib.corners.slice(0, 3) }), /corners/);
