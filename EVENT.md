@@ -90,7 +90,8 @@ Other schedule notes: midnight pizza; sleeping area TLC123.
   supercomputer access is in Max's plan but isn't in the source file: _not confirmed_.
 - **What the team already has** (per the source file): an **Arduino UNO Q**, an Arduino Nicla Vision (a camera
   board), a Raspberry Pi Pico W, an M5Stack Cardputer, an Arduino Sensor Kit, Modulinos, a servo and motors. Not
-  owned: a USB webcam, a USB-C hub, a micro-USB data cable.
+  owned: a USB webcam, a micro-USB data cable. **For RS** (2026-11-14): the Nicla Vision is our camera, and the RS staff
+  confirmed it counts; Ahmed has a USB-C hub.
 - **Constraints:** **hall Wi-Fi will be slow; use a phone hotspot.** A paper printer's availability is unknown,
   which matters for the marker. The UNO Q has forum complaints about serial output to a PC and analog input: ask
   the RS and Arduino staff. A native iPhone app needs a Mac with Xcode.

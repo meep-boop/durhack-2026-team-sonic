@@ -44,6 +44,7 @@ Source: `EVENT.md` §1 (one notes file, not yet checked against Devpost). The th
 
 | Date | Decision |
 |---|---|
+| 2026-11-14 | The RS camera is the Nicla Vision; the RS staff confirmed it counts (Ahmed) |
 | 2026-11-14 | Anyone on the hotspot can connect; the relay enforces who may send what, by role (Ahmed) |
 | 2026-11-14 | Phone and dashboard reach the relay over plain `ws://` on the team hotspot (Ahmed) |
 | 2026-11-14 | The relay saves guide, step, calibration and progress to `relay/state.json` on each change (Ahmed) |
@@ -127,9 +128,9 @@ Xcode" is answered: yes, per Ahmed.
 ### Blockers only humans can clear
 *Accounts, API keys, access, team registration, hardware, asking the organisers.*
 - **Dawn login.** Promised by the event, untested by us. Max to try.
-- **A camera and a USB hub** for the RS challenge. The team has an UNO Q and a Nicla Vision (`EVENT.md` §6); a USB
-  webcam and hub would come from the Product Loan Library. Ahmed to sort out.
-- **A paper printer** for the marker. Availability at the venue is unknown. Laura to find one.
+- **Cleared 2026-11-14 21:47: a camera and a USB hub** for the RS challenge. The Nicla Vision is the camera (RS staff
+  confirmed) and Ahmed has a USB-C hub.
+- **Cleared 2026-11-14 21:31: a paper printer** for the marker. Laura printed it, matte, 180 mm (`assets/marker/`).
 - **Hall Wi-Fi is slow.** Plan on a phone hotspot for the demo.
 - **Xcode and iOS versions.** The Mac needs Xcode to build at all. If cut-outs are ever drawn as real splats on the
   phone, it needs Xcode 27 and the demo iPhone on iOS 27.2 or later (`research/ledger.md` § 1). Salman to check both.

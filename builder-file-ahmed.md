@@ -79,7 +79,8 @@ but all three teammates build on them, so every change after the first version i
      travel in; whether signalling rides this websocket.
    - *Done when:* the file and `fixtures/sample-guide.json` are on `main` and a board entry flags all three teammates.
    - `[⚠ conflicts with @salman @max @laura: they all build on it]`
-3. 🟡 **Get the rest of the RS kit** 🟠 (moved from @laura 2026-11-14: Ahmed took the rig)
+3. ✅ **Get the rest of the RS kit** (done 2026-11-14 21:47: the camera is the Nicla Vision, confirmed by the RS staff;
+   a USB-C hub is in hand. Moved from @laura 2026-11-14)
    - The RS challenge makes an UNO Q, a camera and USB hubs mandatory. The team has an UNO Q and a Nicla Vision
      (`EVENT.md` §6). Still needed: a USB hub, and a USB webcam if the Nicla doesn't count as the camera. Try the
      Product Loan Library (student ID and table number).
@@ -113,6 +114,7 @@ but all three teammates build on them, so every change after the first version i
    - `[⚠ conflicts with @laura: the rig mounts on her demo set, before it's scanned]`
 
 ## 4. Done log (newest first)
+- 2026-11-14 21:47: task 3, the RS kit. UNO Q + Nicla Vision as the camera (RS staff confirmed it counts) + a USB-C hub.
 - 2026-11-14 21:29: tasks 4 and 5, the relay and both fakes. `relay/relay.ts`, `relay/server.ts`,
   `fixtures/fake-phone.ts`, `fixtures/fake-expert.ts` on `main` (`97cde98`); 31 tests, type-check clean.
 - 2026-11-14 20:59: task 2, the protocol contract. `contracts/protocol.ts`, `fixtures/sample-guide.json`,
