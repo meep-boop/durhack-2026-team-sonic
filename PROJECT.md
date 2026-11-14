@@ -30,12 +30,14 @@ The idea is Max's (`docs/remote-assist/` on `main` has the full plan). It was ta
 
 | When | What |
 |---|---|
-| _blank_ | Hacking starts |
+| Sat 14 Nov, 12:00 | Hacking started |
 | _blank_ | Walking skeleton end to end (the first thing that must work) |
 | _blank_ | Feature freeze: after it, only fixes, and no API shape changes |
 | _blank_ | Demo recorded / deck done |
-| _blank_ | **Submission deadline** (use the earliest time any source gives) |
-| _blank_ | Judging / presentations |
+| **Sun 15 Nov, 12:00** | **Submission deadline** on Devpost (use the earliest time any source gives) |
+| Sun 15 Nov, from 12:30 | Judging: judges visit tables, so the demo is live |
+
+Source: `EVENT.md` §1 (one notes file, not yet checked against Devpost). The three blank rows are the team's to set.
 
 ### Decisions in force
 *One line each, newest first: what, who decided, when. The full record is in the Decision log below.*
@@ -85,7 +87,11 @@ briefs ask them to object on the board before building.
   Owner: Ahmed + Max, to settle together. Max's file is his to update.
 - **Does the relay need a public address?** A phone on 4G can't reach a laptop on venue Wi-Fi (open-questions § 3).
   A tunnel is a new dependency. Owner: Ahmed. **Not decided.**
-- **May one project enter four sponsor challenges?** Owner: Ahmed, from the event rules. **Not checked.**
+- **May one project enter four sponsor challenges?** Owner: Ahmed. The opening slides don't say. **Ask an organiser.**
+- **The three internal deadlines** (walking skeleton, feature freeze, demo recorded). Owner: Ahmed, with the team.
+  **Not decided.**
+- **Neptune North wants no central hub; our relay is one.** How the pitch shows the phone acting on its own (`EVENT.md` §4).
+  Owner: Ahmed + Laura. **Not decided.**
 - **Live or prepared guides first?** (Max's open question.) Overtaken by "all in parallel": the phone plays a
   prepared sample guide from its first task, and live building arrives with the guide builder.
 
@@ -102,9 +108,11 @@ Xcode" is answered: yes, per Ahmed.
 
 ### Blockers only humans can clear
 *Accounts, API keys, access, team registration, hardware, asking the organisers.*
-- **The Clock is empty.** Nobody has written down the submission deadline. Ahmed to paste the schedule.
 - **Dawn login.** Promised by the event, untested by us. Max to try.
-- **An UNO Q and camera** for the RS challenge. Ahmed to ask today.
+- **A camera and a USB hub** for the RS challenge. The team has an UNO Q and a Nicla Vision (`EVENT.md` §6); a USB
+  webcam and hub would come from the Product Loan Library. Ahmed to sort out.
+- **A paper printer** for the marker. Availability at the venue is unknown. Laura to find one.
+- **Hall Wi-Fi is slow.** Plan on a phone hotspot for the demo.
 - **Xcode and iOS versions.** The Mac needs Xcode to build at all. If cut-outs are ever drawn as real splats on the
   phone, it needs Xcode 27 and the demo iPhone on iOS 27.2 or later (`research/ledger.md` § 1). Salman to check both.
 - **The demo objects.** A switch or router, a patch panel, a cover with screws: someone has to bring or borrow them.

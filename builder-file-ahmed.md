@@ -67,7 +67,8 @@ but all three teammates build on them, so every change after the first version i
 ## 3. ▶ Current tasks (2026-11-14), in order
 *Status: ⬜ not started · 🟡 in progress · ⏸ blocked · ✅ done*
 
-1. ⬜ **The event's rules and deadlines**
+1. ✅ **The event's rules and deadlines** (done 2026-11-14 20:30; still unknown: criterion weights, the cap on challenges,
+   licence and public-repo rules, all marked _not stated_ in `EVENT.md`)
    - Paste the schedule, rules and judging criteria; fill `EVENT.md` and `PROJECT.md` → NOW → Clock. Check whether
      one project may enter four sponsor challenges.
    - *Done when:* the Clock has a submission deadline and `EVENT.md` §1–§4 are filled.
@@ -77,9 +78,11 @@ but all three teammates build on them, so every change after the first version i
      travel in; whether signalling rides this websocket.
    - *Done when:* the file and `fixtures/sample-guide.json` are on `main` and a board entry flags all three teammates.
    - `[⚠ conflicts with @salman @max @laura: they all build on it]`
-3. ⬜ **Ask about the UNO Q today** 🟠 (moved from @laura 2026-11-14: Ahmed took the rig)
-   - The RS challenge needs an Arduino UNO Q and a camera. Find out now whether we can borrow them.
-   - *Done when:* a board entry says we have the kit, or that we don't and the RS feature is parked.
+3. 🟡 **Get the rest of the RS kit** 🟠 (moved from @laura 2026-11-14: Ahmed took the rig)
+   - The RS challenge makes an UNO Q, a camera and USB hubs mandatory. The team has an UNO Q and a Nicla Vision
+     (`EVENT.md` §6). Still needed: a USB hub, and a USB webcam if the Nicla doesn't count as the camera. Try the
+     Product Loan Library (student ID and table number).
+   - *Done when:* a board entry says we have the full kit, or that we don't and the RS feature is parked.
 4. ⬜ **Fake phone and fake expert**
    - Two small scripts in `fixtures/` that speak the protocol, so each side can be built and tested alone.
    - *Done when:* run against each other, they complete the sample guide.
@@ -108,7 +111,7 @@ but all three teammates build on them, so every change after the first version i
    - `[⚠ conflicts with @laura: the rig mounts on her demo set, before it's scanned]`
 
 ## 4. Done log (newest first)
-- _(empty)_
+- 2026-11-14 20:30: task 1, the event's rules and deadlines. `EVENT.md` §1–§6 and the Clock filled from the notes file.
 
 ## 5. Waiting on / owed to others
 - 📤 **Owed to @salman @max @laura:** `contracts/protocol.ts`, the sample guide and the fakes.
