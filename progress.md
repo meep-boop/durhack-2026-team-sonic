@@ -93,3 +93,11 @@ each builder's brief (`builder-file-<name>.md`, on the `context` branch).
 - Touched: `docs/remote-assist/README.md`, `docs/remote-assist/architecture.md`
 - ⚠️ Conflicts: none
 - Conflict status: resolved by @max 2026-11-14
+
+### 2026-11-14 19:40 — Remote Assist plan: round-1 decisions — @max
+- Shipped: `docs/remote-assist/` rewritten for the MSP setting (on-site user with an iPhone, remote MSP engineer on a dashboard) and stepped 3D animated guides. Quest and ISS framing moved to Parked.
+- Touched: `docs/remote-assist/README.md`, `docs/remote-assist/architecture.md`
+- Decision: iPhone native app, no Quest; expert builds the guide, live or ahead; built-in models plus cut-outs from the scan; preset animations; user taps Next; boxes stay alongside models. Decided by @max, needs team agreement at kickoff.
+- 📨 To @ahmed: please add to PROJECT.md → Active tasks: "Pick and get the demo objects (unassigned)" and "Check we have a Mac with Xcode for the iPhone app".
+- ⚠️ Conflicts: none
+- Conflict status: resolved by @max 2026-11-14
