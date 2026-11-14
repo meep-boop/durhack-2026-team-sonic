@@ -272,9 +272,23 @@ each builder's brief (`builder-file-<name>.md`, on the `context` branch).
   drift apart).
 - Decision: **not decided** (Max + Ahmed, after calibration works): what happens before the marker is calibrated:
   block placing until calibrated, or place in scan coordinates and convert later. Only `dashboard/src/scene/` changes
-  either way. Please add it to `PROJECT.md` → Pending.
+  either way. Please add it to `PROJECT.md` → Pending. *(done by @ahmed 2026-11-14 22:27)*
 - 📨 To @laura: read `api.ts` and `scene-api.md`, and say here if anything is missing. Your guide builder sends the
   3D view the step's `GuideObject[]` and listens for moves and clicks; it never converts positions.
 - ⚠️ Conflicts: @laura — `dashboard/src/scene/api.ts` is the seam with `dashboard/src/guide/`; agree it before
   building on it
 - Conflict status: open
+
+### 2026-11-14 22:27 — the UNO Q rig's code is on main, not yet on hardware — @ahmed
+- Shipped: `hardware/nicla/main.py` (the Nicla prints which ports hold the coloured cable) and `hardware/unoq/` (the
+  UNO Q app joins the relay as `rig`, follows the guide, and sends `step.verified` for steps with `expect`; a cable in
+  the wrong port warns, the right one ticks). 13 rig tests; end to end through the real relay with typed-in Nicla
+  lines it reported "cable in port 16, expected 17", then "correct". Commit `4db2ce6`. How to run: `hardware/README.md`.
+- Not done yet: running it on the Nicla and the UNO Q (the regions and colour in the Nicla script are examples), and
+  the ✓ / ✗ on the LED matrix.
+- Touched: `hardware/` (new); on `context`: `PROJECT.md`, `CLAUDE.md`, `builder-file-ahmed.md`
+- 📨 To @max @laura @salman: if the rig is running, `step.verified` arrives for steps with `expect`. `ok: false` comes
+  with a `detail` like "cable in port 16, expected 17" to show the user.
+- ⚠️ Conflicts: none (new files in Ahmed's area)
+- Conflict status: resolved by @ahmed 2026-11-14
+
