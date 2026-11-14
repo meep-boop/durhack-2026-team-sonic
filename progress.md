@@ -59,7 +59,7 @@ each builder's brief (`builder-file-<name>.md`, on the `context` branch).
 - **Shared docs** (`CLAUDE.md`, `PROJECT.md`, `EVENT.md`, briefs, research, skills) are **never** committed to
   `main`. They live on the `context` branch. Edit, then `bash scripts/publish-context.sh "what changed"`,
   and every agent picks it up on its next prompt.
-- **Deploy:** _blank_ (where it runs, who restarts it, how).
+- **Deploy:** The relay runs on the laptop that starts it (Ahmed's for now), on the team hotspot, port 8080. No cloud. State in `relay/state.json` (git-ignored). Ask Ahmed to restart it.
 
 ## Latest
 - **The volatile facts live here only:** the current commit, test counts, what's merged vs. local-only, and deploy
@@ -181,4 +181,41 @@ each builder's brief (`builder-file-<name>.md`, on the `context` branch).
   places: ids instead of indexes, and the corners no longer go to the phone.
 - 📨 To @laura: build the guide builder against `Guide` in the contract, with `import type`.
 - ⚠️ Conflicts: @salman @max @laura — the contract you build on is now fixed; any change is flagged to all three
+- Conflict status: open
+
+### 2026-11-14 21:29 — the relay and the fakes are on main — @ahmed
+- Shipped: `relay/relay.ts` routes every message by role, replays the guide, current step, calibration and progress
+  to anyone who reconnects, and saves them to `relay/state.json` so a restart loses nothing. A heartbeat drops a
+  phone that silently loses Wi-Fi from presence within about 10 seconds. `fixtures/fake-phone.ts` and
+  `fixtures/fake-expert.ts` stand in for the phone and the dashboard. 31 tests and a type-check pass. Commit `97cde98`.
+- Run it: `cd relay && npm install && npm start` (prints the `ws://` address to use). Fakes need only Node 24:
+  `node fixtures/fake-expert.ts ws://<relay>:8080`, `node fixtures/fake-phone.ts ws://<relay>:8080`.
+- Touched: `relay/`, `fixtures/`, `.gitignore`; on `context`: `PROJECT.md`, `CLAUDE.md`, four briefs
+- Decision: by Ahmed: the `ws` package; state saved to a JSON file; plain `ws://` on the team hotspot; role rules
+  with no login; keep the fakes.
+- 📨 To @salman: plain `ws://` means one Info.plist setting, `NSAllowsLocalNetworking` (your brief, task 3). Test
+  your app against `node fixtures/fake-expert.ts`.
+- 📨 To @max @laura: test the dashboard against `node fixtures/fake-phone.ts`. It taps Next every 3 seconds and walks
+  a camera pose round the marker. Its poses are SIMULATED: never demo them.
+- ⚠️ Conflicts: none (all new files in Ahmed's area)
+- Conflict status: resolved by @ahmed 2026-11-14
+
+### 2026-11-14 21:31 — the printed marker is on main — @laura
+- Shipped: `assets/marker/marker.png` (300 dpi), `marker-print-A4.pdf` (print sheet with a TOP mark and a 100 mm
+  scale ruler) and `assets/marker/README.md`. Printed on matte paper and measured with a ruler: **180 mm × 180 mm**
+  (outer black frame), so the guide's `marker` is `{ "name": "marker", "width": 0.18, "height": 0.18 }`. Random,
+  asymmetric pattern, not a checkerboard, so ARKit can tell its corners and its orientation apart. Commit `eca6c24`.
+- Touched: `assets/marker/` (new)
+- ⚠️ Conflicts: @salman — add `marker.png` as an ARKit reference image at 0.18 m and check Xcode gives no warnings
+  (that's what closes my task 1); the "TOP" edge on the sheet is upright for the +X/+Z check. @max — the marker is
+  printed; the demo set it goes on isn't built yet. @ahmed — `fixtures/sample-guide.json` still says 0.16 m and
+  `sample-marker`; fine for a SAMPLE, but the real guide needs 0.18.
+- Conflict status: open (the @ahmed part resolved by @ahmed 2026-11-14 in `f28411b`)
+
+### 2026-11-14 21:34 — sample guide sized for the printed marker — @ahmed
+- Shipped: `fixtures/sample-guide.json` and the example `guide.set` in `fixtures/messages.json` now use Laura's
+  marker: `{ "name": "marker", "width": 0.18, "height": 0.18 }`. Still labelled SAMPLE; positions unchanged.
+  Commit `f28411b`.
+- Touched: `fixtures/sample-guide.json`, `fixtures/messages.json`
+- ⚠️ Conflicts: @salman — if you bundled the sample guide or decode `messages.json` in a test, pull again
 - Conflict status: open

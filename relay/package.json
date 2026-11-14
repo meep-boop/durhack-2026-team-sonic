@@ -6,10 +6,16 @@
     "node": ">=24"
   },
   "scripts": {
+    "start": "node server.ts",
     "test": "node --test",
     "typecheck": "tsc -p tsconfig.json"
   },
   "devDependencies": {
+    "@types/node": "~24.19.2",
+    "@types/ws": "~8.18.2",
     "typescript": "~7.0.2"
+  },
+  "dependencies": {
+    "ws": "~8.23.0"
   }
 }

@@ -24,6 +24,9 @@ secrets/
 *apikey*
 *.key.txt
 
+# The relay's saved state (relay/server.ts): per-machine, rewritten on every change
+relay/state.json*
+
 # Data and models
 /data/
 *.zip
