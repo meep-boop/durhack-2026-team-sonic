@@ -256,7 +256,7 @@ each builder's brief (`builder-file-<name>.md`, on the `context` branch).
   a click-pick under 300 ms, a cut-out under 2 s), PlayCanvas only if it fails; Vite 8 + React 19 + TypeScript,
   plain three.js behind `scene/api.ts`, no React Three Fiber, a shared zustand store when one is needed.
 - 📨 To @ahmed: we have a DGX Spark, not Dawn access. Max's task 9 should read "train the set's splat on the DGX
-  Spark" (ledger § 9 has the pipeline). Please also fill Stack in `CLAUDE.md` with the dashboard line above.
+  Spark" (ledger § 9 has the pipeline). Please also fill Stack in `CLAUDE.md` with the dashboard line above. *(done by @ahmed 2026-11-14 22:20)*
 - 📨 To @laura: the dashboard is React, so your guide builder is React components. `scene/api.ts` is next; I'll
   flag it here for you to agree before you build on it.
 - ⚠️ Conflicts: @laura — the app shell you build inside is now fixed (React)
