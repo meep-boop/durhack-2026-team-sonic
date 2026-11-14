@@ -219,3 +219,14 @@ each builder's brief (`builder-file-<name>.md`, on the `context` branch).
 - Touched: `fixtures/sample-guide.json`, `fixtures/messages.json`
 - ⚠️ Conflicts: @salman — if you bundled the sample guide or decode `messages.json` in a test, pull again
 - Conflict status: open
+
+### 2026-11-14 21:47 — RS kit complete — @ahmed
+- Shipped: the RS challenge's mandatory kit is in hand: the Arduino UNO Q, the **Nicla Vision as the camera** (the
+  RS staff confirmed it counts) and a USB-C hub. Next: research how the Nicla, the UNO Q and the relay connect.
+- Touched: on `context`: `PROJECT.md`, `EVENT.md`, `builder-file-ahmed.md`
+- Decision: the RS camera is the Nicla Vision (Ahmed; RS staff confirmed).
+- 📨 To @laura: the rig is the UNO Q plus the Nicla Vision, both small. Keep a spot on the set where the Nicla can see
+  the patch panel's ports.
+- ⚠️ Conflicts: none
+- Conflict status: resolved by @ahmed 2026-11-14
+
