@@ -1,0 +1,81 @@
+[
+  { "type": "hello", "protocol": 1, "role": "user", "client": "fake phone" },
+  {
+    "type": "guide.set",
+    "guide": {
+      "id": "sample-one-step",
+      "rev": 3,
+      "title": "SAMPLE: one step",
+      "marker": { "name": "sample-marker", "width": 0.16, "height": 0.16 },
+      "steps": [
+        {
+          "id": "s1",
+          "text": "Pull the cable out of port 14",
+          "objects": [
+            {
+              "id": "o1",
+              "model": "cable-plug",
+              "pos": [0.03, 0.012, 0.11],
+              "rot": [0, 0, 0, 1],
+              "size": [0.014, 0.016, 0.012],
+              "action": "pull",
+              "axis": [0, 1, 0],
+              "label": "Port 14",
+              "cutoutId": "cut-7"
+            }
+          ]
+        }
+      ]
+    }
+  },
+  { "type": "step.set", "guideId": "sample-one-step", "stepId": "s1" },
+  {
+    "type": "calib.set",
+    "splatId": "sample-desk",
+    "corners": [
+      [-0.41, 1.12, 0.3],
+      [0.39, 1.1, 0.31],
+      [0.4, 0.31, 0.29],
+      [-0.4, 0.32, 0.3]
+    ],
+    "residual": 0.004
+  },
+  {
+    "type": "step.done",
+    "guideId": "sample-one-step",
+    "rev": 3,
+    "stepId": "s1",
+    "doneId": "c0a8e7f2-3b1d-4c55-9e0a-1f2b3c4d5e6f",
+    "at": 1794686400000
+  },
+  {
+    "type": "pose",
+    "t": 1794686400250,
+    "camera": { "p": [0.02, 0.35, 0.28], "q": [-0.3826834, 0, 0, 0.9238795] },
+    "markerTracked": true
+  },
+  {
+    "type": "step.verified",
+    "guideId": "sample-one-step",
+    "stepId": "s1",
+    "ok": false,
+    "detail": "cable in port 16, expected 17"
+  },
+  {
+    "type": "rtc.signal",
+    "signal": {
+      "kind": "candidate",
+      "candidate": "candidate:1 1 udp 2122260223 192.168.1.20 54321 typ host",
+      "sdpMid": "0",
+      "sdpMLineIndex": 0
+    }
+  },
+  {
+    "type": "presence",
+    "clients": [
+      { "role": "expert", "client": "fake expert" },
+      { "role": "user", "client": "fake phone" }
+    ]
+  },
+  { "type": "error", "message": "unknown message type", "about": "guide.patch" }
+]
