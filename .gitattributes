@@ -1,0 +1,7 @@
+* text=auto eol=lf
+*.png binary
+*.jpg binary
+*.pdf binary
+# Everyone appends entries at the end; a union merge keeps both sides instead of a conflict someone resolves by
+# dropping one.
+progress.md merge=union

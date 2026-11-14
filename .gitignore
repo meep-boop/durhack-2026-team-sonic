@@ -1,0 +1,58 @@
+# Shared docs live on the context branch; scripts/sync-context.sh unpacks them here. Root-level markdown is ignored so
+# no doc or ad-hoc note reaches main by accident; nested markdown (docs/, kit/, content folders) is code and stays.
+/*.md
+!/progress.md
+!/README.md
+!/LICENSE.md
+/research/
+
+# Skills are unpacked from context; the project settings (the every-prompt hook) are shared on main
+.claude/*
+!.claude/settings.json
+
+# Secrets
+.env
+.env.*
+!.env.example
+*.pem
+*.key
+*.p12
+id_rsa*
+id_ed25519*
+id_ecdsa*
+secrets/
+*apikey*
+*.key.txt
+
+# Data and models
+/data/
+*.zip
+*.gguf
+*.onnx
+*.pt
+*.h5
+*.keras
+
+# Tooling and build output
+.omc/
+__pycache__/
+*.pyc
+.venv/
+venv/
+node_modules/
+dist/
+build/
+.next/
+.ipynb_checkpoints/
+.coverage
+coverage/
+htmlcov/
+motion-frames/
+motion-timing/
+.pytest_cache/
+.DS_Store
+Thumbs.db
+
+# Docs bundles for teammates (sent on Discord/Drive, never committed) and superseded local docs
+share/
+_archive/
