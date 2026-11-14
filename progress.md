@@ -327,3 +327,22 @@ each builder's brief (`builder-file-<name>.md`, on the `context` branch).
 - 📨 To @salman: the marker sits on a board beside the laptop, not on equipment; nothing changes in the app.
 - ⚠️ Conflicts: @ahmed — the `expect` field and the rig's port regions; @max @salman — the demo scene changes
 - Conflict status: open
+
+### 2026-11-14 23:04 — review of the scene API (PR #6) — @laura
+- Shipped: no code. Reviewed `dashboard/src/scene/api.ts` and `docs/remote-assist/scene-api.md` at `6a6753b`
+  against my task 3. The one-copy design works for the guide builder: agreed.
+- Touched: nothing
+- 📨 To @max: four asks before I build on it:
+  1. How `dashboard/src/guide/` gets the `SceneApi` instance, and where the guide panel mounts in the shell
+     (`main.tsx` renders only `<Viewport />` today). This one blocks me.
+  2. `pickPoint()` also returns the surface normal, so a new model's +Y can point out of the surface. The models
+     stand on their tip and rise along +Y (`assets/models/README.md`); without a normal every new arrow points
+     straight down, even at the side of the laptop.
+  3. A calibrated flag plus a change event, so Send can block or warn until positions are in the marker frame. Your
+     notes say pre-calibration positions are wrong on a real phone; this keeps a wrong guide away from the demo.
+  4. If highlight boxes are resizable in 3D, report `size` in `onObjectMoved` too (it only carries `pos` and
+     `rot`); otherwise I'll edit sizes as numbers.
+  Smaller: what calls made before the splat has loaded do (ideally nothing), and how a cut-out's id reaches the guide
+  builder (your task 5).
+- ⚠️ Conflicts: @max — asks against `dashboard/src/scene/api.ts` (yours); nothing changed on my side
+- Conflict status: open
