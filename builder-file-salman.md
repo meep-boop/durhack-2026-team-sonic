@@ -80,15 +80,18 @@ splats until that's settled. Training splats in the app (the scan is taken in Sc
      +z point to. Apple's docs say the image lies in the anchor's X–Z plane but not which way each axis points,
      and the protocol depends on it (`research/ledger.md` § 6).
 2. ⬜ **Play the sample guide, lined up by the marker**
-   - Load `fixtures/sample-guide.json` from the app bundle. Convert each position into the phone's world using the
-     marker's pose. Draw the highlight box and a placeholder shape per object. **Next** moves on.
+   - Load `fixtures/sample-guide.json` from the app bundle. **Positions arrive in the marker's own frame, in metres**
+     (decided by @ahmed): make each object a child of the image anchor and set its position, rotation and size
+     straight from the JSON. No conversion on the phone. Draw the highlight box and a placeholder shape per
+     object. **Next** moves on.
    - *Done when:* each step's box lands on the spot measured from the marker with a ruler, and Next walks through
      all the steps.
-   - `[⚠ conflicts with @ahmed: which side solves the alignment, and the units positions arrive in, is being decided now (`research/ledger.md` § 6) and lands in contracts/protocol.ts.]`
+   - `[⚠ conflicts with @ahmed: the frame is defined at the top of contracts/protocol.ts. The +x and +z directions are
+     provisional until your axis check in task 1.]`
 3. ⬜ **Talk to the relay**
    - WebSocket client: `hello`, receive `guide.set` and `step.set`, send `step.done` and `pose`. Reconnect on drop.
    - The contract is TypeScript types only (`contracts/protocol.ts`). Mirror the messages as Swift `Codable`
-     structs, using the JSON examples in `fixtures/` as your test data.
+     structs. `fixtures/messages.json` has one example of every message: decode them all in a unit test.
    - *Done when:* with the fake expert from `fixtures/` running, its guide shows on the phone and each Next appears
      in its log.
 4. ⬜ **Live camera over WebRTC** 🟠

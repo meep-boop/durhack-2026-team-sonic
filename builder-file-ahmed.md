@@ -72,7 +72,8 @@ but all three teammates build on them, so every change after the first version i
    - Paste the schedule, rules and judging criteria; fill `EVENT.md` and `PROJECT.md` → NOW → Clock. Check whether
      one project may enter four sponsor challenges.
    - *Done when:* the Clock has a submission deadline and `EVENT.md` §1–§4 are filled.
-2. ⬜ **`contracts/protocol.ts` and the sample guide** 🟠 (everyone is waiting on this)
+2. ✅ **`contracts/protocol.ts` and the sample guide** (done 2026-11-14 20:59, `1fcc4c3`. Labels left out on purpose: they
+   arrive with task 8's endpoint, whose provider isn't decided)
    - Start from the draft in `docs/remote-assist/architecture.md`. Add what it lacks: marker calibration, WebRTC
      signalling, `step.verified`, labels. Decide first: which side solves the alignment and what units positions
      travel in; whether signalling rides this websocket.
@@ -111,10 +112,12 @@ but all three teammates build on them, so every change after the first version i
    - `[⚠ conflicts with @laura: the rig mounts on her demo set, before it's scanned]`
 
 ## 4. Done log (newest first)
+- 2026-11-14 20:59: task 2, the protocol contract. `contracts/protocol.ts`, `fixtures/sample-guide.json`,
+  `fixtures/messages.json` and `relay/validate.ts` on `main` (`1fcc4c3`); 15 tests, type-check clean.
 - 2026-11-14 20:30: task 1, the event's rules and deadlines. `EVENT.md` §1–§6 and the Clock filled from the notes file.
 
 ## 5. Waiting on / owed to others
-- 📤 **Owed to @salman @max @laura:** `contracts/protocol.ts`, the sample guide and the fakes.
+- 📤 **Owed to @salman @max @laura:** the fake phone and fake expert (the contract and sample guide are done).
 - 📥 **Waiting on @salman:** his pick of WebRTC library.
 - 📥 **Waiting on @laura:** a spot on the demo set for the UNO Q rig.
 

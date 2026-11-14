@@ -44,6 +44,9 @@ Source: `EVENT.md` §1 (one notes file, not yet checked against Devpost). The th
 
 | Date | Decision |
 |---|---|
+| 2026-11-14 | The protocol contract is on `main`: `contracts/protocol.ts`, `fixtures/`, `relay/validate.ts` (Ahmed) |
+| 2026-11-14 | `typescript` is a dev-only dependency of `relay/`, for type-checking the contract (Ahmed) |
+| 2026-11-14 | Guide positions travel in the marker's frame, in metres; the dashboard converts from splat coordinates (Ahmed) |
 | 2026-11-14 | Live view stays WebRTC, re-confirmed after reading Max's research; signalling rides the relay websocket (Ahmed) |
 | 2026-11-14 | The protocol contract is TypeScript types only, plus JSON examples; the Swift app mirrors them by hand (Ahmed) |
 | 2026-11-14 | The phone app is pure native Swift; Salman's Expo app is dropped (Ahmed) |
@@ -73,8 +76,11 @@ briefs ask them to object on the board before building.
   Owner: Ahmed + Max + Salman. The decision stands until Ahmed changes it.
 - **WebRTC library on iOS.** Owner: Salman. **Not decided.** (Signalling settled: it rides the relay websocket as a
   pass-through message.)
-- **Which side solves the alignment, and what units positions travel in.** Owner: Ahmed, in `contracts/protocol.ts`.
-  **Not decided.** Researched: `research/ledger.md` § 6.
+- **Settled 20:59: which side solves the alignment.** The dashboard, and positions travel in the marker's frame in
+  metres (Ahmed; Decision log). The original question: which side solves the alignment, and what units positions
+  travel in. Researched in `research/ledger.md` § 6.
+- **Which way the marker frame's +x and +z point across the print.** Owner: Salman, with an axis marker on the
+  phone. Provisional in `contracts/protocol.ts` until then.
 - **Offline conflict rule:** what happens if the expert edits the guide while the phone is offline. Owner: Ahmed.
   **Not decided.**
 - **LLM provider for labelling, and what it looks at** (renders of the splat, or camera frames). Owner: Ahmed + Max.
@@ -102,7 +108,7 @@ briefs ask them to object on the board before building.
 ### Active tasks (details in each brief)
 | Who | Now |
 |---|---|
-| Ahmed | The event's rules and Clock; then `contracts/protocol.ts`, the sample guide and the fake peers; ask about the UNO Q |
+| Ahmed | The fake phone and fake expert; the rest of the RS kit (a USB hub, maybe a webcam) |
 | Salman | App skeleton and marker detection on a real iPhone |
 | Max | Dashboard shell with a splat on screen, and the scene API for Laura |
 | Laura | The printed marker (Salman and Max are waiting on it); pick and get the demo objects |
@@ -240,6 +246,33 @@ The diagram, components, alignment maths and draft protocol are in `docs/remote-
 
 ## Decision log
 *Full records, newest first. NOW → Decisions in force holds the one-line versions.*
+
+## 2026-11-14 20:59 — The protocol contract's shape
+- Chose: 13 shape choices proposed by Ahmed's agent and approved by Ahmed, listed in the `progress.md` entry of
+  2026-11-14 20:59. The main ones: steps and objects are referred to by id; `guide.set` always sends the whole guide; guides
+  carry `rev` and the marker's printed size; calibration goes dashboard → relay only; `step.done` carries a
+  unique `doneId` and the tap time; the rig connects as a third role; `hello` carries a protocol version
+- Because: each choice is explained in a comment beside it in `contracts/protocol.ts`
+- Rejected: Max's draft in `docs/remote-assist/architecture.md` where it differs (indexes, `calib.points` to the
+  phone)
+- Revisit if: a builder hits a message that doesn't fit. Any change after this is flagged to all three consumers.
+
+## 2026-11-14 20:59 — A type-checker for the contract
+- Chose: `typescript` (7.0.x) as a dev-only dependency in `relay/` (Ahmed)
+- Because: Node 24 runs TypeScript without checking it, so a typo in the contract would only surface in Max's build.
+  The relay's check is written so the type-checker fails if the contract gains a model, role, action or message
+  type the check doesn't know (tested by breaking it on purpose)
+- Rejected: runtime tests only
+
+## 2026-11-14 20:59 — The frame guide positions travel in
+- Chose: the marker's own frame, in metres; the dashboard converts from splat coordinates using the four corner
+  clicks and the printed size; the phone pins objects to the image anchor and does no maths (Ahmed)
+- Because: the conversion is the same few dozen lines either way, and on the dashboard it's testable on a laptop and
+  its error is visible to the expert right after clicking. The phone's list is already long, and a guide stored for
+  offline play is complete on its own (`research/ledger.md` § 6)
+- Rejected: splat coordinates plus the four corners, with the phone converting (Max's original draft)
+- Cost: if the expert re-clicks the corners, the dashboard resends the whole guide
+- Revisit if: experts need to recalibrate often during a call
 
 ## 2026-11-14 20:45 — Live view, second look
 - Chose: keep WebRTC; signalling rides the relay websocket as a pass-through message (Ahmed)

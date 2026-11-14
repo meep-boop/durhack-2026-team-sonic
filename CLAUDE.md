@@ -20,7 +20,7 @@ apply; the step-by-step protocols live in the skills it names (§ Triggers).*
 | Briefs | `builder-file-<name>.md`, one per builder: what their agent builds from |
 | Progress | `progress.md` on `main`: build log + conflict board |
 | Stack | Phone: native Swift, ARKit + RealityKit. Dashboard (browser) and relay (Node): libraries proposed, not decided (§5) |
-| Run · Test | _blank_ |
+| Run · Test | Relay and contract: `cd relay && npm install && npm test && npm run typecheck` (Node 24+, no build step) |
 | Deploy | _blank_ |
 | Expected scale | _blank_ (until set, `no-slop` designs for 10× the real load) |
 | Verbosity | **Level 0** (§3; a brief or the user can change it) |

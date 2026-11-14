@@ -76,9 +76,15 @@ so nobody waits for anybody. Until `contracts/protocol.ts` lands, use the draft 
    - No mesh to hit: take the splat centre nearest the mouse ray (within about 1 cm) that's closest to the camera.
    - *Done when:* clicking a small visible feature drops a dot on it, from three different camera angles.
 3. ⬜ **Marker calibration**
-   - The expert clicks the marker's four corners. Show the leftover error. Send the calibration message.
-   - *Done when:* the fake phone in `fixtures/` logs the calibration, and the residual is on screen in mm.
-   - `[⚠ conflicts with @ahmed: the calibration message, and which side solves the transform, in contracts/protocol.ts]`
+   - The expert clicks the marker's four corners (top-left, top-right, bottom-right, bottom-left, as the print
+     reads upright). **The dashboard does the conversion** (decided by @ahmed): solve scale, rotation and
+     translation from splat coordinates to the marker's frame in metres, using the printed size. Show the leftover
+     error. Every position, rotation, size and axis in a `guide.set` goes out in the marker frame; splat
+     coordinates only travel in `calib.set`, which the relay keeps for you and never sends to the phone.
+   - *Done when:* the clicked corners land within a few mm of the printed corners after conversion, the residual
+     is on screen in mm, and your `calib.set` passes the relay's check (`relay/validate.ts`).
+   - `[⚠ conflicts with @ahmed: the frame and calib.set are in contracts/protocol.ts]` `[⚠ conflicts with @salman: +x
+     and +z directions are provisional until his axis check]`
 4. ⬜ **Objects in the scene**
    - Show each step's highlight boxes and built-in glTF models where the guide puts them, and preview the preset
      actions.
@@ -90,7 +96,8 @@ so nobody waits for anybody. Until `contracts/protocol.ts` lands, use the draft 
    - *Done when:* a cable or screw is lifted out of the scan and moved, and the guide sent to the fake phone names a
      built-in model for it.
 6. ⬜ **Where the user is standing**
-   - Draw the phone's camera position inside the scan from `pose` messages.
+   - Draw the phone's camera position inside the scan from `pose` messages. They arrive in the marker frame, so
+     apply the inverse of your calibration. Show when `markerTracked` is false: alignment may be drifting.
    - *Done when:* the fake phone's moving pose shows as a moving marker in the scene.
 7. ⬜ **Find a part by name** (the Accenture feature) 🟠
    - A search box: type "port 14", the view jumps to it and it can be dropped into a step. Labels come from

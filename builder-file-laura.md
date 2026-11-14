@@ -80,6 +80,8 @@ them, so a renamed or resized model breaks two apps).
 3. ⬜ **The guide builder**
    - Build against the fake phone in `fixtures/` and @max's scene API. Step list, instruction text, model and
      action pickers, send the guide, jump to a step, tick steps as `step.done` arrives.
+   - The guide's shape is `Guide` in `contracts/protocol.ts` (`import type`). Steps are referred to by `id`, never
+     by position, and each edit bumps `rev`. Positions come from @max's scene API already in the marker frame.
    - *Done when:* a three-step guide built in the UI appears in the fake phone's log, and its `step.done` ticks the
      step.
    - `[⚠ conflicts with @max: dashboard/src/scene/api.ts]` `[⚠ conflicts with @ahmed: the guide shape in contracts/protocol.ts]`
