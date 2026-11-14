@@ -44,6 +44,11 @@ Source: `EVENT.md` §1 (one notes file, not yet checked against Devpost). The th
 
 | Date | Decision |
 |---|---|
+| 2026-11-14 | Anyone on the hotspot can connect; the relay enforces who may send what, by role (Ahmed) |
+| 2026-11-14 | Phone and dashboard reach the relay over plain `ws://` on the team hotspot (Ahmed) |
+| 2026-11-14 | The relay saves guide, step, calibration and progress to `relay/state.json` on each change (Ahmed) |
+| 2026-11-14 | The relay uses the `ws` package; `@types/ws` and `@types/node` are dev-only (Ahmed) |
+| 2026-11-14 | Keep the fake phone and fake expert, built with the relay (Ahmed) |
 | 2026-11-14 | The protocol contract is on `main`: `contracts/protocol.ts`, `fixtures/`, `relay/validate.ts` (Ahmed) |
 | 2026-11-14 | `typescript` is a dev-only dependency of `relay/`, for type-checking the contract (Ahmed) |
 | 2026-11-14 | Guide positions travel in the marker's frame, in metres; the dashboard converts from splat coordinates (Ahmed) |
@@ -82,6 +87,9 @@ briefs ask them to object on the board before building.
 - **Which way the marker frame's +x and +z point across the print.** Owner: Salman, with an axis marker on the
   phone. Provisional in `contracts/protocol.ts` until then.
 - **Offline conflict rule:** what happens if the expert edits the guide while the phone is offline. Owner: Ahmed.
+  A concrete case the relay shows today: a phone that taps Next offline, then reconnects, is first sent the
+  relay's last known step (older than where the phone is) and only then sends its queued taps. The phone or the
+  rule must handle that order.
   **Not decided.**
 - **LLM provider for labelling, and what it looks at** (renders of the splat, or camera frames). Owner: Ahmed + Max.
   **Not decided.**
@@ -188,7 +196,7 @@ The diagram, components, alignment maths and draft protocol are in `docs/remote-
 | Live video | WebRTC with a custom source fed from AR frames, signalling over the relay websocket (**decided**); library **not decided** | Ahmed's call | No |
 | Splat | Scaniverse export (**decided** as main route); Dawn + gsplat as an upgrade | Dawn untested | No |
 | Dashboard | Browser app; three.js + Spark + Vite **proposed, not decided** | Max's planning session | No |
-| Relay | Node + `ws` over HTTPS **proposed, not decided** | Max's planning session | No |
+| Relay | Node 24 + `ws` 8.23, plain `ws://` on the hotspot, state in a JSON file (**decided**) | No build step; HTTPS needs certificates iPhones won't trust | Yes: runs and tested on Ahmed's laptop |
 | AI labelling | Provider **not decided** | | No |
 | Hardware check | Arduino UNO Q + camera (the RS challenge requires them); method **not decided** | | No kit yet |
 
@@ -246,6 +254,18 @@ The diagram, components, alignment maths and draft protocol are in `docs/remote-
 
 ## Decision log
 *Full records, newest first. NOW → Decisions in force holds the one-line versions.*
+
+## 2026-11-14 21:29 — The relay
+- Chose (Ahmed, each as recommended): the `ws` package (with `@types/ws` and `@types/node` dev-only); state kept in
+  memory and in `relay/state.json`, written on every change except poses; plain `ws://` on the team hotspot; role
+  rules with no login. Also kept the fake phone and fake expert (Ahmed asked why they're needed, then kept them)
+- Because: `ws` is the standard Node server with no sub-dependencies; the file survives a relay crash mid-demo;
+  iPhones refuse self-signed certificates and a tunnel needs the slow hall internet; role rules keep the fakes and
+  real apps identical
+- Rejected: a hand-written websocket server; memory only; a self-signed `wss://`; a public tunnel; a join key
+- Revisit if: the relay must be reachable from 4G (tunnel, and then a join key)
+- Built in, not separately decided: a 5-second heartbeat, so a phone that silently drops off Wi-Fi leaves presence
+  within about 10 seconds; a 1 MB cap per message
 
 ## 2026-11-14 20:59 — The protocol contract's shape
 - Chose: 13 shape choices proposed by Ahmed's agent and approved by Ahmed, listed in the `progress.md` entry of

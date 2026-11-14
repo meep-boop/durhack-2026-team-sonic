@@ -20,8 +20,8 @@ apply; the step-by-step protocols live in the skills it names (§ Triggers).*
 | Briefs | `builder-file-<name>.md`, one per builder: what their agent builds from |
 | Progress | `progress.md` on `main`: build log + conflict board |
 | Stack | Phone: native Swift, ARKit + RealityKit. Dashboard (browser) and relay (Node): libraries proposed, not decided (§5) |
-| Run · Test | Relay and contract: `cd relay && npm install && npm test && npm run typecheck` (Node 24+, no build step) |
-| Deploy | _blank_ |
+| Run · Test | Relay: `cd relay && npm install && npm start` (prints the `ws://` address to give the phone; `npm start -- --fresh` starts empty). Test: `cd relay && npm test && npm run typecheck`. Fakes need only Node 24: `node fixtures/fake-expert.ts ws://<relay>:8080` or `node fixtures/fake-phone.ts ws://<relay>:8080` |
+| Deploy | The relay runs on the laptop that starts it (Ahmed's for now), on the team hotspot, port 8080. No cloud. State in `relay/state.json` (git-ignored) |
 | Expected scale | _blank_ (until set, `no-slop` designs for 10× the real load) |
 | Verbosity | **Level 0** (§3; a brief or the user can change it) |
 

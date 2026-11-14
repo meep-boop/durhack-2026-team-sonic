@@ -104,7 +104,8 @@ them, so a renamed or resized model breaks two apps).
 
 ## 5. Waiting on / owed to others
 - 📥 **Waiting on @max:** `dashboard/src/scene/api.ts` and the dashboard shell.
-- 📥 **Waiting on @ahmed:** `contracts/protocol.ts`, the fake phone, the event's rules and deadlines.
+- 📥 **Waiting on @ahmed:** nothing right now. The contract, relay and fake phone are on `main`
+  (`node fixtures/fake-phone.ts ws://<relay>:8080`), and the deadlines are in `PROJECT.md` → Clock.
 - 📤 **Owed to @salman and @max:** the marker image and printed width (task 1), then the models.
 - 📤 **Owed to @max:** the finished demo set, to scan.
 - 📤 **Owed to @ahmed:** a spot on the set for his UNO Q rig, agreed before the scan.

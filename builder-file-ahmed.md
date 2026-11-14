@@ -84,10 +84,11 @@ but all three teammates build on them, so every change after the first version i
      (`EVENT.md` §6). Still needed: a USB hub, and a USB webcam if the Nicla doesn't count as the camera. Try the
      Product Loan Library (student ID and table number).
    - *Done when:* a board entry says we have the full kit, or that we don't and the RS feature is parked.
-4. ⬜ **Fake phone and fake expert**
+4. ✅ **Fake phone and fake expert** (done 2026-11-14 21:29, `97cde98`)
    - Two small scripts in `fixtures/` that speak the protocol, so each side can be built and tested alone.
    - *Done when:* run against each other, they complete the sample guide.
-5. ⬜ **The relay** 🟠
+5. ✅ **The relay** (done 2026-11-14 21:29, `97cde98`: `ws` over plain `ws://` on the hotspot, not HTTPS; see the Decision
+   log)
    - Node and `ws` over HTTPS, as planned; confirm the packages first. Keeps the latest guide, calibration and
      step, and replays them to whoever reconnects.
    - *Done when:* the two fakes complete a guide through it, and a fake that reconnects gets the current state.
@@ -112,12 +113,14 @@ but all three teammates build on them, so every change after the first version i
    - `[⚠ conflicts with @laura: the rig mounts on her demo set, before it's scanned]`
 
 ## 4. Done log (newest first)
+- 2026-11-14 21:29: tasks 4 and 5, the relay and both fakes. `relay/relay.ts`, `relay/server.ts`,
+  `fixtures/fake-phone.ts`, `fixtures/fake-expert.ts` on `main` (`97cde98`); 31 tests, type-check clean.
 - 2026-11-14 20:59: task 2, the protocol contract. `contracts/protocol.ts`, `fixtures/sample-guide.json`,
   `fixtures/messages.json` and `relay/validate.ts` on `main` (`1fcc4c3`); 15 tests, type-check clean.
 - 2026-11-14 20:30: task 1, the event's rules and deadlines. `EVENT.md` §1–§6 and the Clock filled from the notes file.
 
 ## 5. Waiting on / owed to others
-- 📤 **Owed to @salman @max @laura:** the fake phone and fake expert (the contract and sample guide are done).
+- 📤 **Owed to @salman @max @laura:** nothing right now. The contract, sample guide, fakes and relay are on `main`.
 - 📥 **Waiting on @salman:** his pick of WebRTC library.
 - 📥 **Waiting on @laura:** a spot on the demo set for the UNO Q rig.
 

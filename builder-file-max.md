@@ -117,7 +117,8 @@ so nobody waits for anybody. Until `contracts/protocol.ts` lands, use the draft 
 
 ## 5. Waiting on / owed to others
 - 📥 **Waiting on @laura:** the marker image and printed width; the glTF models; the finished demo set to scan.
-- 📥 **Waiting on @ahmed:** `contracts/protocol.ts`, the fake phone, the sample guide, the labelling endpoint.
+- 📥 **Waiting on @ahmed:** the labelling endpoint. (The contract, sample guide, relay and fake phone are on
+  `main`: `node fixtures/fake-phone.ts ws://<relay>:8080`.)
 - 📤 **Owed to @laura:** `dashboard/src/scene/api.ts`, first thing: her guide builder builds on it.
 
 ## 6. Working-style notes for the agent

@@ -92,6 +92,9 @@ splats until that's settled. Training splats in the app (the scan is taken in Sc
    - WebSocket client: `hello`, receive `guide.set` and `step.set`, send `step.done` and `pose`. Reconnect on drop.
    - The contract is TypeScript types only (`contracts/protocol.ts`). Mirror the messages as Swift `Codable`
      structs. `fixtures/messages.json` has one example of every message: decode them all in a unit test.
+   - The relay is on `main`: `cd relay && npm install && npm start` prints the `ws://` address to use. Then run
+     `node fixtures/fake-expert.ts ws://<that address>` to send the sample guide. The connection is plain
+     `ws://` on the team hotspot, so add `NSAllowsLocalNetworking` under App Transport Security in Info.plist.
    - *Done when:* with the fake expert from `fixtures/` running, its guide shows on the phone and each Next appears
      in its log.
 4. ⬜ **Live camera over WebRTC** 🟠
