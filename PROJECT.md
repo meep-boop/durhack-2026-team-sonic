@@ -45,6 +45,7 @@ Source: `EVENT.md` §1 (one notes file, not yet checked against Devpost). The th
 
 | Date | Decision |
 |---|---|
+| 2026-11-14 | Scene API: the guide builder keeps the only copy of the guide and hands the 3D view a whole step; the 3D view reports edits back (Max) |
 | 2026-11-14 | The splat upgrade route is the team's DGX Spark, not Dawn: we have no Dawn access (Max) |
 | 2026-11-14 | Dashboard: Vite 8 + React 19 + TypeScript, plain three.js + Spark 2.4 behind `scene/api.ts`, no React Three Fiber, zustand when needed; proven by a spike with a kill test (Max) |
 | 2026-11-14 | Guide objects can carry an optional `expect: { port, cable: in or out }` for the rig (Ahmed) |
@@ -92,6 +93,9 @@ briefs ask them to object on the board before building.
   travel in. Researched in `research/ledger.md` § 6.
 - **Which way the marker frame's +x and +z point across the print.** Owner: Salman, with an axis marker on the
   phone. Provisional in `contracts/protocol.ts` until then.
+- **Before the marker is calibrated, can the expert place objects?** Block placing until calibrated, or place in
+  scan coordinates and convert later. Only `dashboard/src/scene/` changes either way. Owner: Max + Ahmed, after
+  calibration works. **Not decided.** (Asked for by Max, board entry 22:40.)
 - **Offline conflict rule:** what happens if the expert edits the guide while the phone is offline. Owner: Ahmed.
   A concrete case the relay shows today: a phone that taps Next offline, then reconnects, is first sent the
   relay's last known step (older than where the phone is) and only then sends its queued taps. The phone or the
@@ -183,7 +187,7 @@ Xcode" is answered: yes, per Ahmed.
 | F9 | Live camera over WebRTC | Salman, Ahmed, Laura | P1 | ⬜ |
 | F10 | Cut-outs from the scan | Max | P1 | ⬜ |
 | F11 | Find a part by name, AI labels (Accenture) | Max, Ahmed | P1 | ⬜ |
-| F12 | Hardware check with the UNO Q (RS) | Ahmed | P1 | ⬜ |
+| F12 | Hardware check with the UNO Q (RS) | Ahmed | P1 | 🟡 code on `main`, not yet on hardware |
 | F13 | The user's position shown in the scan | Max | P1 | ⬜ |
 
 **The rule across all of them:** the guide (F1–F8) must never depend on video, the AI labels or the hardware.

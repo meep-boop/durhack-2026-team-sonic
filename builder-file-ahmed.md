@@ -116,15 +116,22 @@ but all three teammates build on them, so every change after the first version i
      power input** (the UNO Q doesn't power the hub), and a **brightly coloured patch cable** on Laura's set.
    - 9a ⬜ **5-minute access test before anything else:** Nicla on the hub; can an App Lab Python app see and open
      `/dev/ttyACM*`? Reports conflict. If it can't, run the same Python over SSH, outside App Lab.
-   - 9b ⬜ The Nicla script: one region per port, the colour threshold from OpenMV's Threshold Editor, one printed line
+   - 9b 🟡 (22:27: written as `hardware/nicla/main.py`, not yet run on a Nicla; regions and colour are examples)
+     The Nicla script: one region per port, the colour threshold from OpenMV's Threshold Editor, one printed line
      per change, e.g. which ports hold the cable.
-   - 9c ⬜ The UNO Q app: read the lines, follow the guide and step from the relay, compare with `expect`, send
+   - 9c 🟡 (22:27: `hardware/unoq/`, tested end to end against the relay with typed-in Nicla lines; not yet on the
+     board)
+     The UNO Q app: read the lines, follow the guide and step from the relay, compare with `expect`, send
      `step.verified`, light the LED matrix.
+   - 9d ⬜ The ✓ / ✗ on the UNO Q's LED matrix through the Bridge: a small sketch plus one call from the app. Use
+     App Lab's own LED matrix example as the reference once the board is in hand.
    - *Done when:* moving the cable to the right port ticks the step on the dashboard and the phone, and a wrong port
      warns. Before the kit arrives: a fake rig message does the same on the two fakes.
    - `[⚠ conflicts with @laura: the rig mounts on her demo set, before it's scanned]`
 
 ## 4. Done log (newest first)
+- 2026-11-14 22:27: task 9b and 9c written, not yet on hardware: `hardware/` on `main` (`4db2ce6`). 13 rig tests; the UNO Q
+  app reported wrong then right through the real relay.
 - 2026-11-14 21:47: task 3, the RS kit. UNO Q + Nicla Vision as the camera (RS staff confirmed it counts) + a USB-C hub.
 - 2026-11-14 21:29: tasks 4 and 5, the relay and both fakes. `relay/relay.ts`, `relay/server.ts`,
   `fixtures/fake-phone.ts`, `fixtures/fake-expert.ts` on `main` (`97cde98`); 31 tests, type-check clean.
