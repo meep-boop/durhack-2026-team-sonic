@@ -292,3 +292,20 @@ each builder's brief (`builder-file-<name>.md`, on the `context` branch).
 - ⚠️ Conflicts: none (new files in Ahmed's area)
 - Conflict status: resolved by @ahmed 2026-11-14
 
+
+### 2026-11-14 22:30 — the six built-in models are on main — @laura
+- Shipped: `assets/models/{screw,bolt,arrow,screwdriver,hand,cable-plug}.{glb,usdz}`, built from one source by
+  `assets/models/build_models.py`, so glTF and USDZ hold identical geometry. Low poly, one orange material, no
+  textures: every file is under 7 KB. 7 tests check the names against `ModelName`, tip at origin, sizes, outward
+  faces, glb/usdz parity and USD's package checks: `python -m unittest discover assets/models` (needs `usd-core`,
+  rebuild only; neither app depends on it). Commit `3ab2d07`.
+- Touched: `assets/models/` (new)
+- Decision: by Laura: **model conventions**: metres, +Y up, the working tip (screw point, arrow point, fingertip,
+  plug contacts) at the origin, each model rising along +Y from it, so with an identity `rot` the arrow points
+  straight down at `pos`; `pull` = +Y, `push` = -Y, `unscrew` spins around Y. Also by Laura: commit the build
+  script so anyone can rebuild (dev-only dependency `usd-core==26.11`). Details: `assets/models/README.md`.
+- 📨 To @ahmed: please fold the conventions into `PROJECT.md` and the `ModelName` comment in the contract.
+- ⚠️ Conflicts: @salman — load the `.usdz` files as-is and place each model's origin at `pos`; tell me if RealityKit
+  shows them the wrong size or way up. @max — same for the `.glb` files in the scene; the tip, not the centre, sits
+  at `pos`.
+- Conflict status: open
