@@ -66,7 +66,9 @@ so nobody waits for anybody. Until `contracts/protocol.ts` lands, use the draft 
 ## 3. ▶ Current tasks (2026-11-14), in order
 *Status: ⬜ not started · 🟡 in progress · ⏸ blocked · ✅ done*
 
-1. ⬜ **Dashboard shell with a splat on screen, and the scene API**
+1. 🟡 **Dashboard shell with a splat on screen, and the scene API**
+   - *Status (2026-11-14 22:40, @max):* shell, SAMPLE splat and `api.ts` in PR #6 (`max-scene`). Left: scan a real
+     desk in Scaniverse and load it; Laura agrees `api.ts` on the board; merge.
    - Scaffold `dashboard/`. Scan any desk with a printed test marker on it in Scaniverse, export it, and render it.
      Write `dashboard/src/scene/api.ts`: what @laura's guide builder can call (pick a point, add, move and remove
      an object, preview an action) and what it gets back.
