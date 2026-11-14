@@ -102,7 +102,9 @@ export async function startRelay(options: RelayOptions): Promise<Relay> {
     const { guide, stepId, calib } = state;
     if (calib && reaches("calib.set", "expert", role)) send(socket, calib);
     if (guide && reaches("guide.set", "expert", role)) send(socket, { type: "guide.set", guide });
-    if (guide && stepId && reaches("step.set", "expert", role)) {
+    // The phone owns its own position. Its taps made offline arrive only after this replay, so replaying the
+    // relay's step would send a phone that worked offline backwards (decided 2026-11-14, PROJECT.md).
+    if (guide && stepId && role !== "user" && reaches("step.set", "expert", role)) {
       send(socket, { type: "step.set", guideId: guide.id, stepId });
     }
     if (reaches("step.done", "user", role)) state.done.forEach((done) => send(socket, done));

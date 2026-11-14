@@ -68,15 +68,20 @@ async function sendGuide(expert: Client, watcher: Client, guide: Guide = sampleG
   await until(() => ofType(watcher, "guide.set").length > before, "the guide to arrive");
 }
 
-test("a client that joins later gets the guide and its current step", async (t) => {
+test("a client that joins later gets the guide; dashboards and the rig also get the current step", async (t) => {
   const { port } = await relay(t);
   const expert = await connect(port, "expert");
   await sendGuide(expert, await connect(port, "expert", "second dashboard"));
 
+  const rig = await connect(port, "rig");
+  await until(() => ofType(rig, "step.set").length === 1, "the replayed step");
+  assert.deepEqual(rig.received.slice(0, 2).map((message) => message.type), ["guide.set", "step.set"]);
+  assert.equal(ofType(rig, "step.set")[0]!.stepId, "s1");
+
   const user = await connect(port, "user");
-  await until(() => ofType(user, "step.set").length === 1, "the replayed step");
-  assert.deepEqual(user.received.slice(0, 2).map((message) => message.type), ["guide.set", "step.set"]);
-  assert.equal(ofType(user, "step.set")[0]!.stepId, "s1");
+  await until(() => ofType(user, "presence").length > 0, "the phone's replay");
+  assert.equal(ofType(user, "guide.set").length, 1);
+  assert.equal(ofType(user, "step.set").length, 0, "the phone owns its position, so it isn't told one");
 });
 
 test("Next on the phone reaches the dashboard and the rig, and moves the current step on", async (t) => {
@@ -89,9 +94,9 @@ test("Next on the phone reaches the dashboard and the rig, and moves the current
   user.send(done("s1"));
   await until(() => ofType(expert, "step.done").length === 1 && ofType(rig, "step.done").length === 1, "step.done");
 
-  const rejoined = await connect(port, "user", "rejoined phone");
-  await until(() => ofType(rejoined, "step.set").length === 1, "the replayed step");
-  assert.equal(ofType(rejoined, "step.set")[0]!.stepId, "s2");
+  const reloaded = await connect(port, "expert", "reloaded dashboard");
+  await until(() => ofType(reloaded, "step.set").length === 1, "the replayed step");
+  assert.equal(ofType(reloaded, "step.set")[0]!.stepId, "s2");
 });
 
 test("a repeated step.done from an offline queue is dropped", async (t) => {
@@ -168,7 +173,7 @@ test("an expert's jump reaches the phone, the rig and other dashboards, and is r
   const jumpedTo = (client: Client) => ofType(client, "step.set").at(-1)?.stepId === "s3";
   await until(() => [user, rig, otherExpert].every(jumpedTo), "the jump everywhere");
 
-  const rejoined = await connect(port, "user", "rejoined phone");
+  const rejoined = await connect(port, "rig", "rejoined rig");
   await until(() => ofType(rejoined, "step.set").length === 1, "the replayed step");
   assert.equal(ofType(rejoined, "step.set")[0]!.stepId, "s3");
 });
@@ -320,6 +325,25 @@ test("the fake expert can jump straight to a step, for testing the rig on a cabl
   const rig = await connect(port, "rig");
   await until(() => ofType(rig, "step.set").length === 1, "the replayed step");
   assert.equal(ofType(rig, "step.set")[0]!.stepId, "s4");
+});
+
+test("a phone that taps Next with the link down catches up when it returns", async (t) => {
+  const { port } = await relay(t);
+  const url = `ws://127.0.0.1:${port}`;
+  const expert = await startFakeExpert({ url, guide: sampleGuide, log: quiet });
+  t.after(async () => expert.close());
+  const phoneCount = () =>
+    expert.received.flatMap((message) => (message.type === "presence" ? [message.clients.filter((c) => c.role === "user").length] : []));
+
+  await runFakePhone({ url, tapEveryMs: 20, poseEveryMs: 10, offline: { afterSteps: 1, forMs: 150 }, log: quiet });
+  const stepIds = () => expert.received.flatMap((message) => (message.type === "step.done" ? [message.stepId] : []));
+  await until(() => stepIds().length === sampleGuide.steps.length, "every step.done, including the queued ones");
+
+  assert.deepEqual(stepIds(), sampleGuide.steps.map((step) => step.id));
+  assert.ok(phoneCount().join(",").includes("1,0,1"), `the dashboard never saw the phone drop and return: ${phoneCount()}`);
+  const reloaded = await connect(port, "expert", "reloaded dashboard");
+  await until(() => ofType(reloaded, "presence").length > 0, "the replay");
+  assert.equal(ofType(reloaded, "step.set")[0]?.stepId, "s4", "the relay's step should end on the last step");
 });
 
 test("the fake phone and fake expert complete the sample guide through the relay", async (t) => {

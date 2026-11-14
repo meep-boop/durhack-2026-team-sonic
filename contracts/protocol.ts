@@ -23,7 +23,9 @@ export type Role = "expert" | "user" | "rig";
 // (assets/models/README.md).
 export type ModelName = "screw" | "bolt" | "arrow" | "screwdriver" | "hand" | "cable-plug";
 
-// Every action moves or turns the model along `axis` and loops until the user taps Next.
+// Every action moves or turns the model along `axis` and loops until the user taps Next. `axis` decides the
+// direction; the guide builder fills it from the model's own +Y after rotation (pull +Y, push -Y, turns around Y)
+// and the expert can change it.
 export type Action = "unscrew" | "pull" | "push" | "flip" | "rotate90";
 
 // The phone compares this with the marker it's tracking; a wrong printed size puts everything off by that ratio.
@@ -63,7 +65,8 @@ export type Step = {
 
 export type Guide = {
   id: string;
-  // Goes up by one on every edit. Offline resync compares it with the rev a `step.done` was made against.
+  // Goes up by one on every edit. On reconnect the latest guide wins: the phone switches to it and keeps its place
+  // and its done steps by step id, and its taps made on an older rev are still accepted.
   rev: number;
   title: string;
   marker: Marker;
@@ -86,7 +89,8 @@ export type Hello = {
 // an edit.
 export type GuideSet = { type: "guide.set"; guide: Guide };
 
-// Expert → user: jump to a step.
+// Expert → user: jump to a step. On connect the relay replays the current step to dashboards and the rig, never to
+// phones: the phone owns its position, so one that worked offline isn't sent backwards before its queued taps land.
 export type StepSet = { type: "step.set"; guideId: string; stepId: string };
 
 // Expert → relay, replayed to experts only and never sent to the phone. Kept so a reloaded dashboard doesn't lose
