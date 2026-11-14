@@ -7,6 +7,8 @@ guide to it, and plays the steps with **Next**. Owner: @salman.
 ```bash
 brew install xcodegen          # once
 cd ios
+./scripts/fetch-webrtc.sh      # once: Google's WebRTC (46 MB, checksum-checked) into ios/Vendor/
+cp Secrets.xcconfig.example Secrets.xcconfig   # once; add Gemini / ElevenLabs keys to turn those features on
 xcodegen                       # makes RemoteAssist.xcodeproj from project.yml (git-ignored, never commit it)
 open RemoteAssist.xcodeproj
 ```
@@ -29,6 +31,21 @@ scales every position.
 
 What you should see: a green outline on the marker's edges and an axis marker at its centre (red +X, green +Y,
 blue +Z). The outline stays put when the marker leaves view, and snaps back when you see it again.
+
+## Live call with the expert
+```bash
+cd relay && npm install && npm start          # prints ws://<laptop-ip>:8080
+cd ios/expert-call && python3 -m http.server 8000   # open http://localhost:8000 on the expert's laptop
+```
+Type the relay's `ws://` address into the page and press Connect: it shows a QR. On the phone, tap the status
+capsule, then **Scan QR**. Press **Call the phone** on the page, then **Accept** on the phone: the page sees the AR camera live and
+both sides can talk. Phone and laptop must be on the same Wi-Fi or hotspot (peer-to-peer, STUN only).
+
+## Laptop assistant and voice (optional)
+With `GEMINI_API_KEY` set, the laptop button identifies the laptop from the camera, writes the SSD-swap steps, pins
+parts ("Show me where") and checks each step ("Check my work"). Everything it says is labelled AI-generated, and it
+refuses to guide when the storage is soldered. With `ELEVENLABS_API_KEY` set, steps are read aloud by ElevenLabs;
+without it (or offline) the built-in iOS voice reads them.
 
 ## Checks
 ```bash
