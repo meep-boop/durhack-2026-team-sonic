@@ -66,9 +66,19 @@ so nobody waits for anybody. Until `contracts/protocol.ts` lands, use the draft 
 ## 3. ▶ Current tasks (2026-11-14), in order
 *Status: ⬜ not started · 🟡 in progress · ⏸ blocked · ✅ done*
 
+> 🟡 **START HERE (2026-11-14 23:55, @max's session):** answer Laura's four asks on `dashboard/src/scene/api.ts`
+> (her `progress.md` entry at 23:04). **Ask 1 blocks her:** how `dashboard/src/guide/` gets the `SceneApi` instance
+> and where her panel mounts (`main.tsx` renders only `<Viewport />` today). Asks 2–4: return the surface normal from
+> `pickPoint()`; a calibrated flag plus a change event; `size` in `onObjectMoved` if boxes resize in 3D. Each changes
+> the contract, so each is Max's decision; explain them in plain words. Branch `max-scene` (PR #6) is 16 behind
+> `main`: merge `origin/main` first. Then: scan Ahmed's laptop on its board in Scaniverse (the demo is now an SSD
+> swap) and drop the export on the dashboard for the first real speed test. Open PRs: #6 (dashboard + scene API),
+> #1 (research answers and decisions, with sources, on `max-docs`). Research: `research/ledger.md` § 7–15.
+
 1. 🟡 **Dashboard shell with a splat on screen, and the scene API**
-   - *Status (2026-11-14 22:40, @max):* shell, SAMPLE splat and `api.ts` in PR #6 (`max-scene`). Left: scan a real
-     desk in Scaniverse and load it; Laura agrees `api.ts` on the board; merge.
+   - *Status (2026-11-14 23:55, @max):* shell, SAMPLE splat and `api.ts` in PR #6 (`max-scene`). Laura agreed the
+     one-copy design (23:04) but asked for four additions first. Left: answer them; scan the real set (now Ahmed's
+     laptop) in Scaniverse and load it; merge.
    - Scaffold `dashboard/`. Scan any desk with a printed test marker on it in Scaniverse, export it, and render it.
      Write `dashboard/src/scene/api.ts`: what @laura's guide builder can call (pick a point, add, move and remove
      an object, preview an action) and what it gets back.
@@ -119,10 +129,11 @@ so nobody waits for anybody. Until `contracts/protocol.ts` lands, use the draft 
 - _(empty)_
 
 ## 5. Waiting on / owed to others
-- 📥 **Waiting on @laura:** the marker image and printed width; the glTF models; the finished demo set to scan.
+- 📥 **Waiting on @laura:** the finished demo set to scan (now Ahmed's laptop on a board). *(Marker 180 mm and the
+  six glTF models are on `main`: a model's tip, not its centre, sits at `pos`.)*
 - 📥 **Waiting on @ahmed:** the labelling endpoint. (The contract, sample guide, relay and fake phone are on
   `main`: `node fixtures/fake-phone.ts ws://<relay>:8080`.)
-- 📤 **Owed to @laura:** `dashboard/src/scene/api.ts`, first thing: her guide builder builds on it.
+- 📤 **Owed to @laura:** answers to her four asks on `api.ts` (23:04 board entry); ask 1 blocks her.
 
 ## 6. Working-style notes for the agent
 - Verbosity: project level (Level 0) unless Max changes it.
