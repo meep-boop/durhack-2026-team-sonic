@@ -59,13 +59,16 @@ each builder's brief (`builder-file-<name>.md`, on the `context` branch).
 - **Shared docs** (`CLAUDE.md`, `PROJECT.md`, `EVENT.md`, briefs, research, skills) are **never** committed to
   `main`. They live on the `context` branch. Edit, then `bash scripts/publish-context.sh "what changed"`,
   and every agent picks it up on its next prompt.
-- **Deploy:** The relay runs on the laptop that starts it (Ahmed's for now), on the team hotspot, port 8080. No cloud. State in `relay/state.json` (git-ignored). Ask Ahmed to restart it.
+- **Deploy:** The relay runs on the dashboard laptop (Ahmed's is opened up in the demo), on the team hotspot, port 8080. No cloud. State in `relay/state.json` (git-ignored). Ask Ahmed to restart it.
 
 ## Latest
 - **The volatile facts live here only:** the current commit, test counts, what's merged vs. local-only, and deploy
   status.
-- **As of 2026-11-14 18:45:** `main` has the team kit, and the `context` branch is seeded. Kit tests are
-  green locally (`test-context-scripts.sh`, `test-git-hooks.sh`). No project code yet. All four of us have repo access.
+- **As of 2026-11-14 23:40:** `main` has the contract, fixtures and fakes, the relay (41 tests, type-check clean), the
+  UNO Q rig code (13 tests, not yet run on its hardware), Laura's marker and six models, and `fixtures/video-test.html`.
+  **Not on `main` yet:** the iPhone app (PR #4, draft), the dashboard and scene API (PR #6), the guide builder
+  (`laura-guide`), Max's research answers (PR #1), Salman's board entries (PR #5). Relay deploy: the dashboard laptop
+  from the demo on; Ahmed's until then.
 
 ---
 
@@ -356,3 +359,30 @@ each builder's brief (`builder-file-<name>.md`, on the `context` branch).
     soft lighting may be enough, and nobody has tried scanning the laptop yet.
 - ⚠️ Conflicts: none (docs in Max's area)
 - Conflict status: resolved by @max 2026-11-14
+
+### 2026-11-14 23:40 — task sweep: every brief updated, and five new decisions — @ahmed
+- Shipped: every brief brought up to date from this board, the open PRs and the branches (Salman's `salman-ios` and
+  `salman-board`, Max's `max-scene` and `max-docs`, Laura's `laura-guide`). Code since my last entry, all on `main`:
+  offline resync (`32ff3e8`), the video test page (`03827d1`, now the dashboard calls, `6afbfa5`), Claude labelling
+  (`63b4be1`), the rig and the sample guide reworked for the SSD swap (`b3a2d0f`). 41 relay tests and 13 rig tests pass.
+- Slip: `6afbfa5` was committed straight to `main` instead of through `ahmed-relay` first. Tests passed first;
+  noted so nobody copies it.
+- Touched: on `context`: `PROJECT.md`, `CLAUDE.md`, `EVENT.md`, all four briefs
+- Decision: by Ahmed: the expert calls the phone (reverses "the phone offers"); `expect` is `{ region, present }` with a
+  sticker on the SSD; the relay runs on the dashboard laptop in the demo; Salman's Gemini and ElevenLabs extras stay,
+  entered for MLH; the Clock's 02:00 / 07:00 / 10:00 / 11:30; nobody sprays the laptop. Also logged: the offline rule,
+  Claude labelling, motion along `axis`. Folded in: the team's SSD swap (Laura), Laura's model conventions, Salman's
+  WebRTC library.
+- 📨 To @salman: four new items at the top of your brief. Mirror `expect: { region, present }` (a struct that
+  requires `port` and `cable` now fails to decode the sample guide); keep the phone's own place on reconnect; merge
+  PR #4 before the walking skeleton; post the +X/+Z edges. Your 22:10 and 23:25 entries are only on `salman-board`:
+  put board entries straight on `main`.
+- 📨 To @max: run the relay on the dashboard laptop for the demo (your brief, item A, with Ahmed); merge PR #6 before
+  the walking skeleton; the labels are `labels.request` / `labels.result` in the contract (task 7).
+- 📨 To @laura: task 2 is now the laptop and marker on one board, plus a bright sticker on the SSD for the rig. Add
+  `"ssd"` to `ModelName` and to `MODELS` in `relay/validate.ts` in the same commit as the model files. The expert
+  calls the phone, and Salman's `ios/expert-call/` is the base for your video panel.
+- ⚠️ Conflicts: @salman — `expect` changed shape, and phones no longer get the current step on reconnect | @laura —
+  `ModelName` and `relay/validate.ts` to edit with the `ssd` model | @max — the relay moves to the dashboard laptop
+- Conflict status: open
+
