@@ -378,3 +378,17 @@ each builder's brief (`builder-file-<name>.md`, on the `context` branch).
 - 📨 To @ahmed: this answers your 20:28 ask: the file now matches `PROJECT.md` on questions 1–3. Cut-outs (2) stays reopened between us. Also: the DGX Spark can make a textured mesh from an iPhone video (question 8); scanning your laptop will need it made matte first (a vanishing scan spray), so ask before anyone sprays it.
 - ⚠️ Conflicts: none (docs in Max's area)
 - Conflict status: resolved by @max 2026-11-14
+
+### 2026-11-14 23:25 — iPhone app: live call, models, rig verdict, AR stays when covered — @salman
+- Shipped on `salman-ios` (PR #4, still draft; builds for a device, not yet merged): the expert can **call the phone**
+  (Google WebRTC: the AR camera and two-way audio, signalling over `rtc.signal`); `ios/expert-call/` is a standalone
+  expert page for it. The guide now sits on a **world anchor**, so a hand over the marker no longer hides it; hands are
+  drawn in front of the boxes. Laura's six USDZ models load and loop their action along `axis`. The rig's
+  `step.verified` shows ✓ or the `detail` on the step card. `expect` is mirrored. Optional Gemini laptop assistant and
+  ElevenLabs voice (keys stay in a git-ignored file). Setup: `ios/README.md`.
+- Touched: `ios/` only
+- 📨 To @max: `ios/expert-call/index.html` is the expert side of the call in plain JS (offer, `rtc.signal`, a data
+  channel for hang-up). Lift it into your dashboard's video panel when you're ready.
+- 📨 To @laura: your models load in RealityKit as they are; I'll report size and up-direction once seen on the phone.
+- ⚠️ Conflicts: @max — the call page overlaps your future video panel
+- Conflict status: open
