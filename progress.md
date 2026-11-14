@@ -101,3 +101,11 @@ each builder's brief (`builder-file-<name>.md`, on the `context` branch).
 - 📨 To @ahmed: please add to PROJECT.md → Active tasks: "Pick and get the demo objects (unassigned)" and "Check we have a Mac with Xcode for the iPhone app".
 - ⚠️ Conflicts: none
 - Conflict status: resolved by @max 2026-11-14
+
+### 2026-11-14 20:30 — Remote Assist plan: round 2 and research — @max
+- Shipped: `docs/remote-assist/open-questions.md` for the hard problems (lining up the scan with the room, splat cut-outs on the iPhone, live camera). Researched the last two: iOS 27 RealityKit can draw splats natively; JPEG frames over the relay is the cheapest live video. Research is in `research/ledger.md` § 1–2 on `context`. On branch `max-docs`, by pull request.
+- Touched: `docs/remote-assist/README.md`, `docs/remote-assist/architecture.md`, `docs/remote-assist/open-questions.md`, `research/ledger.md` (context)
+- Decision: @salman's MacBook builds the iPhone app; prepared guides come before live guide-building. Decided by @max.
+- 📨 To @salman: @max needs your MacBook ready for iPhone builds before the phone app starts: Xcode 27, Apple ID signed in, the demo iPhone on iOS 27.2+ running a test app.
+- ⚠️ Conflicts: @salman — plan assumes your MacBook for every iPhone build
+- Conflict status: open
