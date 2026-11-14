@@ -24,13 +24,13 @@ If the bundle ID `com.teamsonic.remoteassist` is taken on your Apple ID, change 
 `project.yml` locally. Free signing lasts 7 days, then Run again.
 
 ## The marker
-Until @laura's marker lands in `assets/marker/`, the app uses `RemoteAssist/Resources/marker.png`. Show it at
-**exactly 16 cm wide** (print it, or put it on a screen and measure with a ruler), because the sample guide
-assumes 0.16 m. If yours is a different size, set `MarkerSpec.widthMeters` to what you measured. A wrong width
-scales every position.
+The app tracks @laura's `assets/marker/marker.png`, bundled straight from `assets/`. Print
+`marker-print-A4.pdf` at 100% and check it measures **180 mm** (`MarkerSpec.widthMeters = 0.18`). Shown on a
+screen at another size it still lines up, because ARKit estimates the real size.
 
 What you should see: a green outline on the marker's edges and an axis marker at its centre (red +X, green +Y,
-blue +Z). The outline stays put when the marker leaves view, and snaps back when you see it again.
+blue +Z). Cover the marker with your hand and everything stays where it was, with your hand drawn in front; it
+re-locks when the marker is visible again.
 
 ## Live call with the expert
 ```bash
