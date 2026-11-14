@@ -67,7 +67,7 @@ them, so a renamed or resized model breaks two apps).
 ## 3. ▶ Current tasks (2026-11-14), in order
 *Status: ⬜ not started · 🟡 in progress · ⏸ blocked · ✅ done*
 
-1. ⬜ **The marker** (do this first: @salman and @max are both waiting on it)
+1. 🟡 **The marker** (printed, measured 180 × 180 mm, on main `eca6c24`; waiting on @salman to confirm Xcode) (do this first: @salman and @max are both waiting on it)
    - A high-contrast, detailed, non-repeating image, 15 to 20 cm wide (small ones track badly), printed flat and
      matte. Measure the printed width with a ruler and commit the image to `assets/marker/` with that width in mm
      beside it: ARKit needs the exact size. Print spares.
@@ -100,13 +100,13 @@ them, so a renamed or resized model breaks two apps).
    - *Done when:* `bash scripts/submission-check.sh` passes and the submission is in.
 
 ## 4. Done log (newest first)
-- _(empty)_
+- 2026-11-14 21:31 · 🟡 Marker printed on matte paper, measured 180 × 180 mm, image + print sheet in `assets/marker/` on main. Closes when @salman confirms Xcode accepts it.
 
 ## 5. Waiting on / owed to others
 - 📥 **Waiting on @max:** `dashboard/src/scene/api.ts` and the dashboard shell.
 - 📥 **Waiting on @ahmed:** nothing right now. The contract, relay and fake phone are on `main`
   (`node fixtures/fake-phone.ts ws://<relay>:8080`), and the deadlines are in `PROJECT.md` → Clock.
-- 📤 **Owed to @salman and @max:** the marker image and printed width (task 1), then the models.
+- 📤 **Owed to @salman and @max:** the marker image and width are on main (task 1, 180 mm); the models still owed.
 - 📤 **Owed to @max:** the finished demo set, to scan.
 - 📤 **Owed to @ahmed:** a spot on the set for his UNO Q rig, agreed before the scan.
 
