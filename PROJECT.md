@@ -20,7 +20,8 @@ The idea is Max's (`docs/remote-assist/` on `main` has the full plan). It was ta
 2026-11-14 without an `idea-forge` scoring round; Laura and Salman haven't weighed in yet.
 
 **Never pitch:**
-- "Trained on the Dawn supercomputer", unless the splat on screen really was. Nobody has logged in to Dawn yet.
+- "Trained on the Dawn supercomputer": we have no Dawn access. Nor "trained on our DGX Spark" unless the splat on
+  screen really was (`research/ledger.md` § 9).
 - Any accuracy or speed number we haven't measured on our own set (alignment error, "x times faster than a call").
 - The market notes in `docs/remote-assist/README.md` → Parked (Dynamics 365 Remote Assist ending, what rival tools
   do). They aren't in `research/ledger.md` yet.
@@ -44,6 +45,8 @@ Source: `EVENT.md` §1 (one notes file, not yet checked against Devpost). The th
 
 | Date | Decision |
 |---|---|
+| 2026-11-14 | The splat upgrade route is the team's DGX Spark, not Dawn: we have no Dawn access (Max) |
+| 2026-11-14 | Dashboard: Vite 8 + React 19 + TypeScript, plain three.js + Spark 2.4 behind `scene/api.ts`, no React Three Fiber, zustand when needed; proven by a spike with a kill test (Max) |
 | 2026-11-14 | Guide objects can carry an optional `expect: { port, cable: in or out }` for the rig (Ahmed) |
 | 2026-11-14 | The rig: colour blobs on the Nicla Vision, USB through the hub to the UNO Q, `websocket-client` to the relay, ✓/✗ on the LED matrix (Ahmed) |
 | 2026-11-14 | The RS camera is the Nicla Vision; the RS staff confirmed it counts (Ahmed) |
@@ -96,8 +99,8 @@ briefs ask them to object on the board before building.
   **Not decided.**
 - **LLM provider for labelling, and what it looks at** (renders of the splat, or camera frames). Owner: Ahmed + Max.
   **Not decided.**
-- **Dashboard and relay libraries** (three.js, Spark, Vite, Node `ws`). Proposed in the plan; each is its builder's
-  call. **Not decided.**
+- **Settled 22:20: dashboard and relay libraries.** Relay: `ws` (Ahmed). Dashboard: Vite + React + three.js + Spark
+  (Max). The original note: proposed in the plan; each is its builder's call.
 - **Model formats:** author once and convert, or keep glTF and USDZ by hand. Owner: Laura. **Not decided.**
 - **Demo objects for the set.** Owner: Laura, with the team. **Not decided.**
 - **UNO Q detection method,** and whether we can borrow a kit at all. Owner: Ahmed (took it from Laura). **Not
@@ -129,7 +132,7 @@ Xcode" is answered: yes, per Ahmed.
 
 ### Blockers only humans can clear
 *Accounts, API keys, access, team registration, hardware, asking the organisers.*
-- **Dawn login.** Promised by the event, untested by us. Max to try.
+- **Cleared 22:20: Dawn login.** We have no Dawn access; the team has a DGX Spark instead (Max).
 - **For the rig: a micro-USB data cable** for the Nicla Vision (not charge-only) and **a charger for the hub's power
   input**. The team notes list no micro-USB data cable. Ahmed.
 - **Cleared 2026-11-14 21:47: a camera and a USB hub** for the RS challenge. The Nicla Vision is the camera (RS staff
@@ -199,8 +202,8 @@ The diagram, components, alignment maths and draft protocol are in `docs/remote-
 | Phone app | Pure native Swift, ARKit + RealityKit, no Expo (**decided**) | iPhone Safari has no WebXR AR; Salman is confident in Swift | No: first build pending |
 | Alignment | Printed marker, 15 to 20 cm, as an ARKit detection image under world tracking (**decided**) | `research/ledger.md` § 3, § 5 | No: error to be measured on our set |
 | Live video | WebRTC with a custom source fed from AR frames, signalling over the relay websocket (**decided**); library **not decided** | Ahmed's call | No |
-| Splat | Scaniverse export (**decided** as main route); Dawn + gsplat as an upgrade | Dawn untested | No |
-| Dashboard | Browser app; three.js + Spark + Vite **proposed, not decided** | Max's planning session | No |
+| Splat | Scaniverse export (**decided** as main route); the DGX Spark as the upgrade (**decided**, Max) | No Dawn access; pipeline in `research/ledger.md` § 9 | No |
+| Dashboard | Vite 8 + React 19 + TypeScript; plain three.js + Spark 2.4 behind `dashboard/src/scene/`; no React Three Fiber (**decided**, Max) | `research/ledger.md` § 7, § 8 | Yes: Spark's sample splat runs (`max-scene`, not merged yet) |
 | Relay | Node 24 + `ws` 8.23, plain `ws://` on the hotspot, state in a JSON file (**decided**) | No build step; HTTPS needs certificates iPhones won't trust | Yes: runs and tested on Ahmed's laptop |
 | AI labelling | Provider **not decided** | | No |
 | Hardware check | Arduino UNO Q + camera (the RS challenge requires them); method **not decided** | | No kit yet |
@@ -256,9 +259,18 @@ The diagram, components, alignment maths and draft protocol are in `docs/remote-
 
 ## Parked
 *Doable, decided against. Each item says why, and what would bring it back.*
+- **Training the splat on Dawn** (parked 2026-11-14): we have no Dawn access; the DGX Spark replaces it. Would come
+  back if Dawn access turns up.
 
 ## Decision log
 *Full records, newest first. NOW → Decisions in force holds the one-line versions.*
+
+## 2026-11-14 22:15 — The dashboard stack (folded in by Ahmed's agent at 22:20)
+- Chose: Spark 2.4 on three.js, proven by a short spike with a kill test (30 fps or more on the weakest laptop, a
+  click-pick under 300 ms, a cut-out under 2 s), PlayCanvas only if it fails; Vite 8 + React 19 + TypeScript; plain
+  three.js behind `scene/api.ts`; no React Three Fiber; a shared zustand store when one is needed (Max)
+- Because: `research/ledger.md` § 7 and § 8
+- Also: the splat upgrade route is the team's DGX Spark, not Dawn, which we have no access to (Max, § 9)
 
 ## 2026-11-14 21:54 — The UNO Q rig
 - Chose (Ahmed, each as recommended): the Nicla Vision works out which port holds the cable, with OpenMV colour blobs

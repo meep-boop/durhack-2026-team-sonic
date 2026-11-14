@@ -108,9 +108,10 @@ so nobody waits for anybody. Until `contracts/protocol.ts` lands, use the draft 
 8. ⬜ **The real splat of the demo set**
    - Once @laura's set is built with the marker fixed on it, scan it and swap it in.
    - *Done when:* the set's splat is in the dashboard and a re-calibration gives a residual you'd demo with.
-9. ⬜ **Dawn** (upgrade only)
-   - Log in and run one small job. If it works, train the set's splat there.
-   - *Done when:* either a Dawn-trained splat is in the dashboard, or a board entry says why not.
+9. ⬜ **Train the set's splat on the DGX Spark** (upgrade only; replaces Dawn 2026-11-14 22:20, at @max's request)
+   - The team has a DGX Spark, not Dawn access. Pipeline and risks: `research/ledger.md` § 9. Scaniverse stays the
+     baseline; only swap in the Spark-trained splat if it's clearly better.
+   - *Done when:* either a DGX-Spark-trained splat of the set is in the dashboard, or a board entry says why not.
 
 ## 4. Done log (newest first)
 - _(empty)_
@@ -131,5 +132,6 @@ so nobody waits for anybody. Until `contracts/protocol.ts` lands, use the draft 
   answered yes by @ahmed).
 
 ---
-── Archived (superseded — do NOT action) ──
-- _(empty)_
+── Archived (superseded 2026-11-14 — do NOT action) ──
+- **Task 9 as "Dawn"** (log in to Dawn, train the splat there). Superseded 2026-11-14 22:20: the team has a DGX Spark, not
+  Dawn access (@max, board entry 22:15). Would come back only if Dawn access turns up.

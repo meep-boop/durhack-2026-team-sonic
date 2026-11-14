@@ -19,7 +19,7 @@ apply; the step-by-step protocols live in the skills it names (§ Triggers).*
 | Research | `research/ledger.md` (every source rated KEEP / WEAK / DO NOT USE) |
 | Briefs | `builder-file-<name>.md`, one per builder: what their agent builds from |
 | Progress | `progress.md` on `main`: build log + conflict board |
-| Stack | Phone: native Swift, ARKit + RealityKit. Dashboard (browser) and relay (Node): libraries proposed, not decided (§5) |
+| Stack | Phone: pure native Swift, ARKit + RealityKit. Dashboard: Vite 8 + React 19 + TypeScript, plain three.js + Spark 2.4 behind `dashboard/src/scene/` (no React Three Fiber), zustand when shared state is needed. Relay: Node 24 + `ws`. Rig: Nicla Vision (OpenMV) + UNO Q (Python, `websocket-client`) (§5) |
 | Run · Test | Relay: `cd relay && npm install && npm start` (prints the `ws://` address to give the phone; `npm start -- --fresh` starts empty). Test: `cd relay && npm test && npm run typecheck`. Fakes need only Node 24: `node fixtures/fake-expert.ts ws://<relay>:8080` or `node fixtures/fake-phone.ts ws://<relay>:8080` |
 | Deploy | The relay runs on the laptop that starts it (Ahmed's for now), on the team hotspot, port 8080. No cloud. State in `relay/state.json` (git-ignored) |
 | Expected scale | _blank_ (until set, `no-slop` designs for 10× the real load) |
@@ -198,8 +198,10 @@ never behind. `progress.md` and `team.conf` are the only files committed straigh
 ---
 
 ## 5. Stack and current architecture *(fill as decided; empty is fine)*
-**Stack:** the iPhone app is native Swift with ARKit + RealityKit (decided). The expert dashboard is a browser app and the
-relay is a Node server; their libraries (three.js, Spark, Vite, `ws`) are proposed, not decided. Full table: `PROJECT.md` §6.
+**Stack:** the iPhone app is pure native Swift with ARKit + RealityKit. The expert dashboard is Vite 8 + React 19 +
+TypeScript with plain three.js and Spark 2.4 behind `dashboard/src/scene/` (Max). The relay is Node 24 + `ws`. The RS
+rig is a Nicla Vision and an UNO Q. Splats come from Scaniverse, with the team's DGX Spark as the upgrade. Full
+table: `PROJECT.md` §6.
 **The plan:** `docs/remote-assist/` on `main`.
 **Runtime shape:** `PROJECT.md` §5 diagram.
 **Known gaps:** no project code yet (2026-11-14). Nothing has been trained on Dawn. No alignment accuracy has been measured.

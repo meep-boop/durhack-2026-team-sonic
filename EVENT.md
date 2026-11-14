@@ -87,7 +87,8 @@ Other schedule notes: midnight pizza; sleeping area TLC123.
 ## 6. Platform and sponsor tech
 - **What we're given:** the RS Product Loan Library on the top floor (student ID and table number), which may
   supply webcams, USB-C hubs and sensors; a 3D printer (queue unknown, a small print takes 1 to 2 hours). Dawn
-  supercomputer access is in Max's plan but isn't in the source file: _not confirmed_.
+  supercomputer access was in Max's plan, but **we have no Dawn access** (Max, 2026-11-14). The team has its own
+  NVIDIA DGX Spark instead.
 - **What the team already has** (per the source file): an **Arduino UNO Q**, an Arduino Nicla Vision (a camera
   board), a Raspberry Pi Pico W, an M5Stack Cardputer, an Arduino Sensor Kit, Modulinos, a servo and motors. Not
   owned: a USB webcam, a micro-USB data cable. **For RS** (2026-11-14): the Nicla Vision is our camera, and the RS staff
