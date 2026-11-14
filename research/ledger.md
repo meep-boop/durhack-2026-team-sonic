@@ -10,6 +10,8 @@ The one research file for this project (`research-ledger` skill). Every source g
 |---|---|---|
 | 1 | Gaussian splats on iPhone AR (2026-11-14) | Can the phone draw a splat cut-out; stand-in options |
 | 2 | Live iPhone camera to a browser (2026-11-14) | Picking the live video path |
+| 3 | Aligning a splat with the real room on a non-LiDAR iPhone (2026-11-14) | Marker vs ARKit poses vs tap points; accuracy |
+| 4 | Scan-to-splat pipeline, Spark cut-outs, RealityKit splat format (2026-11-14) | Scaniverse vs Dawn; cutting parts out; loading on iOS |
 
 ---
 
@@ -120,3 +122,118 @@ Cloud as the upgrade if there's time. Put the relay on a public address for 4G, 
 - [9] LiveKit custom capturer docs mirror, mintlify.com, https://www.mintlify.com/livekit/client-sdk-swift/api/capturers/custom-capturer : third-party mirror.
 - Daily, Agora, Twilio free tiers: not checked.
 ### DO NOT USE
+
+
+# § 3 Aligning a splat with the real room on a non-LiDAR iPhone (2026-11-14)
+**Question:** how can an iPhone 16 (no LiDAR) line up a pre-made splat with the real cupboard to about 1–2 cm?
+Feeds open question 1 in `docs/remote-assist/open-questions.md`.
+
+## Findings
+- No published measurement shows any method reaching 1–2 cm on a non-LiDAR iPhone. Must be measured on the set.
+- Image anchors need the exact printed size, or position and stability suffer ([1]; corroborated on forums). Tiny
+  markers (26 mm) track badly ([7], WEAK). Use 15–20 cm.
+- ArUco markers seen in COLMAP frames can be triangulated, which also gives metric scale (`aruco-estimator`, needs
+  2+ images, one marker, work in progress) ([2], [3]). A tool released 30 Oct 2026 bakes AprilTag alignment into the
+  COLMAP model and splat ([8], WEAK).
+- `colmap model_aligner` fits rotation, translation and scale to reference camera centres, needing 3+ images ([4]).
+  Flag names differ between versions; a "successful" fit has gone badly wrong for one user ([9], WEAK).
+- ARWorldMap survives app relaunch, but relocalizing "strongly depends" on the environment and suffers with lighting
+  changes ([5]; failures reported in [10], WEAK).
+- nerfstudio imports ARKit-posed captures from Polycam/Record3D (LiDAR modes) ([6]); NeRFCapture exports ARKit-posed
+  frames ([11]).
+- Taps on non-LiDAR feature points and estimated planes are unreliable for small targets ([12], [13], both WEAK but
+  agreeing).
+- ARKit object detection suits rigid tabletop objects, no accuracy figures ([14]).
+- General AR placement error around 1.5 cm in one study, not image-anchor specific ([15], WEAK).
+
+## Community consensus
+Apple developer forums and the COLMAP group agree: non-LiDAR taps are imprecise, image anchors need the exact size,
+and world-map relocalization is fragile with lighting changes. No Reddit/HN pass.
+
+## Final call (professional + community)
+A 15–20 cm printed marker in the scan and detected live, with ARKit poses recorded during the scan for metric scale.
+Tap-to-correct as a fallback; ARWorldMap a stretch. Measure the error with a ruler before the demo.
+
+## Source ledger
+### KEEP
+- [1] Detecting images in an AR experience, Apple, https://developer.apple.com/tutorials/data/documentation/arkit/detecting-images-in-an-ar-experience.md : exact physical size needed.
+- [2] aruco-estimator 1.1.5, PyPI, https://pypi.org/project/aruco-estimator/1.1.5/ : ArUco triangulation in COLMAP.
+- [3] arXiv 2604.18205, https://arxiv.org/pdf/2604.18205 : marker-based scale and alignment.
+- [4] COLMAP FAQ, https://colmap.readthedocs.io/en/stable/faq.html : model_aligner.
+- [5] Managing session life cycle and tracking quality, Apple, https://developer.apple.com/documentation/arkit/managing-session-life-cycle-and-tracking-quality.md : ARWorldMap relocalization.
+- [6] nerfstudio custom data, https://docs.nerf.studio/quickstart/custom_dataset.html : ARKit-posed imports.
+- [11] NeRFCapture, App Store, https://apps.apple.com/us/app/-/id6446518379 : ARKit-posed frame export.
+- [14] Scanning and detecting 3D objects, Apple, https://developer.apple.com/documentation/arkit/scanning-and-detecting-3d-objects.md : object detection scope.
+### WEAK
+- [7] Apple Developer Forums 101872, https://developer.apple.com/forums/thread/101872 : small marker unreliable.
+- [8] Spirula Studio AprilTag alignment, radiancefields.com, https://radiancefields.com/spirula-studio-v2026.10.30-adds-apriltag-alignment
+- [9] COLMAP Google group, https://groups.google.com/g/colmap/c/6qYieMyK4XI : model_aligner pitfalls.
+- [10] Apple Developer Forums 690668, https://developer.apple.com/forums/thread/690668 : world map failures.
+- [12] Apple forums (CurvSurf replies), https://origin-devforums.apple.com/forums/profile/CurvSurf/replies?page=2 : feature points inaccurate.
+- [13] Apple Developer Forums 711139, https://developer.apple.com/forums/thread/711139 : estimated-plane raycasts inconsistent.
+- [15] NSF PAR 10339780, https://par.nsf.gov/servlets/purl/10339780 : general AR placement error.
+- ARKit drift about 0.02 m/s on iPhone 12 Pro Max, PMC9785098, https://pmc.ncbi.nlm.nih.gov/articles/PMC9785098 : single benchmark.
+### DO NOT USE
+
+# § 4 Scan-to-splat pipeline, Spark cut-outs, RealityKit splat format (2026-11-14)
+**Question:** fastest reliable route from an iPhone scan to a splat; whether Dawn can train it; how to cut a part
+out in Spark and load it in RealityKit. Feeds open questions 2 and 4.
+
+## Findings
+### Dawn and gsplat on Intel GPUs
+- isl-org/gsplat (branch `sycl_code_integration`) adds a SYCL backend with install steps and a prebuilt wheel for
+  torch 2.10+xpu; tested on Arc iGPUs, A770, B580 only; no 3DGUT or compression; 30k-step runs ran out of memory on a
+  B580; 7k steps took 519–919 s on a B580 ([1]). Its initial-backend PR is still open ([10], WEAK, mirror).
+- Dawn nodes have 4× Intel Max 1550 ([2]). Access is through UKRI/DSIT allocations; a 2024 hackfest gave teams nodes
+  ([3]). Dawn's ML docs use an IPEX conda env, likely stale ([4]).
+- Brush trains splats with WebGPU on Intel GPUs and reads COLMAP ([5]); headless use on a GPU node unverified.
+### COLMAP vs GLOMAP
+- GLOMAP's mapping is far faster at similar accuracy, e.g. 133 s vs 1115 s on one ETH3D sequence ([6]); it's in
+  recent COLMAP as `global_mapper`, which needs good focal priors; without CUDA everything except dense works ([7]).
+### Scaniverse
+- Free, on-device splats, exports PLY and SPZ, iOS 16.6+, works without LiDAR ([8]). Metric scale undocumented.
+### Spark
+- Loads .ply, .spz, .splat, .ksplat, .sog, .rad ([9]). SplatEdit/SplatEditSdf act at render time only ([11]).
+  A true cut-out uses `PackedSplats.forEachSplat` + `pushSplat` into a new SplatMesh ([12]).
+### RealityKit GaussianSplatComponent (iOS 27)
+- iOS/macOS/visionOS 27, Apple7 GPU family, not in Simulator ([13]). Buffers filled by the app: position and scale
+  float3, rotation float4 in w,x,y,z, opacity float, SH degree 0–3; raw PLY needs exponential scale and sigmoid
+  opacity; NaN/Inf rejected ([13], [14]). No native SPZ ([15], WEAK).
+- A per-resource splat limit exists, number unpublished (200k reported [16], 400k ran [17], both WEAK).
+- OpacityComponent fades are broken on iOS, Apple-confirmed ([18]). Runtime buffer mutation "not supported" per an
+  Apple engineer ([16]).
+
+## Community consensus
+GitHub issues and Apple forums: the Intel gsplat fork works on consumer Arc cards, with no reports on PVC; Apple's
+splat API works but has a limit and young bugs. No Reddit/HN pass.
+
+## Final call (professional + community)
+Scaniverse first (about 15 min, low risk), Dawn as a stretch goal. Cut-outs via Spark's CPU API, exported as PLY,
+parsed into RealityKit buffers on the phone; animate transforms, not opacity. Ask organisers about Dawn access.
+
+## Source ledger
+### KEEP
+- [1] isl-org/gsplat Intel_XPU.md, https://raw.githubusercontent.com/isl-org/gsplat/sycl_code_integration/docs/Intel_XPU.md
+- [2] Dawn PVC user guide, https://docs.hpc.cam.ac.uk/hpc/user-guide/pvc.html
+- [3] Intel oneAPI Hackfest at DiRAC, https://community.intel.com/t5/Blogs/Tech-Innovation/Tools/Intel-Hosted-oneAPI-Hackfest-at-DiRAC-HPC-Research-Facility/post/1630543
+- [4] Dawn ML jobs, https://docs.hpc.cam.ac.uk/user-guide/pvc-jobs-ML.html (likely stale)
+- [5] Brush, https://github.com/ArthurBrussee/brush
+- [6] GLOMAP, arXiv 2407.20219, https://arxiv.org/abs/2407.20219
+- [7] COLMAP FAQ, https://colmap.github.io/faq.html
+- [8] Scaniverse, App Store, https://apps.apple.com/us/app/-/id1541433223
+- [9] Spark SplatMesh docs, https://sparkjs.dev/docs/splat-mesh/
+- [11] Spark splat editing docs, https://sparkjs.dev/docs/splat-editing/
+- [12] Spark PackedSplats docs, https://sparkjs.dev/docs/packed-splats/
+- [13] GaussianSplatComponent, Apple, https://developer.apple.com/documentation/realitykit/gaussiansplatcomponent.md
+- [14] Rendering Gaussian splats with RealityKit, Apple, https://developer.apple.com/documentation/visionos/rendering-gaussian-splats-with-realitykit.md
+- [18] Apple Developer Forums 842819, https://developer.apple.com/forums/thread/842819 : opacity fade bug, Apple-confirmed.
+### WEAK
+- [10] isl-org/gsplat PR 1 (mirror), https://gh.r-mj.com/isl-org/gsplat/pull/1
+- [15] Apple Developer Forums 842737 : no native SPZ.
+- [16] Apple Developer Forums 831663, https://developer.apple.com/forums/thread/831663 : ~200k limit, no runtime buffer mutation.
+- [17] Apple Developer Forums 838974, https://developer.apple.com/forums/thread/838974 : 400k on iPhone 16 Pro, AR mode.
+- GLOMAP matching bottleneck on CPU, arXiv 2603.20428, https://arxiv.org/pdf/2603.20428
+- Scaniverse paid tiers, polyvia3d.pages.dev, https://polyvia3d.pages.dev/guides/gaussian-splatting-mobile-capture
+- Spark v2.3.0 writeSpz, radiancefields.com, https://radiancefields.com/spark-v2.3.0-fixes-on-demand-rendering-for-paged-lod
+### DO NOT USE
+- Dawn's IPEX conda env as the gsplat base ([4]): superseded by upstream PyTorch XPU wheels per [1]. Tombstone.
