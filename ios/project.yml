@@ -1,0 +1,52 @@
+name: RemoteAssist
+options:
+  bundleIdPrefix: com.teamsonic
+  deploymentTarget:
+    iOS: "18.0"
+  createIntermediateGroups: true
+configFiles:
+  Debug: Config/Signing.xcconfig
+  Release: Config/Signing.xcconfig
+settings:
+  base:
+    SWIFT_VERSION: "5.0"
+    MARKETING_VERSION: "0.1.0"
+    CURRENT_PROJECT_VERSION: "1"
+targets:
+  RemoteAssist:
+    type: application
+    platform: iOS
+    sources:
+      - path: RemoteAssist
+      # Ahmed's fixture, bundled as-is so the contract has one source of truth.
+      - path: ../fixtures/sample-guide.json
+        buildPhase: resources
+    settings:
+      base:
+        PRODUCT_BUNDLE_IDENTIFIER: com.teamsonic.remoteassist
+        TARGETED_DEVICE_FAMILY: "1"
+        GENERATE_INFOPLIST_FILE: YES
+        INFOPLIST_KEY_CFBundleDisplayName: Remote Assist
+        INFOPLIST_KEY_NSCameraUsageDescription: Remote Assist uses the camera to line the guide up with the printed marker.
+        INFOPLIST_KEY_UILaunchScreen_Generation: YES
+        INFOPLIST_KEY_UISupportedInterfaceOrientations: UIInterfaceOrientationPortrait
+        INFOPLIST_KEY_UIStatusBarStyle: UIStatusBarStyleLightContent
+  RemoteAssistTests:
+    type: bundle.unit-test
+    platform: iOS
+    sources:
+      - path: RemoteAssistTests
+    dependencies:
+      - target: RemoteAssist
+    settings:
+      base:
+        GENERATE_INFOPLIST_FILE: YES
+schemes:
+  RemoteAssist:
+    build:
+      targets:
+        RemoteAssist: all
+        RemoteAssistTests: [test]
+    test:
+      targets:
+        - RemoteAssistTests

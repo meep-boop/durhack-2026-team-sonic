@@ -1,0 +1,3 @@
+// Signing stays out of the repo: each builder's team ID lives in the git-ignored ios/Local.xcconfig.
+CODE_SIGN_STYLE = Automatic
+#include? "../Local.xcconfig"
