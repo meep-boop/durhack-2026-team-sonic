@@ -31,8 +31,7 @@ flowchart LR
 | Piece | Runs on | Stack |
 |---|---|---|
 | Phone app | iPhone (user) | Native Swift app, ARKit + RealityKit. Live camera share, scan capture and upload, step player with **Next**. Built on @salman's MacBook |
-| Splat pipeline | Dawn (Slurm batch) | ffmpeg frames → COLMAP or GLOMAP camera poses → gsplat (Intel XPU fork, `isl-org/gsplat`) → crop and compress to .spz/.ksplat |
-| Splat fallback | iPhone | Scaniverse app (free, on-device splats) → export .ply |
+| Splat pipeline | iPhone first, Dawn as stretch | **Scaniverse** on the phone first (about 15 min). Dawn route: ffmpeg frames → COLMAP global mapper → gsplat Intel XPU fork (`isl-org/gsplat`). See [open-questions.md § 4](open-questions.md#4-getting-from-a-scan-to-a-splat-and-cutting-parts-out) |
 | Relay server | Team laptop | Node + `ws`, over HTTPS. Keeps the latest guide and replays it to anyone who reconnects |
 | Expert dashboard | Laptop browser | three.js + Spark splat renderer: live view, cut objects out of the splat, place built-in models, build the step timeline |
 | Live video | Phone → dashboard | **Open:** [open question 3](open-questions.md#3-getting-the-live-camera-to-the-expert) |

@@ -109,3 +109,11 @@ each builder's brief (`builder-file-<name>.md`, on the `context` branch).
 - 📨 To @salman: @max needs your MacBook ready for iPhone builds before the phone app starts: Xcode 27, Apple ID signed in, the demo iPhone on iOS 27.2+ running a test app.
 - ⚠️ Conflicts: @salman — plan assumes your MacBook for every iPhone build
 - Conflict status: open
+
+### 2026-11-14 21:15 — Remote Assist plan: unknowns researched, working defaults set — @max
+- Shipped: researched alignment (printed marker + ARKit poses recorded during the scan) and the scan pipeline (Scaniverse first, Dawn as stretch; cut-outs via Spark's CPU API, exported as PLY for RealityKit). Set working defaults for open questions 1–4; added open question 4. Ledger § 3–4 on `context`. Via PR on `max-docs`.
+- Touched: `docs/remote-assist/open-questions.md`, `docs/remote-assist/README.md`, `docs/remote-assist/architecture.md`, `research/ledger.md` (context)
+- Decision: working defaults (not confirmed by the team): marker + ARKit poses for alignment; RealityKit splats with a stand-in fallback; JPEG over the relay, LiveKit later; Scaniverse first. @max asked for defaults over more questions.
+- 📨 To @ahmed: please add "Ask the organisers whether DurHack teams can get Dawn access" to PROJECT.md → Active tasks.
+- ⚠️ Conflicts: none
+- Conflict status: resolved by @max 2026-11-14

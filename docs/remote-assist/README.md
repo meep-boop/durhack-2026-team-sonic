@@ -52,9 +52,9 @@ Each one still needs the team's agreement at kickoff.
 |---|---|---|
 | 1 | Do we have a Mac for the iPhone app? | **Yes, @salman's MacBook** |
 | 2 | How does the phone line up the scan with the room? | **Needs real thought.** [Open question 1](open-questions.md#1-lining-up-the-scan-with-the-real-room) |
-| 3 | What does the phone show for a cut-out from the scan? | **Researched:** iOS 27 RealityKit can draw splats. Awaiting decision. [Open question 2](open-questions.md#2-showing-splat-cut-outs-on-the-iphone) |
+| 3 | What does the phone show for a cut-out from the scan? | **Researched:** iOS 27 RealityKit can draw splats. Working default: RealityKit splats, stand-in model as fallback. [Open question 2](open-questions.md#2-showing-splat-cut-outs-on-the-iphone) |
 | 4 | Live guide-building or prepared guides first? | **Prepared guides first** (what Neptune North needs). Live building reuses the same editor |
-| 5 | How does the live camera reach the expert? | **Researched:** JPEG over the relay first, LiveKit later. Awaiting decision. [Open question 3](open-questions.md#3-getting-the-live-camera-to-the-expert) |
+| 5 | How does the live camera reach the expert? | **Researched:** JPEG over the relay first, LiveKit later. Working default: JPEG now, LiveKit later. [Open question 3](open-questions.md#3-getting-the-live-camera-to-the-expert) |
 
 ## The demo (to redo for the new setting)
 
@@ -97,6 +97,7 @@ several sponsor challenges.
   iPhone set up for development and a test app running on it.
 - [ ] **Figure out how the phone lines up the scan with the real room:**
   [open question 1](open-questions.md#1-lining-up-the-scan-with-the-real-room). Owner: not assigned yet.
+- [ ] **Ask the organisers whether DurHack teams can get Dawn access.** Scaniverse is the default until then.
 - [ ] **Agree the protocol** (architecture.md) before the phone and laptop sides split up.
 
 ## Parked (superseded by round 1, kept for the record)
