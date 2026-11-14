@@ -14,6 +14,9 @@ The one research file for this project (`research-ledger` skill). Every source g
 | 4 | Scan-to-splat pipeline, Spark cut-outs, RealityKit splat format (2026-11-14) | Scaniverse vs Dawn; cutting parts out; loading on iOS |
 | 5 | Add-ons to § 2 and § 3: marker under world tracking, ARKit holding the camera (2026-11-14) | Which ARKit configuration to use; why the stock WebRTC capturer fails |
 | 6 | Which frame guide positions travel in: the marker's or the splat's (2026-11-14) | The protocol's coordinate rules; what the phone must check on device |
+| 7 | Splat renderer for the dashboard: Spark vs PlayCanvas vs the rest (2026-11-14) | Picking the renderer; picking and cut-out APIs; the spike's pass criteria |
+| 8 | Dashboard shell: build tool, UI layer, R3F or not, scene-UI state (2026-11-14) | Scaffolding `dashboard/`; the scene/guide seam |
+| 9 | Training our own splat on the DGX Spark (2026-11-14) | Whether and how to beat Scaniverse's splat; replaces the Dawn route |
 
 ---
 
@@ -370,3 +373,236 @@ printed width.
 - "Image anchors are not tracked after initial detection" and "ARKit doesn't track changes to the position or
   orientation of each detected image", from the iOS 11.3-era sample [1]. Refuted for iOS 12 and later by Apple's own
   [2] when `maximumNumberOfTrackedImages` is above zero. Tombstone, so it isn't re-litigated.
+
+# § 7 Splat renderer for the dashboard: Spark vs PlayCanvas vs the rest (2026-11-14)
+**Question:** which library should draw the Scaniverse splat in the expert dashboard, given what Max's tasks need:
+orbit, click-picking, glTF models in the same scene, and cut-outs (lifting a box of splats out as its own object)?
+Builds on § 4. Asked by Max because "PlayCanvas has the best splat tooling" was said without a source.
+
+**How this pass was done:** about 20 minutes by Max's agent. Versions are from the npm registry and GitHub on
+2026-11-14. Spark 2.4.0's and playcanvas 2.24.1's type definitions were read from their npm tarballs. Reddit and HN
+had no head-to-head thread.
+
+## Findings
+### Versions and upkeep
+- Spark (`@sparkjsdev/spark`) 2.4.0, 2026-10-20, MIT, releases every few weeks (sources: [1], [2]).
+- PlayCanvas engine 2.24.1, 2026-11-12, MIT, releases every week or two, mostly splat work lately. SuperSplat
+  3.8.1. `@playcanvas/react` is still 0.x (sources: [1], [12], [19]).
+- GaussianSplats3D is **no longer developed**; its README points to Spark. Last release 0.4.7, Jan 2025 (sources:
+  [21], [1]).
+- three.js r186 merged its own splat renderer (TSL, WebGPU/WebGL) with raycasting in Aug 2026. Three months old, in
+  `examples/jsm`, no CPU editing API found (sources: [23], [22]).
+- Babylon.js 9.36 loads .ply/.splat/.spz/.sog and has `GaussianSplattingMesh.intersects` (sources: [24], [25]).
+### Formats
+- Both Scaniverse exports (.ply, .spz) load in Spark and PlayCanvas. Spark reads SPZ v4 since 2.4.0; PlayCanvas
+  needs a hand-registered SPZ parser (sources: [2], [3], [13]).
+### Speed
+- Spark: WebGL2 only (WebGPU support is an open issue). GPU distances, CPU radix sort in a worker; all splat
+  objects sorted together, so several blend correctly. In-browser level-of-detail (sources: [4], [6], [10]).
+- Against Spark: one user found it slower than GaussianSplats3D on a 19M-splat file, with sort lag on fast orbits
+  [8]. Firefox at 0.3 fps vs Chrome at 40–50 fps, likely the integrated GPU [9]. **Demo in Chrome.**
+- PlayCanvas: CPU sort on WebGL2, GPU sort on WebGPU (sources: [12], [13]). "3–4× faster" is one forum anecdote
+  [18]. No independent benchmark either way.
+### Cut-outs
+- Spark 2.4.0: `forEachSplat` to collect indices, `PackedSplats.extractSplats(indices)` (in the types, undocumented)
+  into a new `SplatMesh`; hide the source region with a SplatEdit (sources: [5], [3], § 4 [11]). The cut-out loses
+  view-dependent colour (no spherical harmonics copied) [5]. Editing packed data re-uploads the whole buffer: fine
+  once, not per frame [3].
+- PlayCanvas: `GSplatData.getProp` / `getCenters` / `calcAabb`; a subset means building new `GSplatData` and a
+  `GSplatResource`. Docs thin (sources: [13], [16], [17]).
+- Offline fallback for either: SuperSplat's "Separate selection" plus export [19].
+### Picking
+- Spark: `SplatMesh` works with three's `Raycaster` (WASM ray–ellipsoid test per splat, opacity cut-off 0.2).
+  About 350 ms per pick on a multi-million-splat file with level-of-detail off; about 7 ms with it on but imprecise
+  (sources: [3], [5], [7]). Open bugs: rays still hit splats a SplatEdit hid or moved [11].
+- PlayCanvas: `Picker.getWorldPointAsync` via GPU depth, since Nov 2025; gives a point, not a splat index
+  (sources: [14], [15]).
+### Mixing with glTF
+- `SplatMesh` is a `THREE.Object3D`, drawn in the normal render call, so GLTFLoader, TransformControls and helpers
+  work as usual (sources: [3], [4]). PlayCanvas loads glb natively [15].
+
+## Community consensus
+No head-to-head thread found. Where sources agree: Spark is the three.js default (even GaussianSplats3D's author
+says so); PlayCanvas/SuperSplat leads on WebGPU speed and the offline editor. "PlayCanvas has the best splat
+tooling" holds for the SuperSplat editor, not for cutting parts out from code, where Spark's API is plainer.
+
+## Final call (professional + community)
+Spark 2.4.0 on three.js covers every dashboard task with documented or typed APIs. Pick on click only,
+level-of-detail off for the room splat, demo in Chrome; cut-outs lose view-dependent colour. A full two-library
+bake-off isn't worth it: run a 60–90 min Spark spike with a kill criterion (orbit at 30 fps or more on the weakest
+laptop, a pick under 300 ms, a cut-out under 2 s that looks right), and give PlayCanvas the same test only if the
+frame rate fails.
+
+## Source ledger
+### KEEP
+- [1] npm registry entries for each package, fetched 2026-11-14, https://www.npmjs.com/package/@sparkjsdev/spark
+- [2] Spark v2.4.0 release notes, GitHub, 2026-10-20, https://github.com/sparkjsdev/spark/releases/tag/v2.4.0
+- [3] Spark SplatMesh docs, https://sparkjs.dev/docs/splat-mesh/
+- [4] Spark overview, https://sparkjs.dev/docs/overview/
+- [5] Spark 2.4.0 type definitions (`PackedSplats.extractSplats`, `raycast`), npm tarball
+- [6] "Spark 2.0", World Labs blog, 2026-04-14, https://www.worldlabs.ai/blog/spark-2.0
+- [7] Spark issue #468, raycast precision, 2026-10, https://github.com/sparkjsdev/spark/issues/468
+- [8] Spark issue #225, slower than GaussianSplats3D, 2025-11, https://github.com/sparkjsdev/spark/issues/225
+- [9] Spark issue #190, Firefox performance, 2025-10, https://github.com/sparkjsdev/spark/issues/190
+- [11] Spark issues #497 / #498, raycast hits hidden splats, 2026-11-12, https://github.com/sparkjsdev/spark/issues/497
+- [12] PlayCanvas engine v2.24.0 release notes, 2026-11-09, https://github.com/playcanvas/engine/releases/tag/v2.24.0
+- [13] playcanvas 2.24.1 type definitions (GSplatData, Picker, renderers), npm tarball
+- [14] PlayCanvas PR #8154, splat world-point picking, 2025-11-21, https://github.com/playcanvas/engine/pull/8154
+- [15] PlayCanvas splat examples, https://github.com/playcanvas/engine/tree/main/examples/src/examples/gaussian-splatting
+- [19] SuperSplat repo and v3.8.x releases, https://github.com/playcanvas/supersplat
+- [21] GaussianSplats3D README, https://github.com/mkkellogg/GaussianSplats3D
+- [23] three.js PRs #33950 and #34284, Aug 2026, https://github.com/mrdoob/three.js/pull/33950
+- [24] @babylonjs/core 9.36.0 type definitions, https://www.npmjs.com/package/@babylonjs/core
+### WEAK
+- [10] Spark issue #394, WebGPURenderer support (title only), https://github.com/sparkjsdev/spark/issues/394
+- [16] PlayCanvas unified splat rendering guide (search summary only), https://developer.playcanvas.com/user-manual/gaussian-splatting/building/unified-rendering
+- [17] PlayCanvas forum, programmatic splat data, https://forum.playcanvas.com/t/programmatic-access-to-splat-data/41492
+- [18] PlayCanvas forum, "3–4× FPS" (one user), https://forum.playcanvas.com/t/gaussian-splatting-playcanvas/33503?page=4
+- [20] radiancefields.com, SuperSplat 3.0 WebGPU-only, 2026-09, https://radiancefields.com/playcanvas-releases-supersplat-3.0
+- [22] radiancefields.com, three.js r186 splats, https://radiancefields.com/three.js-ships-its-native-gaussian-splat-renderer-and-splat-raycasting-in-r186
+- [25] radiancefields.com, Babylon.js 9 splats, https://radiancefields.com/babylon.js-v9.0-3dgs-gets-shadows-sogs-and-triangle-splatting-support-announced
+- [26] gsplat.js, last release July 2025, https://github.com/huggingface/gsplat.js
+- [28] SplatBus, arXiv 2601.15431 (not opened), https://arxiv.org/abs/2601.15431
+### DO NOT USE
+- PlayCanvas forum "How to raycast on a Gaussian splat mesh?" saying it can't be done: superseded by [14].
+  https://forum.playcanvas.com/t/how-to-raycast-on-gaussian-splat-mesh/40637
+- "Spark's latest is v2.3.0" (stale search result): 2.4.0 shipped [1], [2].
+- "AMD to acquire World Labs": one unverified site. Don't cite.
+
+# § 8 Dashboard shell: build tool, UI layer, R3F or not, scene-UI state (2026-11-14)
+**Question:** what should `dashboard/` be built with? It's a big 3D viewport (Max) plus a lot of editor UI (Laura:
+timeline, pickers, forms, sortable steps, search, live status), split by `dashboard/src/scene/api.ts`. Max asked
+for the best fit, not the easiest.
+
+**How this pass was done:** about 20 minutes by Max's agent. Versions from the npm registry on 2026-11-14. Reddit
+read through a mirror only.
+
+## Findings
+### Build tool
+- Vite 8 (stable since 2026-03-12, Rolldown bundler, Node 20.19+ / 22.12+) (sources: [1], [2]).
+- Spark loads its WASM via `new URL(..., import.meta.url)`, which breaks under Webpack/Next.js: issue #97 is open
+  and Spark's own R3F example warns about it (sources: [3], [4]). Rules out Next.js.
+- Rsbuild's own table has Vite faster on build and HMR, Rsbuild faster on cold start only [5].
+### UI layer
+- Real 3D editors keep the engine imperative and the UI in a separate layer: SuperSplat (plain TS + PCUI), the
+  three.js editor (vanilla DOM), the PlayCanvas editor (PCUI, now React-based) (sources: [6], [7], [8]).
+- React has the deepest editor-UI ecosystem (drag-and-drop, headless components); Svelte 5 and Solid are thinner
+  (sources: [1], [9]).
+- Hot-path updates go through refs and mutation in the frame loop, never component state (sources: [10], [11]).
+### R3F or plain three.js
+- Spark supports R3F officially (on-demand rendering docs, a StrictMode fix in Oct 2026) (sources: [12], [13]).
+- But: R3F pointer events on a `SplatMesh` raycast every splat on every move, about 100% CPU (#75, open); multiple
+  canvases break (#98, #107); a maintainer isn't familiar with R3F (#173) [13]. The standalone R3F example repo is
+  stale (Spark 0.1.x) [4].
+- An editor-tool write-up moved its hot path to vanilla three.js and kept React for panels [11].
+### State between scene and UI
+- A framework-agnostic store both sides import, e.g. zustand's vanilla `createStore`: React reads it with
+  `useStore`, the scene with `subscribe`/`getState()` [10]. Keep camera pose and per-frame data out of React state.
+
+## Community consensus
+Vite is the default for a client-only app; nobody credible says otherwise. R3F vs vanilla is split, leaning R3F for
+React teams ([14], [15]), but people building editors end up hybrid with imperative hot paths [11]. Spark's open R3F
+issues tip this app toward vanilla behind an API.
+
+## Final call (professional + community)
+Vite 8 + React 19 + TypeScript. Plain three.js and Spark live in `dashboard/src/scene/`, mounted once by one
+component, behind `scene/api.ts`; no R3F. A zustand vanilla store for shared state. No Next.js (Spark's WASM breaks
+under Webpack).
+
+## Source ledger
+### KEEP
+- [1] npm registry metadata, fetched 2026-11-14, https://registry.npmjs.org/
+- [2] "Vite 8.0 is out", vite.dev, 2026-03-12, https://vite.dev/blog/announcing-vite8
+- [3] Spark issue #97, Next.js/Webpack, open, https://github.com/sparkjsdev/spark/issues/97
+- [4] spark-react-r3f README, https://github.com/sparkjsdev/spark-react-r3f (Webpack caveat; stale as a version reference)
+- [5] Rsbuild quick start and comparison, https://rsbuild.rs/guide/start/
+- [6] SuperSplat package.json, https://github.com/playcanvas/supersplat
+- [7] three.js editor `ui.js`, https://github.com/mrdoob/three.js/blob/dev/editor/js/libs/ui.js
+- [8] PlayCanvas editor and PCUI, https://github.com/playcanvas/editor, https://github.com/playcanvas/pcui
+- [10] R3F performance pitfalls, https://r3f.docs.pmnd.rs/advanced/pitfalls
+- [12] Spark on-demand rendering (R3F section), https://sparkjs.dev/docs/on-demand-rendering/
+- [13] Spark issues #75, #98, #107, #173 and PR #478, https://github.com/sparkjsdev/spark/issues/75
+### WEAK
+- [9] State of JS 2025, front-end frameworks (qualitative only), https://2025.stateofjs.com/en-US/libraries/front-end-frameworks/
+- [11] "Building a browser-based 3D modeling tool with Three.js", dev.to, about 2026, https://dev.to/ericwoooo_kr/building-a-browser-based-3d-modeling-tool-with-threejs-what-the-docs-dont-tell-you-320h
+- [14] "ThreeJS or R3F", three.js forum, 2023, https://discourse.threejs.org/t/threejs-or-r3f-technology-pick/57973
+- [15] r/threejs "Using React with vanilla three.js" (mirror), https://lr.eu.psf.lt/r/threejs/comments/1frhrp5/using_react_with_vanilla_threejs
+### DO NOT USE
+- "Theatre.js studio is React": from memory, not verified.
+- "React gets the best AI-written code": no source found.
+
+# § 9 Training our own splat on the DGX Spark (2026-11-14)
+**Question:** the team has an NVIDIA DGX Spark (GB10, ARM64, 128 GB unified memory), not Dawn. Can we train a
+better splat than Scaniverse's on it within a few hours of setup, and how? Builds on § 4. Not to be confused with
+Spark the splat library (§ 7).
+
+**How this pass was done:** about 15 minutes by Max's agent. Reddit was unreachable; community view from GitHub
+issues and blogs only.
+
+## Findings
+### Trainers that run on GB10
+- gsplat + nerfstudio splatfacto: one full phone-video-to-splat run on a DGX Spark (CUDA 13.0, torch 2.9.0 cu130,
+  gsplat 1.5.3 compiled on first use with `TORCH_CUDA_ARCH_LIST="12.0"`, nerfstudio installed `--no-deps`,
+  `numpy<2`, open3d imports stubbed) [1]. Packaging matches: no aarch64 gsplat wheels, aarch64 cu130 torch wheels
+  exist (sources: [2], [3], [4]). A torch/CUDA mismatch on aarch64 fails silently [5].
+- LichtFeld Studio (C++/CUDA, GPLv3) starts on GB10 (SM 12.1) [6]; headless CLI, exports PLY/SPZ/SOG
+  (sources: [7], [8]). Build time on ARM unknown.
+- Brush, OpenSplat: no GB10 reports (sources: [9], [11]). Postshot is Windows-only [12]. NVIDIA's DGX Spark
+  playbooks don't cover splats [14].
+### Camera poses
+- apt COLMAP works on CPU only; GPU SIFT crashed headless [1]. Distro packages have no CUDA [15]. pycolmap has no
+  aarch64 wheel [16].
+- Record one continuous slow video; two clips split COLMAP into separate models [1].
+- nerfstudio's ARKit-pose importers need a LiDAR iPhone [17].
+### Capture and training time
+- 200–500+ images for a room; 70–80% overlap; locked exposure and white balance; fast shutter [18].
+- On the Spark: 115 of 232 frames registered; full 1080p 30k steps about 45 min; half resolution 15k steps about
+  5 min [1]. For 200–300 frames, expect roughly 45–90 min at 1080p (our extrapolation, not measured).
+- splatfacto holds images back for evaluation by default; train on all with
+  `--eval-mode fraction --train-split-fraction 1` [20].
+### Into the dashboard
+- `ns-export gaussian-splat` for the full PLY, then PlayCanvas `splat-transform` to `.spz` (crop, floater removal)
+  (sources: [1], [21]). SPZ is about 10× smaller than PLY [22].
+### Better than Scaniverse?
+- No head-to-head found. Desktop training is generally sharper given more images and time (sources: [13], [20]).
+  Pose quality, not the trainer, is the usual limit [20].
+
+## Community consensus
+Scaniverse is the fast, easy route; desktop training is the quality route, and only wins with a clean capture.
+Only one first-hand DGX Spark splat report exists [1]; [6] corroborates that GB10 runs splat training in general.
+
+## Final call (professional + community)
+Keep Scaniverse as the baseline. As an upgrade: one slow 4K video, 200–300 sharp frames, apt COLMAP on CPU,
+gsplat/splatfacto on the Spark at half resolution first, `ns-export`, then `splat-transform` to `.spz`. Budget
+1–2 h setup plus 15–60 min training. Risks: dependency friction, COLMAP registering half the frames, one source.
+Never claim "trained on our DGX Spark" unless the splat on screen was.
+
+## Source ledger
+### KEEP
+- [1] "I tried making a 3D digital twin of DGX Spark from smartphone videos", Classmethod, 2026-03-28, https://dev.classmethod.jp/en/articles/dgx-spark-3dgs-digital-twin/
+- [2] gsplat on PyPI (1.5.3, pure-Python wheel), https://pypi.org/pypi/gsplat/json
+- [3] gsplat wheel index (no aarch64), https://docs.gsplat.studio/whl/gsplat/
+- [4] PyTorch cu130 wheel index (aarch64 torch 2.9.0–2.14.1), https://download.pytorch.org/whl/cu130/torch/
+- [5] gsplat issue #595, missing `gsplat_cuda.so` on aarch64, 2025-03, https://github.com/nerfstudio-project/gsplat/issues/595
+- [6] LichtFeld Studio issue #1054 (GB10 log), 2026-03-29, https://github.com/MrNeRF/LichtFeld-Studio/issues/1054
+- [7] LichtFeld build docs, https://github.com/MrNeRF/LichtFeld-Studio/blob/master/docs/building_and_distribution.md
+- [8] LichtFeld Studio README, https://github.com/MrNeRF/LichtFeld-Studio
+- [14] DGX Spark playbooks index, https://build.nvidia.com/spark
+- [15] COLMAP install docs, https://colmap.github.io/install.html
+- [16] pycolmap 4.2.1 on PyPI (no aarch64 wheel), https://pypi.org/pypi/pycolmap/json
+- [17] nerfstudio "Using custom data", https://docs.nerf.studio/quickstart/custom_dataset.html
+- [18] PlayCanvas "Taking photos", https://developer.playcanvas.com/user-manual/gaussian-splatting/creating/taking-photos/
+- [19] gsplat evaluation page, https://docs.gsplat.studio/main/tests/eval.html
+- [21] playcanvas/splat-transform README, https://github.com/playcanvas/splat-transform
+- [22] Niantic SPZ 4 blog, 2026, https://www.nianticspatial.com/blog/spz4
+### WEAK
+- [9] Brush README, https://github.com/ArthurBrussee/brush
+- [10] radiancefields.com, SculptForge (Brush has no Linux ARM binaries), https://radiancefields.com/sculptforge-trains-gaussian-splats-from-phone-video
+- [11] OpenSplat README, https://github.com/pierotofy/OpenSplat/blob/main/README.md
+- [12] Postshot release notes (search snippet), https://www.jawset.com/docs/d/Postshot+User+Guide/Release+Notes/v0.1.24
+- [13] realhorizons.ai, 17 splat tools compared (no measurements), https://realhorizons.ai/blog/gaussian-splatting-software/
+- [20] nerfstudio issue #3421, Postshot vs splatfacto, about 2024, https://github.com/nerfstudio-project/nerfstudio/issues/3421
+- [23] Scaniverse App Store listing (marketing), https://apps.apple.com/us/app/scaniverse-lidar-3d-scanner/id1541433223
+### DO NOT USE
+- [24] polyvia3d guides: unsourced PSNR figures (Scaniverse 25.2 dB, photo vs video 28.4 vs 26.8 dB). Keep these
+  numbers out of the pitch. https://polyvia3d.pages.dev/guides/gaussian-splatting-tools-comparison
