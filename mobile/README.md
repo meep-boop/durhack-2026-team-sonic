@@ -41,6 +41,10 @@ With a free Apple ID the app stops opening after **7 days** (rebuild to renew), 
 phones plugged into your Mac. Sending friends an install link needs the paid Apple Developer account ($99/yr).
 
 ## If it breaks
+- **"502 Bad Gateway / No server is connected"**: that link's server is gone (Expo Go's "Recently opened" keeps
+  dead links). Tap **Clear**, then scan the QR from the server that's running now.
+- **Opening a tunnel link by hand** (no QR): use `exps://<tunnel-host>`, not `exp://`. Tunnels only answer over
+  https. Paste it in Safari or tap it in a message → Open in Expo Go.
 - **"Cannot find native module …"** or a red screen on first open: update Expo Go from the store (it must support
   SDK 58), then shake the phone → **Reload**.
 - **"Could not connect to development server"**: the first tunnel load sometimes times out. Reload once. If it
