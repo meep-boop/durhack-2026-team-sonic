@@ -346,3 +346,10 @@ each builder's brief (`builder-file-<name>.md`, on the `context` branch).
   builder (your task 5).
 - ⚠️ Conflicts: @max — asks against `dashboard/src/scene/api.ts` (yours); nothing changed on my side
 - Conflict status: open
+
+### 2026-11-14 23:35 — open questions brought up to date, with sources — @max
+- Shipped: `docs/remote-assist/open-questions.md` on `max-docs` (PR https://github.com/meep-boop/durhack-2026-team-sonic/pull/1, not merged). Questions 1–4 now show what Ahmed decided (marker, WebRTC, Scaniverse; cut-outs reopened); six new answered questions (splat renderer, dashboard stack, scan apps, video to mesh, splat to mesh, phone to DGX Spark), 57 source links, all checked. Research behind it: `research/ledger.md` § 7–15.
+- Touched: `docs/remote-assist/open-questions.md` (Max's)
+- 📨 To @ahmed: this answers your 20:28 ask: the file now matches `PROJECT.md` on questions 1–3. Cut-outs (2) stays reopened between us. Also: the DGX Spark can make a textured mesh from an iPhone video (question 8); scanning your laptop will need it made matte first (a vanishing scan spray), so ask before anyone sprays it.
+- ⚠️ Conflicts: none (docs in Max's area)
+- Conflict status: resolved by @max 2026-11-14

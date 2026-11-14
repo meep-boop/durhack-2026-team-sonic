@@ -50,9 +50,10 @@ export type GuideObject = {
   label?: string;
   // A part lifted out of the scan on the dashboard. The phone may ignore it and draw `model`.
   cutoutId?: string;
-  // What the UNO Q rig should see once the step is done: the cable now "in" port "17", or "out" of port "14". Port
-  // names match the regions set up on the Nicla Vision. Without it, the rig doesn't check this object.
-  expect?: { port: string; cable: "in" | "out" };
+  // What the UNO Q rig should see once the step is done: the stickered part (the SSD in the demo) present in a region
+  // of the Nicla Vision's view, or gone from it. Region names match the Nicla's, e.g. "ssd-bay". Without it, the rig
+  // doesn't check this object.
+  expect?: { region: string; present: boolean };
 };
 
 export type Step = {
@@ -131,7 +132,7 @@ export type StepVerified = {
   guideId: string;
   stepId: string;
   ok: boolean;
-  // What the rig saw, e.g. "cable in port 16, expected 17". Shown to both sides when `ok` is false.
+  // What the rig saw, e.g. "seen in slot-2, expected in ssd-bay". Shown to both sides when `ok` is false.
   detail?: string;
 };
 

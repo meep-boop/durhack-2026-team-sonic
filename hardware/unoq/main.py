@@ -1,9 +1,9 @@
-"""Runs on the UNO Q: reads which ports the Nicla Vision sees the cable in, follows the guide through the relay as
-the `rig`, and reports `step.verified`.
+"""Runs on the UNO Q: reads which regions the Nicla Vision sees the stickered part in, follows the guide through the
+relay as the `rig`, and reports `step.verified`.
 
     RELAY_URL=ws://<relay laptop>:8080 python main.py            # Nicla on the hub, found automatically
     python main.py --relay ws://... --nicla /dev/ttyACM0
-    python main.py --relay ws://... --nicla -                     # type `ports=17` lines instead of a Nicla
+    python main.py --relay ws://... --nicla -                     # type `seen=ssd-bay` lines instead of a Nicla
 """
 
 from __future__ import annotations
@@ -19,7 +19,7 @@ from collections.abc import Iterator
 import serial
 import websocket
 
-from rig import Rig, parse_ports
+from rig import Rig, parse_seen
 
 
 def nicla_lines(path: str) -> Iterator[str]:
@@ -83,12 +83,12 @@ def main() -> None:
     threading.Thread(target=app.run_forever, kwargs={"reconnect": 2}, daemon=True).start()
 
     for line in nicla_lines(args.nicla or find_nicla()):
-        ports = parse_ports(line.strip())
-        if ports is None:
+        seen = parse_seen(line.strip())
+        if seen is None:
             continue
-        print(f"nicla sees the cable in: {', '.join(sorted(ports)) or 'no port'}", flush=True)
+        print(f"nicla sees the part in: {', '.join(sorted(seen)) or 'no region'}", flush=True)
         with lock:
-            send(rig.on_ports(ports))
+            send(rig.on_seen(seen))
 
 
 if __name__ == "__main__":

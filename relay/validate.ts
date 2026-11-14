@@ -1,6 +1,5 @@
 import type {
   Action,
-  GuideObject,
   Hello,
   LabelsRequest,
   Message,
@@ -31,7 +30,6 @@ const MODELS = {
   "cable-plug": true,
 } satisfies Record<ModelName, true>;
 const ACTIONS = { unscrew: true, pull: true, push: true, flip: true, rotate90: true } satisfies Record<Action, true>;
-const CABLE_STATES = { in: true, out: true } satisfies Record<NonNullable<GuideObject["expect"]>["cable"], true>;
 const IMAGE_TYPES = { "image/jpeg": true, "image/png": true } satisfies Record<LabelsRequest["image"]["mediaType"], true>;
 
 const isObj = (x: unknown): x is Obj => typeof x === "object" && x !== null && !Array.isArray(x);
@@ -81,7 +79,7 @@ const checkMarker = (x: unknown, path: string): Problem =>
 const checkExpect = (x: unknown, path: string): Problem => {
   if (x === undefined) return null;
   if (!isObj(x)) return `${path}: expected an object`;
-  return text(x.port, `${path}.port`) ?? oneOf(CABLE_STATES, x.cable, `${path}.cable`);
+  return text(x.region, `${path}.region`) ?? flag(x.present, `${path}.present`);
 };
 
 const checkObject = (x: unknown, path: string): Problem => {

@@ -5,13 +5,14 @@ export type Labeller = (request: LabelsRequest) => Promise<{ model: string; labe
 
 const MODEL = "claude-opus-5-5";
 
-const INSTRUCTIONS = `This is a snapshot of a 3D scan of network equipment in a small business's comms cupboard:
-switches, patch panels, routers, cables and screws. A remote engineer will use your labels to tell someone on site
-which part to touch, so a wrong label sends them to the wrong part.
+const INSTRUCTIONS = `This is a snapshot of a 3D scan of equipment that someone on site is about to repair with a
+remote engineer's help: for example the inside of an opened laptop, or a network cabinet. The engineer will use your
+labels to tell that person which part to touch, so a wrong label sends them to the wrong part.
 
-Label each part whose name or number you can actually read in the image, such as a port number printed on a patch
-panel, plus any screw or cable that is clearly visible (for example "Cover screw"). Use the text printed on the
-equipment where there is any. Leave out anything you would have to guess: no label is better than a wrong one.
+Label each part you can identify with confidence: components such as an SSD, a battery, a fan or a memory module,
+screws and connectors that are clearly visible (for example "Cover screw"), and any name or number printed on the
+equipment, such as a port number. Use the printed text where there is any. Leave out anything you would have to
+guess: no label is better than a wrong one.
 
 Give each label the pixel position of the part's centre, measured from the image's top-left corner.`;
 
