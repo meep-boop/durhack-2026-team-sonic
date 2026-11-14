@@ -4,3 +4,10 @@
 Local.xcconfig
 build/
 DerivedData/
+
+# API keys for Gemini and ElevenLabs (see Secrets.xcconfig.example).
+Secrets.xcconfig
+
+# Downloaded by scripts/fetch-webrtc.sh.
+/Vendor/
+/build2/

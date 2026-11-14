@@ -6,6 +6,8 @@ struct RemoteAssistApp: App {
     WindowGroup {
       RootView()
         .preferredColorScheme(.dark)
+        // Team Sonic teal, as in the explainer video.
+        .tint(Color(red: 0.18, green: 0.83, blue: 0.75))
     }
   }
 }

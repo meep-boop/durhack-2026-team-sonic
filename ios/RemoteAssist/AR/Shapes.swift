@@ -59,7 +59,50 @@ enum Shapes {
     return root
   }
 
-  /// Stand-ins until @laura's USDZ models land in assets/models/.
+  private static var modelCache: [ModelName: Entity] = [:]
+
+  /// @laura's model from assets/models/ (tip at the origin, +Y up, metres), or a simple stand-in if it won't load.
+  static func model(_ name: ModelName) -> Entity {
+    if let cached = modelCache[name] { return cached.clone(recursive: true) }
+    guard let loaded = try? Entity.load(named: name.rawValue) else { return placeholder(for: name) }
+    modelCache[name] = loaded
+    return loaded.clone(recursive: true)
+  }
+
+  /// Loops the action until the step changes, along `axis` (in the model's frame), as assets/models/README.md says:
+  /// pull is +axis, push is -axis, unscrew spins around it, flip and rotate90 turn about it.
+  static func animate(_ entity: Entity, action: Action, axis: SIMD3<Float>) {
+    let direction = simd_length(axis) > 0 ? simd_normalize(axis) : SIMD3<Float>(0, 1, 0)
+    let start = entity.transform
+    var end = start
+    var mode = AnimationRepeatMode.autoReverse
+    var duration = 0.8
+
+    switch action {
+    case .pull:
+      end.translation += direction * 0.02
+    case .push:
+      end.translation -= direction * 0.02
+    case .unscrew:
+      // Half turns repeated: a screw looks the same every 180°, so the restart is invisible.
+      end.rotation = simd_quatf(angle: -.pi, axis: direction) * start.rotation
+      end.translation += direction * 0.003
+      mode = .repeat
+      duration = 0.9
+    case .flip:
+      end.rotation = simd_quatf(angle: .pi, axis: direction) * start.rotation
+      duration = 1.2
+    case .rotate90:
+      end.rotation = simd_quatf(angle: .pi / 2, axis: direction) * start.rotation
+    }
+
+    let definition = FromToByAnimation(from: start, to: end, duration: duration, timing: .easeInOut, bindTarget: .transform, repeatMode: mode)
+    if let animation = try? AnimationResource.generate(with: definition) {
+      entity.playAnimation(animation)
+    }
+  }
+
+  /// Stand-ins for when a model file is missing.
   static func placeholder(for model: ModelName) -> ModelEntity {
     let metal = SimpleMaterial(color: .lightGray, roughness: 0.25, isMetallic: true)
     switch model {
@@ -76,6 +119,31 @@ enum Shapes {
     case .cablePlug:
       return ModelEntity(mesh: .generateBox(size: [0.01, 0.014, 0.01], cornerRadius: 0.001), materials: [SimpleMaterial(color: .systemBlue, isMetallic: false)])
     }
+  }
+
+  /// A pulsing ring and a stem with a label, standing on the surface: "this one".
+  static func pin(label text: String) -> Entity {
+    let root = Entity()
+    let ring = ModelEntity(mesh: .generateCylinder(height: 0.001, radius: 0.012), materials: [UnlitMaterial(color: UIColor.systemTeal.withAlphaComponent(0.6))])
+    root.addChild(ring)
+    let stem = ModelEntity(mesh: .generateCylinder(height: 0.04, radius: 0.0015), materials: [UnlitMaterial(color: .systemTeal)])
+    stem.position.y = 0.02
+    root.addChild(stem)
+    let head = ModelEntity(mesh: .generateSphere(radius: 0.006), materials: [UnlitMaterial(color: .systemTeal)])
+    head.position.y = 0.042
+    root.addChild(head)
+    let tag = label(text)
+    tag.position.y = 0.055
+    root.addChild(tag)
+
+    var pulse = Transform(scale: [1.8, 1, 1.8])
+    pulse.translation = ring.position
+    if let animation = try? AnimationResource.generate(with: FromToByAnimation(
+      from: ring.transform, to: pulse, duration: 0.9, timing: .easeInOut, bindTarget: .transform, repeatMode: .autoReverse
+    )) {
+      ring.playAnimation(animation)
+    }
+    return root
   }
 
   static func label(_ text: String) -> Entity {

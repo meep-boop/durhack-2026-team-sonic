@@ -18,6 +18,8 @@ final class RelayClient {
 
   @ObservationIgnored var onGuide: ((Guide) -> Void)?
   @ObservationIgnored var onStepSet: ((StepSet) -> Void)?
+  @ObservationIgnored var onSignal: ((RtcSignal) -> Void)?
+  @ObservationIgnored var onStepVerified: ((StepVerified) -> Void)?
 
   @ObservationIgnored private let session = URLSession(configuration: .default)
   @ObservationIgnored private var task: URLSessionWebSocketTask?
@@ -151,6 +153,8 @@ final class RelayClient {
     switch message {
     case .guideSet(let m): onGuide?(m.guide)
     case .stepSet(let m): onStepSet?(m)
+    case .rtcSignal(let m): onSignal?(m.signal)
+    case .stepVerified(let m): onStepVerified?(m)
     case .presence(let m): expertOnline = m.clients.contains { $0.role == .expert }
     case .error(let m): lastError = "Relay refused \(m.about ?? "a message"): \(m.message)"
     default: break
@@ -174,6 +178,12 @@ final class RelayClient {
   func sendPose(_ pose: PoseUpdate) {
     guard state == .connected, let task else { return }
     send(.pose(pose), on: task)
+  }
+
+  /// Signalling is only useful live; a stale offer or candidate can't be replayed later.
+  func sendSignal(_ signal: RtcSignal) {
+    guard state == .connected, let task else { return }
+    send(.rtcSignal(RtcSignalMessage(signal: signal)), on: task)
   }
 
   private func flush() {

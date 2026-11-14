@@ -82,6 +82,14 @@ struct GuideObject: Codable, Identifiable, Equatable {
   var axis: Vec3
   var label: String?
   var cutoutId: String?
+  /// What Ahmed's UNO Q rig should see after the step; the phone only shows the rig's verdict.
+  var expect: Expect?
+}
+
+struct Expect: Codable, Equatable {
+  enum Cable: String, Codable { case `in`, out }
+  var port: String
+  var cable: Cable
 }
 
 struct Step: Codable, Identifiable, Equatable {

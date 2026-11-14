@@ -23,6 +23,15 @@ targets:
         buildPhase: resources
       - path: ../assets/marker/marker.png
         buildPhase: resources
+      - path: ../assets/models
+        buildPhase: resources
+        includes:
+          - "*.usdz"
+    dependencies:
+      # Google's WebRTC (stasel/WebRTC 156.0.0; Salman's pick 2026-11-14): P2P video and audio, signalling over the
+      # relay's rtc.signal. Fetched by scripts/fetch-webrtc.sh: SwiftPM hung on the binary download at the venue.
+      - framework: Vendor/WebRTC.xcframework
+        embed: true
     info:
       path: RemoteAssist/Info.plist
       properties:
@@ -30,13 +39,19 @@ targets:
         NSAppTransportSecurity:
           NSAllowsLocalNetworking: true
         NSLocalNetworkUsageDescription: Remote Assist connects to the team's relay on this network to receive the guide.
+        GeminiAPIKey: $(GEMINI_API_KEY)
+        GeminiModel: $(GEMINI_MODEL)
+        ElevenLabsAPIKey: $(ELEVENLABS_API_KEY)
+        ElevenLabsVoiceID: $(ELEVENLABS_VOICE_ID)
+        ElevenLabsModel: $(ELEVENLABS_MODEL)
     settings:
       base:
         PRODUCT_BUNDLE_IDENTIFIER: com.teamsonic.remoteassist
         TARGETED_DEVICE_FAMILY: "1"
         GENERATE_INFOPLIST_FILE: YES
         INFOPLIST_KEY_CFBundleDisplayName: Remote Assist
-        INFOPLIST_KEY_NSCameraUsageDescription: Remote Assist uses the camera to line the guide up with the printed marker.
+        INFOPLIST_KEY_NSCameraUsageDescription: Remote Assist uses the camera to line the guide up with the printed marker and to show the expert what you see.
+        INFOPLIST_KEY_NSMicrophoneUsageDescription: Remote Assist uses the microphone so you can talk to the expert during a call.
         INFOPLIST_KEY_UILaunchScreen_Generation: YES
         INFOPLIST_KEY_UISupportedInterfaceOrientations: UIInterfaceOrientationPortrait
         INFOPLIST_KEY_UIStatusBarStyle: UIStatusBarStyleLightContent

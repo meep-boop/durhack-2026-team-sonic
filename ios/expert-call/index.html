@@ -1,0 +1,252 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Remote Assist · Expert call</title>
+<style>
+  :root {
+    --bg: #0b0d12; --panel: #141821; --line: #232937; --text: #e8ecf3; --muted: #8a93a6;
+    --accent: #3b82f6; --green: #22c55e; --amber: #f59e0b; --red: #ef4444;
+  }
+  * { box-sizing: border-box; }
+  body { margin: 0; background: var(--bg); color: var(--text); font: 15px/1.45 -apple-system, BlinkMacSystemFont, "Inter", "Segoe UI", sans-serif; }
+  header { display: flex; align-items: center; gap: 16px; padding: 14px 20px; border-bottom: 1px solid var(--line); }
+  header h1 { font-size: 17px; margin: 0; font-weight: 650; letter-spacing: -0.01em; }
+  .pill { display: inline-flex; align-items: center; gap: 8px; padding: 5px 12px; border-radius: 999px; background: var(--panel); border: 1px solid var(--line); font-size: 13px; color: var(--muted); }
+  .dot { width: 9px; height: 9px; border-radius: 50%; background: var(--muted); }
+  .dot.green { background: var(--green); } .dot.amber { background: var(--amber); } .dot.red { background: var(--red); }
+  .spacer { flex: 1; }
+  main { display: grid; grid-template-columns: 1fr 340px; gap: 20px; padding: 20px; height: calc(100vh - 60px); }
+  .stage { position: relative; background: #000; border-radius: 18px; overflow: hidden; border: 1px solid var(--line); display: grid; place-items: center; }
+  .stage video { width: 100%; height: 100%; object-fit: contain; background: #000; }
+  .stage .empty { position: absolute; text-align: center; color: var(--muted); padding: 24px; }
+  .stage .empty strong { display: block; color: var(--text); font-size: 18px; margin-bottom: 6px; }
+  .badge { position: absolute; top: 14px; left: 14px; display: none; align-items: center; gap: 8px; background: rgba(0,0,0,.55); backdrop-filter: blur(10px); padding: 6px 12px; border-radius: 999px; font-size: 13px; }
+  .badge .dot { background: var(--red); animation: pulse 1.4s infinite; }
+  @keyframes pulse { 50% { opacity: .35; } }
+  #selfView { position: absolute; right: 14px; bottom: 14px; width: 180px; border-radius: 12px; border: 1px solid var(--line); display: none; }
+  aside { display: flex; flex-direction: column; gap: 14px; overflow: auto; }
+  .card { background: var(--panel); border: 1px solid var(--line); border-radius: 16px; padding: 16px; }
+  .card h2 { font-size: 12px; text-transform: uppercase; letter-spacing: .08em; color: var(--muted); margin: 0 0 10px; font-weight: 600; }
+  input { width: 100%; padding: 10px 12px; border-radius: 10px; border: 1px solid var(--line); background: var(--bg); color: var(--text); font: inherit; }
+  button { font: inherit; font-weight: 600; border: 0; border-radius: 12px; padding: 11px 14px; cursor: pointer; color: white; background: var(--accent); }
+  button.secondary { background: #262c3a; } button.danger { background: var(--red); }
+  button:disabled { opacity: .45; cursor: default; }
+  .row { display: flex; gap: 8px; margin-top: 10px; } .row > * { flex: 1; }
+  #qr { display: grid; place-items: center; background: white; border-radius: 12px; padding: 12px; margin-top: 10px; min-height: 60px; }
+  #qr img { width: 180px; height: 180px; image-rendering: pixelated; }
+  .hint { color: var(--muted); font-size: 13px; margin: 8px 0 0; }
+  meter { width: 100%; height: 10px; margin-top: 10px; }
+  #log { list-style: none; margin: 0; padding: 0; font-size: 13px; max-height: 220px; overflow: auto; }
+  #log li { padding: 6px 0; border-bottom: 1px solid var(--line); color: var(--muted); }
+  #log li b { color: var(--text); font-weight: 600; }
+  @media (max-width: 900px) { main { grid-template-columns: 1fr; height: auto; } .stage { min-height: 50vh; } }
+</style>
+</head>
+<body>
+<header>
+  <h1>Remote Assist · Expert</h1>
+  <span class="pill"><span class="dot" id="relayDot"></span><span id="relayText">Relay offline</span></span>
+  <span class="pill"><span class="dot" id="phoneDot"></span><span id="phoneText">Phone offline</span></span>
+  <span class="spacer"></span>
+  <span class="pill"><span class="dot" id="markerDot"></span><span id="markerText">Marker: unknown</span></span>
+</header>
+
+<main>
+  <section class="stage">
+    <video id="remote" autoplay playsinline></video>
+    <div class="empty" id="empty"><strong>No live view yet</strong>Connect to the relay, then press Call. The phone gets an incoming call and shares its camera when they accept.</div>
+    <div class="badge" id="liveBadge"><span class="dot"></span>Live from the phone</div>
+    <video id="selfView" autoplay playsinline muted></video>
+  </section>
+
+  <aside>
+    <div class="card">
+      <h2>Relay</h2>
+      <input id="relayUrl" placeholder="ws://192.168.1.20:8080" spellcheck="false">
+      <div class="row"><button id="connectBtn">Connect</button></div>
+      <p class="hint">Use the address the relay prints (not localhost) so the phone can reach it too.</p>
+      <div id="qr"><span class="hint">QR appears here</span></div>
+      <p class="hint">On the phone: tap the status capsule → Scan QR.</p>
+    </div>
+
+    <div class="card">
+      <h2>Call</h2>
+      <label class="hint"><input type="checkbox" id="sendCam" style="width:auto"> Send my webcam too</label>
+      <div class="row">
+        <button id="callBtn" disabled>Call the phone</button>
+        <button id="endBtn" class="danger" disabled>End</button>
+      </div>
+      <div class="row"><button id="muteBtn" class="secondary" disabled>Mute mic</button></div>
+      <p class="hint" id="callState">Not in a call.</p>
+      <meter id="level" min="0" max="1" value="0" title="Phone audio level"></meter>
+    </div>
+
+    <div class="card">
+      <h2>Activity</h2>
+      <ul id="log"></ul>
+    </div>
+  </aside>
+</main>
+
+<script src="vendor/qrcode.js"></script>
+<script>
+// Joins the relay as the expert and runs one WebRTC call with the phone. The phone answers; this page always offers.
+// Messages follow contracts/protocol.ts: hello, rtc.signal, presence, step.done, pose.
+const $ = (id) => document.getElementById(id);
+const STUN = [{ urls: "stun:stun.l.google.com:19302" }];
+let ws, pc, control, mic, pendingCandidates = [], lastPoseLog = 0, meterTimer;
+
+$("relayUrl").value = new URLSearchParams(location.search).get("relay") || localStorage.getItem("relayUrl") || "";
+
+// Relay messages are untrusted text, so log lines are built as text nodes, never parsed as HTML.
+function log(text) {
+  const li = document.createElement("li");
+  const time = document.createElement("b");
+  time.textContent = new Date().toLocaleTimeString();
+  li.append(time, " · ", text);
+  $("log").prepend(li);
+}
+function setPill(dot, text, color, label) { $(dot).className = "dot " + color; $(text).textContent = label; }
+function send(message) { if (ws?.readyState === WebSocket.OPEN) ws.send(JSON.stringify(message)); }
+function signal(payload) { send({ type: "rtc.signal", signal: payload }); }
+
+function renderQR(url) {
+  const qr = qrcode(0, "M");
+  qr.addData(url);
+  qr.make();
+  $("qr").innerHTML = qr.createImgTag(6, 8);
+}
+
+$("connectBtn").onclick = () => {
+  const url = $("relayUrl").value.trim();
+  if (!/^wss?:\/\//.test(url)) return log("Enter a ws:// address");
+  localStorage.setItem("relayUrl", url);
+  renderQR(url);
+  connect(url);
+};
+
+function connect(url) {
+  ws?.close();
+  setPill("relayDot", "relayText", "amber", "Connecting…");
+  ws = new WebSocket(url);
+  ws.onopen = () => {
+    send({ type: "hello", protocol: 1, role: "expert", client: "Expert call page" });
+    setPill("relayDot", "relayText", "green", "Relay connected");
+    $("callBtn").disabled = false;
+    log("Connected to the relay");
+  };
+  ws.onclose = () => {
+    setPill("relayDot", "relayText", "red", "Relay offline");
+    setPill("phoneDot", "phoneText", "", "Phone offline");
+    $("callBtn").disabled = true;
+    // Retry quietly: the relay may be restarting, and the call itself survives a relay blip.
+    setTimeout(() => { if (ws.url === url && ws.readyState === WebSocket.CLOSED) connect(url); }, 2000);
+  };
+  ws.onmessage = (event) => handle(JSON.parse(event.data));
+}
+
+function handle(message) {
+  switch (message.type) {
+    case "presence": {
+      const phone = message.clients.find((c) => c.role === "user");
+      setPill("phoneDot", "phoneText", phone ? "green" : "", phone ? phone.client : "Phone offline");
+      break;
+    }
+    case "step.done": log(`Phone finished step ${message.stepId}`); break;
+    case "pose":
+      setPill("markerDot", "markerText", message.markerTracked ? "green" : "amber", message.markerTracked ? "Marker tracked" : "Marker out of view");
+      if (message.t - lastPoseLog > 5000) { lastPoseLog = message.t; log(`Phone camera ${message.camera.p.map((n) => n.toFixed(2)).join(", ")} m from the marker`); }
+      break;
+    case "step.verified": log(`Rig on ${message.stepId}: ${message.ok ? "✓ correct" : "✗ " + (message.detail || "wrong")}`); break;
+    case "rtc.signal": onSignal(message.signal); break;
+    case "error": log(`Relay refused ${message.about || "a message"}: ${message.message}`); break;
+  }
+}
+
+async function onSignal(s) {
+  if (!pc) return;
+  if (s.kind === "answer") {
+    await pc.setRemoteDescription({ type: "answer", sdp: s.sdp });
+    for (const c of pendingCandidates) await pc.addIceCandidate(c);
+    pendingCandidates = [];
+    $("callState").textContent = "Connecting media…";
+  } else if (s.kind === "candidate") {
+    const c = { candidate: s.candidate, sdpMid: s.sdpMid, sdpMLineIndex: s.sdpMLineIndex };
+    if (pc.remoteDescription) await pc.addIceCandidate(c); else pendingCandidates.push(c);
+  }
+}
+
+$("callBtn").onclick = async () => {
+  try {
+    mic = await navigator.mediaDevices.getUserMedia({ audio: { echoCancellation: true, noiseSuppression: true }, video: $("sendCam").checked });
+  } catch (e) {
+    return log("Microphone blocked: " + e.message + " (open the page on http://localhost)");
+  }
+  pc = new RTCPeerConnection({ iceServers: STUN });
+  // The phone ends the call by closing this channel, so both sides hang up at once.
+  control = pc.createDataChannel("control");
+  control.onclose = () => endCall("The phone ended the call");
+  mic.getTracks().forEach((t) => pc.addTrack(t, mic));
+  if (!$("sendCam").checked) pc.addTransceiver("video", { direction: "recvonly" });
+  if ($("sendCam").checked) { $("selfView").srcObject = mic; $("selfView").style.display = "block"; }
+
+  pc.onicecandidate = (e) => { if (e.candidate) signal({ kind: "candidate", candidate: e.candidate.candidate, sdpMid: e.candidate.sdpMid, sdpMLineIndex: e.candidate.sdpMLineIndex }); };
+  pc.ontrack = (e) => {
+    $("remote").srcObject = e.streams[0] || new MediaStream([e.track]);
+    if (e.track.kind === "video") { $("empty").style.display = "none"; $("liveBadge").style.display = "flex"; }
+    if (e.track.kind === "audio") startMeter($("remote").srcObject);
+  };
+  pc.onconnectionstatechange = () => {
+    const s = pc?.connectionState;
+    if (s === "connected") { $("callState").textContent = "In call · you can talk"; log("Call connected"); }
+    if (s === "failed") endCall("Connection failed (are both on the same Wi-Fi?)");
+  };
+
+  const offer = await pc.createOffer();
+  await pc.setLocalDescription(offer);
+  signal({ kind: "offer", sdp: offer.sdp });
+  $("callState").textContent = "Ringing the phone…";
+  $("callBtn").disabled = true; $("endBtn").disabled = false; $("muteBtn").disabled = false;
+  log("Calling the phone");
+};
+
+$("endBtn").onclick = () => endCall("You ended the call");
+$("muteBtn").onclick = () => {
+  const track = mic?.getAudioTracks()[0];
+  if (!track) return;
+  track.enabled = !track.enabled;
+  $("muteBtn").textContent = track.enabled ? "Mute mic" : "Unmute mic";
+};
+
+function startMeter(stream) {
+  const ctx = new AudioContext();
+  const analyser = ctx.createAnalyser();
+  ctx.createMediaStreamSource(stream).connect(analyser);
+  const data = new Uint8Array(analyser.fftSize);
+  clearInterval(meterTimer);
+  meterTimer = setInterval(() => {
+    analyser.getByteTimeDomainData(data);
+    let peak = 0;
+    for (const v of data) peak = Math.max(peak, Math.abs(v - 128) / 128);
+    $("level").value = peak;
+  }, 100);
+}
+
+function endCall(reason) {
+  if (!pc) return;
+  try { control?.close(); } catch {}
+  pc.close(); pc = null; control = null; pendingCandidates = [];
+  mic?.getTracks().forEach((t) => t.stop()); mic = null;
+  clearInterval(meterTimer); $("level").value = 0;
+  $("remote").srcObject = null; $("selfView").style.display = "none";
+  $("empty").style.display = "block"; $("liveBadge").style.display = "none";
+  $("callBtn").disabled = ws?.readyState !== WebSocket.OPEN; $("endBtn").disabled = true; $("muteBtn").disabled = true;
+  $("muteBtn").textContent = "Mute mic";
+  $("callState").textContent = "Not in a call.";
+  log(reason);
+}
+</script>
+</body>
+</html>

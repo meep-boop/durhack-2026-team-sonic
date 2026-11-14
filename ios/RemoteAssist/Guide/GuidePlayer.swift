@@ -23,6 +23,11 @@ final class GuidePlayer {
     currentStepId = nextIndex < guide.steps.count ? guide.steps[nextIndex].id : nil
   }
 
+  func back() {
+    guard let index = currentIndex, index > 0 else { return }
+    currentStepId = guide.steps[index - 1].id
+  }
+
   func restart() {
     currentStepId = guide.steps.first?.id
   }
