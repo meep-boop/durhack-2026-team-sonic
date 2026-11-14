@@ -1,0 +1,47 @@
+html,
+body,
+#root {
+  height: 100%;
+  margin: 0;
+  background: #111318;
+  color: #e6e8ee;
+  font: 13px/1.4 system-ui, sans-serif;
+}
+
+.viewport {
+  position: relative;
+  height: 100%;
+  overflow: hidden;
+}
+
+.viewport canvas {
+  display: block;
+  width: 100%;
+  height: 100%;
+}
+
+.hud {
+  position: absolute;
+  top: 8px;
+  left: 8px;
+  padding: 6px 10px;
+  border-radius: 6px;
+  background: rgb(0 0 0 / 0.55);
+  pointer-events: none;
+  font-variant-numeric: tabular-nums;
+}
+
+.hud .tag {
+  padding: 0 4px;
+  border-radius: 3px;
+  background: #b45309;
+  font-weight: 600;
+}
+
+.hud .error {
+  color: #fca5a5;
+}
+
+.hud .hint {
+  opacity: 0.6;
+}
