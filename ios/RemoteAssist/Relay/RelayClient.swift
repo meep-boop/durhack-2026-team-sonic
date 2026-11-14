@@ -31,6 +31,8 @@ final class RelayClient {
   }
   @ObservationIgnored private var flushing = false
   @ObservationIgnored private var pingTimer: Timer?
+  /// False after the user taps Disconnect, so coming back from the background doesn't reconnect behind their back.
+  @ObservationIgnored private var wantsConnection = false
 
   private static let urlKey = "relayURL"
   private let encoder = JSONEncoder()
@@ -55,7 +57,21 @@ final class RelayClient {
     if url != nil { open() }
   }
 
+  /// Back from the background: iOS has usually killed the socket while we were suspended, and the backoff timer may
+  /// be up to 10 s away, so reconnect now rather than show "Reconnecting" for no reason.
+  func appBecameActive() {
+    guard wantsConnection, url != nil, state != .connected else { return }
+    attempt = 0
+    open()
+  }
+
+  deinit {
+    pingTimer?.invalidate()
+    task?.cancel(with: .goingAway, reason: nil)
+  }
+
   func disconnect() {
+    wantsConnection = false
     generation += 1
     task?.cancel(with: .goingAway, reason: nil)
     task = nil
@@ -66,6 +82,7 @@ final class RelayClient {
 
   private func open() {
     guard let url else { return }
+    wantsConnection = true
     generation += 1
     let gen = generation
     task?.cancel(with: .goingAway, reason: nil)

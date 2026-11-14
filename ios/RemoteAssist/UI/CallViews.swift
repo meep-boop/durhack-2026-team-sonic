@@ -73,16 +73,37 @@ struct InCallBar: View {
 /// The expert's webcam, when they send it.
 struct RemoteVideoView: UIViewRepresentable {
   let track: RTCVideoTrack
+  /// False in the background: a Metal view drawing there floods the log with "submit GPU work from background".
+  var isActive = true
+
+  func makeCoordinator() -> Coordinator { Coordinator() }
 
   func makeUIView(context: Context) -> RTCMTLVideoView {
     let view = RTCMTLVideoView()
     view.videoContentMode = .scaleAspectFill
     view.clipsToBounds = true
+    view.isEnabled = isActive
     track.add(view)
+    context.coordinator.track = track
     return view
   }
 
-  func updateUIView(_ view: RTCMTLVideoView, context: Context) {}
+  func updateUIView(_ view: RTCMTLVideoView, context: Context) {
+    view.isEnabled = isActive
+    if context.coordinator.track !== track {
+      context.coordinator.track?.remove(view)
+      track.add(view)
+      context.coordinator.track = track
+    }
+  }
 
-  static func dismantleUIView(_ view: RTCMTLVideoView, coordinator: ()) {}
+  /// Without this the track keeps a strong reference to the view and keeps rendering into it after it's gone.
+  static func dismantleUIView(_ view: RTCMTLVideoView, coordinator: Coordinator) {
+    coordinator.track?.remove(view)
+    coordinator.track = nil
+  }
+
+  final class Coordinator {
+    var track: RTCVideoTrack?
+  }
 }

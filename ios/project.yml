@@ -38,6 +38,8 @@ targets:
         # The relay is plain ws:// on the team hotspot (Ahmed's call), which ATS blocks unless local networking is allowed.
         NSAppTransportSecurity:
           NSAllowsLocalNetworking: true
+        # Keeps the expert's voice going when the phone is locked mid-call; video pauses (Salman's call, 2026-11-14).
+        UIBackgroundModes: [audio]
         NSLocalNetworkUsageDescription: Remote Assist connects to the team's relay on this network to receive the guide.
         GeminiAPIKey: $(GEMINI_API_KEY)
         GeminiModel: $(GEMINI_MODEL)

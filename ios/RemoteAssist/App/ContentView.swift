@@ -15,6 +15,7 @@ struct ContentView: View {
   @State private var syncedToast: String?
   @AppStorage("onboarded") private var onboarded = false
   @AppStorage("voiceOn") private var voiceOn = true
+  @Environment(\.scenePhase) private var scenePhase
 
   private var isAIGuide: Bool { player.guide.id.hasPrefix("ai-") }
 
@@ -25,6 +26,17 @@ struct ContentView: View {
 
       if !ar.markerSeen && !isAIGuide {
         FindMarkerHint().transition(.opacity)
+      }
+
+      if ar.markerLostForAWhile && !isAIGuide && player.currentStep != nil {
+        Label("Marker out of view: the guide is holding where it was", systemImage: "pin.fill")
+          .font(.footnote.weight(.semibold))
+          .padding(.horizontal, 14)
+          .padding(.vertical, 8)
+          .glassBackground(in: Capsule())
+          .frame(maxHeight: .infinity, alignment: .center)
+          .allowsHitTesting(false)
+          .transition(.opacity)
       }
 
       VStack(spacing: 12) {
@@ -90,7 +102,7 @@ struct ContentView: View {
       .padding(.bottom, 8)
 
       if let face = call.remoteVideoTrack, call.state == .live {
-        RemoteVideoView(track: face)
+        RemoteVideoView(track: face, isActive: scenePhase == .active)
           .frame(width: 96, height: 128)
           .clipShape(RoundedRectangle(cornerRadius: 18, style: .continuous))
           .overlay(RoundedRectangle(cornerRadius: 18, style: .continuous).stroke(.white.opacity(0.4), lineWidth: 1))
@@ -101,6 +113,7 @@ struct ContentView: View {
     }
     .animation(.snappy, value: call.state)
     .animation(.easeInOut, value: ar.markerSeen)
+    .animation(.easeInOut, value: ar.markerLostForAWhile)
     .animation(.easeInOut, value: pinMessage)
     .animation(.snappy, value: syncedToast)
     .onChange(of: relay.outboxCount) { old, new in
@@ -129,6 +142,9 @@ struct ContentView: View {
       Onboarding { onboarded = true }
     }
     .onAppear(perform: wire)
+    .onChange(of: onboarded) { if onboarded { ar.start() } }
+    .onChange(of: scenePhase) { _, phase in handle(phase) }
+    .task { await Shapes.preloadModels() }
     // Step is compared by value, so a guide.set that edits the current step's objects redraws it too.
     .onChange(of: player.currentStep) {
       ar.step = player.currentStep
@@ -137,6 +153,10 @@ struct ContentView: View {
       speakCurrentStep()
     }
     .onChange(of: voiceOn) { voiceOn ? speakCurrentStep() : voice.stop() }
+    .onChange(of: call.state) { old, new in
+      // AI pins are for working alone; when the expert joins they point at things themselves.
+      if old == .ringing, new == .connecting { ar.clearPins(); pinMessage = nil }
+    }
     .onChange(of: relay.state) {
       // A call can't survive losing its signalling path for long; end it rather than leave it hanging.
       if relay.state == .off, call.state != .idle { call.hangUp() }
@@ -150,8 +170,9 @@ struct ContentView: View {
   private func wire() {
     ar.step = player.currentStep
     ar.onPose = { [relay] pose in relay.sendPose(pose) }
-    ar.onCameraFrame = { [call] buffer, time in
-      if call.isSendingVideo { call.videoSource.push(buffer, timestamp: time) }
+    // Runs on the AR session queue; the source checks its own thread-safe switch, set by CallManager.
+    ar.onCameraFrame = { [videoSource = call.videoSource] buffer, time in
+      videoSource.push(buffer, timestamp: time)
     }
     relay.onGuide = { [player] guide in player.replace(with: guide) }
     relay.onStepSet = { [player] message in
@@ -163,6 +184,24 @@ struct ContentView: View {
     }
     call.sendSignal = { [relay] signal in relay.sendSignal(signal) }
     relay.connectSaved()
+    if onboarded { ar.start() }
+  }
+
+  /// Background: no AR (iOS takes the camera anyway), no GPU drawing, no reading aloud. A live call keeps its voice
+  /// (UIBackgroundModes audio) and stops its video until the user is back.
+  private func handle(_ phase: ScenePhase) {
+    switch phase {
+    case .background:
+      ar.pause()
+      voice.stop()
+      call.setBackgrounded(true)
+    case .active:
+      call.setBackgrounded(false)
+      if onboarded { ar.resume() }
+      relay.appBecameActive()
+    default:
+      break
+    }
   }
 
   private func next() {

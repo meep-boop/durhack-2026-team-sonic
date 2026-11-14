@@ -10,18 +10,24 @@ final class CallManager: NSObject {
     case idle, ringing, connecting, live, reconnecting
   }
 
-  private(set) var state: State = .idle
+  private(set) var state: State = .idle {
+    didSet { updateVideoFlow() }
+  }
   private(set) var isMuted = false
   private(set) var isSpeakerOn = true
   /// Set when the expert sends their webcam, so the phone can show a face bubble.
   private(set) var remoteVideoTrack: RTCVideoTrack?
 
   @ObservationIgnored var sendSignal: ((RtcSignal) -> Void)?
-  @ObservationIgnored private(set) lazy var videoSource = ArFrameVideoSource(factory: factory)
+  /// Not lazy: the AR session queue pushes frames into it, and a lazy var must not be created from two threads.
+  @ObservationIgnored let videoSource: ArFrameVideoSource
 
   @ObservationIgnored private let factory: RTCPeerConnectionFactory
   @ObservationIgnored private var peer: RTCPeerConnection?
   @ObservationIgnored private var audioTrack: RTCAudioTrack?
+  @ObservationIgnored private var videoTrack: RTCVideoTrack?
+  @ObservationIgnored private var backgrounded = false
+  @ObservationIgnored private let audioSession = AudioSessionCoordinator.shared
   @ObservationIgnored private var control: RTCDataChannel?
   @ObservationIgnored private var pendingOffer: String?
   @ObservationIgnored private var pendingCandidates: [RTCIceCandidate] = []
@@ -35,6 +41,7 @@ final class CallManager: NSObject {
       encoderFactory: RTCDefaultVideoEncoderFactory(),
       decoderFactory: RTCDefaultVideoDecoderFactory()
     )
+    videoSource = ArFrameVideoSource(factory: factory)
     super.init()
   }
 
@@ -68,7 +75,7 @@ final class CallManager: NSObject {
     pendingOffer = nil
     expertSendsVideo = Self.offerSendsVideo(offer)
     state = .connecting
-    configureAudioSession()
+    audioSession.beginCall(speakerOn: isSpeakerOn)
 
     let config = RTCConfiguration()
     config.iceServers = [RTCIceServer(urlStrings: ["stun:stun.l.google.com:19302"])]
@@ -85,15 +92,25 @@ final class CallManager: NSObject {
     audioTrack = audio
     audio.isEnabled = !isMuted
     peer.add(audio, streamIds: ["phone"])
-    peer.add(factory.videoTrack(with: videoSource.source, trackId: "phone-camera"), streamIds: ["phone"])
+    let video = factory.videoTrack(with: videoSource.source, trackId: "phone-camera")
+    videoTrack = video
+    peer.add(video, streamIds: ["phone"])
+    updateVideoFlow()
 
+    // WebRTC calls these back on its own signalling thread; every state change hops to main, and a failure at any
+    // step ends the call instead of leaving it stuck on "Connecting…".
     peer.setRemoteDescription(RTCSessionDescription(type: .offer, sdp: offer)) { [weak self] error in
-      guard let self, error == nil else { return self?.hangUp() ?? () }
-      self.flushCandidates()
-      peer.answer(for: constraints) { answer, _ in
-        guard let answer else { return }
-        peer.setLocalDescription(answer) { _ in }
-        DispatchQueue.main.async { self.sendSignal?(.answer(sdp: answer.sdp)) }
+      guard error == nil else { return self?.failCall(peer) ?? () }
+      self?.onMain { self?.flushCandidates() }
+      peer.answer(for: constraints) { answer, error in
+        guard let answer, error == nil else { return self?.failCall(peer) ?? () }
+        peer.setLocalDescription(answer) { error in
+          guard error == nil else { return self?.failCall(peer) ?? () }
+          self?.onMain {
+            guard let self, peer === self.peer else { return }
+            self.sendSignal?(.answer(sdp: answer.sdp))
+          }
+        }
       }
     }
   }
@@ -117,7 +134,14 @@ final class CallManager: NSObject {
 
   func toggleSpeaker() {
     isSpeakerOn.toggle()
-    try? AVAudioSession.sharedInstance().overrideOutputAudioPort(isSpeakerOn ? .speaker : .none)
+    audioSession.setSpeaker(isSpeakerOn)
+  }
+
+  /// In the background the call keeps its voice but sends no camera: ARKit has no camera there anyway, and iOS
+  /// refuses GPU work from a backgrounded app. The expert sees the last frame until the user comes back.
+  func setBackgrounded(_ value: Bool) {
+    backgrounded = value
+    updateVideoFlow()
   }
 
   // MARK: Internals
@@ -134,11 +158,17 @@ final class CallManager: NSObject {
     pendingCandidates = []
   }
 
-  private func configureAudioSession() {
-    let session = AVAudioSession.sharedInstance()
-    try? session.setCategory(.playAndRecord, mode: .voiceChat, options: [.defaultToSpeaker, .allowBluetoothHFP])
-    try? session.setActive(true)
-    try? session.overrideOutputAudioPort(isSpeakerOn ? .speaker : .none)
+  private func updateVideoFlow() {
+    let sending = isSendingVideo && !backgrounded
+    videoSource.isEnabled = sending
+    videoTrack?.isEnabled = sending
+  }
+
+  private func failCall(_ peer: RTCPeerConnection) {
+    onMain { [weak self] in
+      guard let self, peer === self.peer else { return }
+      self.hangUp()
+    }
   }
 
   private func tearDown() {
@@ -146,11 +176,12 @@ final class CallManager: NSObject {
     peer = nil
     control = nil
     audioTrack = nil
+    videoTrack = nil
     remoteVideoTrack = nil
     pendingOffer = nil
     pendingCandidates = []
     state = .idle
-    try? AVAudioSession.sharedInstance().setActive(false, options: .notifyOthersOnDeactivation)
+    audioSession.endCall()
   }
 
   private func onMain(_ work: @escaping () -> Void) {

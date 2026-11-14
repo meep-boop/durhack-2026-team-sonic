@@ -40,6 +40,8 @@ cd ios/expert-call && python3 -m http.server 8000   # open http://localhost:8000
 Type the relay's `ws://` address into the page and press Connect: it shows a QR. On the phone, tap the status
 capsule, then **Scan QR**. Press **Call the phone** on the page, then **Accept** on the phone: the page sees the AR camera live and
 both sides can talk. Phone and laptop must be on the same Wi-Fi or hotspot (peer-to-peer, STUN only).
+Lock the phone or switch apps mid-call and the voice keeps going while the camera pauses; it picks up again when you
+come back.
 
 ## Laptop assistant and voice (optional)
 With `GEMINI_API_KEY` set, the laptop button identifies the laptop from the camera, writes the SSD-swap steps, pins
