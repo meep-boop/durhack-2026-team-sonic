@@ -309,3 +309,40 @@ each builder's brief (`builder-file-<name>.md`, on the `context` branch).
   shows them the wrong size or way up. @max — same for the `.glb` files in the scene; the tip, not the centre, sits
   at `pos`.
 - Conflict status: open
+
+### 2026-11-14 23:03 — the demo is now an SSD swap on Ahmed's laptop — @laura
+- Shipped: no code. Records a team decision that changes several tasks.
+- Touched: nothing yet
+- Decision: by the whole team (Ahmed, Max, Salman, Laura): the demo set is **Ahmed's laptop, and the guide walks
+  the user through replacing its SSD**, instead of a network cabinet. The marker is taped to the same board as the
+  laptop, next to the SSD cover, so the two can't move apart.
+- 📨 To @ahmed: please (1) update `PROJECT.md` and the briefs (my task 2 is now "fix the laptop and the marker to one
+  board", and the coloured cable boot is no longer needed); (2) add `"ssd"` to `ModelName` in
+  `contracts/protocol.ts`, and I'll build `ssd.glb`/`ssd.usdz` with the same conventions as the other six
+  (`cable-plug` and `bolt` stay, just unused for now); (3) decide what the UNO Q rig checks now that there's no cable,
+  since `expect: { port, cable }` no longer fits. Suggestion: back up the laptop first, and in the demo take its own
+  SSD out and put the same one back, so it still boots.
+- 📨 To @max: the splat to scan is the laptop on its board (laptops are dark and shiny, so expect a harder scan than
+  the cabinet).
+- 📨 To @salman: the marker sits on a board beside the laptop, not on equipment; nothing changes in the app.
+- ⚠️ Conflicts: @ahmed — the `expect` field and the rig's port regions; @max @salman — the demo scene changes
+- Conflict status: open
+
+### 2026-11-14 23:04 — review of the scene API (PR #6) — @laura
+- Shipped: no code. Reviewed `dashboard/src/scene/api.ts` and `docs/remote-assist/scene-api.md` at `6a6753b`
+  against my task 3. The one-copy design works for the guide builder: agreed.
+- Touched: nothing
+- 📨 To @max: four asks before I build on it:
+  1. How `dashboard/src/guide/` gets the `SceneApi` instance, and where the guide panel mounts in the shell
+     (`main.tsx` renders only `<Viewport />` today). This one blocks me.
+  2. `pickPoint()` also returns the surface normal, so a new model's +Y can point out of the surface. The models
+     stand on their tip and rise along +Y (`assets/models/README.md`); without a normal every new arrow points
+     straight down, even at the side of the laptop.
+  3. A calibrated flag plus a change event, so Send can block or warn until positions are in the marker frame. Your
+     notes say pre-calibration positions are wrong on a real phone; this keeps a wrong guide away from the demo.
+  4. If highlight boxes are resizable in 3D, report `size` in `onObjectMoved` too (it only carries `pos` and
+     `rot`); otherwise I'll edit sizes as numbers.
+  Smaller: what calls made before the splat has loaded do (ideally nothing), and how a cut-out's id reaches the guide
+  builder (your task 5).
+- ⚠️ Conflicts: @max — asks against `dashboard/src/scene/api.ts` (yours); nothing changed on my side
+- Conflict status: open
