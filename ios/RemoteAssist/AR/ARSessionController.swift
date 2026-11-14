@@ -3,25 +3,36 @@ import CoreImage
 import Observation
 import RealityKit
 import UIKit
+import os
 
 /// Owns the AR session: finds the marker under world tracking and pins the guide to where the marker was last seen.
+///
+/// Threading: ARKit calls the delegate on `sessionQueue`, never on main. Each queued delegate call holds its ARFrame,
+/// so with the delegate on main, any busy moment on main (SwiftUI, audio setup) used to pile up ARKit's frames until
+/// it logged "retaining 11 ARFrames" and stopped sending camera images. Now the per-frame work (call video, pose)
+/// finishes on `sessionQueue`, and main only gets the marker's latest state, coalesced to one hop at a time.
+/// Observable state and every RealityKit entity are touched on main only.
 @Observable
 final class ARSessionController: NSObject, ARSessionDelegate {
   private(set) var markerTracked = false
   private(set) var markerSeen = false
   private(set) var errorMessage: String?
+  /// True while the marker was found once but isn't visible right now, for long enough to be worth saying.
+  private(set) var markerLostForAWhile = false
 
   /// The step being shown. Drawn as soon as the marker is found, and redrawn when it changes.
   var step: Step? {
     didSet { if step != oldValue { renderStep() } }
   }
 
-  /// Camera poses in the marker frame, about 5 a second, once the marker has been seen.
+  /// Camera poses in the marker frame, about 5 a second, once the marker has been seen. Called on main.
   @ObservationIgnored var onPose: ((PoseUpdate) -> Void)?
-  /// Every camera frame, for the live call. Must return fast: it runs on ARKit's delegate queue.
-  @ObservationIgnored var onCameraFrame: ((CVPixelBuffer, TimeInterval) -> Void)?
-  @ObservationIgnored private var markerTransform: simd_float4x4?
-  @ObservationIgnored private var lastPoseTime: TimeInterval = 0
+  /// Every camera frame, for the live call. Called on the AR session queue; it must finish its work with the buffer
+  /// before it returns (copy or convert it), because ARKit wants the buffer back straight away.
+  @ObservationIgnored var onCameraFrame: ((CVPixelBuffer, TimeInterval) -> Void)? {
+    get { shared.withLock { $0.onCameraFrame } }
+    set { shared.withLock { $0.onCameraFrame = newValue } }
+  }
 
   @ObservationIgnored let arView = ARView(frame: .zero, cameraMode: .ar, automaticallyConfigureSession: false)
   /// A world anchor, not an image anchor: RealityKit hides image-anchored content the moment the image is covered
@@ -32,11 +43,46 @@ final class ARSessionController: NSObject, ARSessionDelegate {
   @ObservationIgnored private let markerRoot = Entity()
   @ObservationIgnored private let stepRoot = Entity()
   @ObservationIgnored private var configuration: ARWorldTrackingConfiguration?
+  @ObservationIgnored private var isRunning = false
   @ObservationIgnored private let coaching = ARCoachingOverlayView()
   @ObservationIgnored private var pinAnchors: [AnchorEntity] = []
   @ObservationIgnored private let imageContext = CIContext()
+  @ObservationIgnored private var glideEndsAt: Date = .distantPast
+  @ObservationIgnored private var lostTimer: Task<Void, Never>?
+  @ObservationIgnored private var thermalObserver: NSObjectProtocol?
 
+  @ObservationIgnored private let sessionQueue = DispatchQueue(label: "ar-session", qos: .userInteractive)
+  @ObservationIgnored private let shared = OSAllocatedUnfairLock(initialState: Shared())
+
+  /// What the session queue and main share. Always behind `shared`'s lock.
+  private struct Shared {
+    var onCameraFrame: ((CVPixelBuffer, TimeInterval) -> Void)?
+    /// The marker's last tracked pose, for expressing the camera in the marker frame.
+    var markerTransform: simd_float4x4?
+    var lastPoseTime: TimeInterval = 0
+    /// The newest marker state waiting for main, and whether a hop to main is already queued.
+    var pending: MarkerSample?
+    var hopQueued = false
+  }
+
+  /// A copy of what main needs from an ARImageAnchor, so no ARKit object crosses threads.
+  private struct MarkerSample {
+    var transform: simd_float4x4
+    var isTracked: Bool
+    var scale: Float
+    var size: CGSize
+    var isNew: Bool
+  }
+
+  deinit {
+    thermalObserver.map(NotificationCenter.default.removeObserver)
+  }
+
+  // MARK: Lifecycle (main)
+
+  /// Starts the session once. Later calls do nothing; use `resume()` after `pause()`.
   func start() {
+    guard configuration == nil else { return }
     guard ARWorldTrackingConfiguration.isSupported else {
       errorMessage = "This iPhone doesn't support ARKit world tracking."
       return
@@ -61,14 +107,13 @@ final class ARSessionController: NSObject, ARSessionDelegate {
     config.maximumNumberOfTrackedImages = 1
     config.planeDetection = []
     config.automaticImageScaleEstimationEnabled = true
-    // Hands and arms in front of the boxes hide them, as a real object would.
-    if ARWorldTrackingConfiguration.supportsFrameSemantics(.personSegmentationWithDepth) {
-      config.frameSemantics.insert(.personSegmentationWithDepth)
-    }
-
     configuration = config
+    applyThermalLimits(to: config)
+
+    arView.session.delegateQueue = sessionQueue
     arView.session.delegate = self
     arView.session.run(config, options: [.resetTracking, .removeExistingAnchors])
+    isRunning = true
 
     // Apple's own "move your phone" guidance whenever tracking is poor.
     coaching.session = arView.session
@@ -77,23 +122,47 @@ final class ARSessionController: NSObject, ARSessionDelegate {
     coaching.autoresizingMask = [.flexibleWidth, .flexibleHeight]
     coaching.frame = arView.bounds
     if coaching.superview == nil { arView.addSubview(coaching) }
+
+    // A hot phone drops the people-occlusion model first: it's the most expensive thing the session runs.
+    thermalObserver = NotificationCenter.default.addObserver(
+      forName: ProcessInfo.thermalStateDidChangeNotification, object: nil, queue: .main
+    ) { [weak self] _ in
+      guard let self, let configuration = self.configuration else { return }
+      let before = configuration.frameSemantics
+      self.applyThermalLimits(to: configuration)
+      if self.isRunning, configuration.frameSemantics != before { self.arView.session.run(configuration) }
+    }
   }
 
   func pause() {
+    guard isRunning else { return }
+    isRunning = false
     arView.session.pause()
   }
 
-  /// Picks up where it left off (no reset), so the guide is still on the marker after the QR scanner closes.
+  /// Picks up where it left off (no reset), so the guide is still on the marker after the QR scanner closes or the
+  /// app comes back from the background.
   func resume() {
-    guard let configuration else { return }
+    guard let configuration, !isRunning else { return }
+    isRunning = true
     arView.session.run(configuration)
   }
 
-  // MARK: Camera snapshots and AI pins
+  /// Hands and arms in front of the boxes hide them, as a real object would, unless the phone is running hot.
+  private func applyThermalLimits(to config: ARWorldTrackingConfiguration) {
+    let hot = ProcessInfo.processInfo.thermalState.rawValue >= ProcessInfo.ThermalState.serious.rawValue
+    if !hot, ARWorldTrackingConfiguration.supportsFrameSemantics(.personSegmentationWithDepth) {
+      config.frameSemantics.insert(.personSegmentationWithDepth)
+    } else {
+      config.frameSemantics.remove(.personSegmentationWithDepth)
+    }
+  }
+
+  // MARK: Camera snapshots and AI pins (main)
 
   /// The current camera image, upright for a phone held in portrait, as a JPEG small enough to send to Gemini.
   func snapshotJPEG(maxSide: CGFloat = 1024) -> Data? {
-    guard let buffer = arView.session.currentFrame?.capturedImage else { return nil }
+    guard isRunning, let buffer = arView.session.currentFrame?.capturedImage else { return nil }
     let upright = CIImage(cvPixelBuffer: buffer).oriented(.right)
     let scale = min(1, maxSide / max(upright.extent.width, upright.extent.height))
     let image = upright.transformed(by: CGAffineTransform(scaleX: scale, y: scale))
@@ -128,74 +197,136 @@ final class ARSessionController: NSObject, ARSessionDelegate {
     pinAnchors.removeAll()
   }
 
-  // MARK: ARSessionDelegate (main queue)
+  // MARK: ARSessionDelegate (sessionQueue)
+
+  func session(_ session: ARSession, didUpdate frame: ARFrame) {
+    let timestamp = frame.timestamp
+    let cameraTransform = frame.camera.transform
+
+    // Synchronous: the handler copies what it needs, so ARKit's buffer is free again when this returns.
+    if let onCameraFrame { onCameraFrame(frame.capturedImage, timestamp) }
+
+    let pose: PoseUpdate? = shared.withLock { state in
+      guard let marker = state.markerTransform, timestamp - state.lastPoseTime >= 0.2 else { return nil }
+      state.lastPoseTime = timestamp
+      // The contract's frame is the marker's, so the camera is expressed relative to the marker anchor.
+      let camera = marker.inverse * cameraTransform
+      return PoseUpdate(
+        t: Int64(Date().timeIntervalSince1970 * 1000),
+        camera: Pose(p: Vec3(SIMD3(camera.columns.3.x, camera.columns.3.y, camera.columns.3.z)), q: Quat(simd_quatf(camera))),
+        markerTracked: false  // set on main below, where markerTracked lives
+      )
+    }
+    if var pose {
+      DispatchQueue.main.async { [weak self] in
+        guard let self else { return }
+        pose.markerTracked = self.markerTracked
+        self.onPose?(pose)
+      }
+    }
+  }
 
   func session(_ session: ARSession, didAdd anchors: [ARAnchor]) {
-    for case let image as ARImageAnchor in anchors {
-      attach(to: image)
-    }
+    receive(anchors, isNew: true)
   }
 
   func session(_ session: ARSession, didUpdate anchors: [ARAnchor]) {
-    for case let image as ARImageAnchor in anchors {
-      if markerTracked != image.isTracked { markerTracked = image.isTracked }
-      // While covered, ARKit's last pose for the image goes stale, so keep the guide where it was.
-      guard image.isTracked else { continue }
-      follow(image)
-    }
-  }
-
-  func session(_ session: ARSession, didUpdate frame: ARFrame) {
-    onCameraFrame?(frame.capturedImage, frame.timestamp)
-    guard let onPose, let markerTransform, frame.timestamp - lastPoseTime >= 0.2 else { return }
-    lastPoseTime = frame.timestamp
-    // The contract's frame is the marker's, so the camera is expressed relative to the marker anchor.
-    let camera = markerTransform.inverse * frame.camera.transform
-    let position = SIMD3(camera.columns.3.x, camera.columns.3.y, camera.columns.3.z)
-    onPose(PoseUpdate(
-      t: Int64(Date().timeIntervalSince1970 * 1000),
-      camera: Pose(p: Vec3(position), q: Quat(simd_quatf(camera))),
-      markerTracked: markerTracked
-    ))
+    receive(anchors, isNew: false)
   }
 
   func session(_ session: ARSession, didFailWithError error: Error) {
-    errorMessage = error.localizedDescription
+    DispatchQueue.main.async { [weak self] in self?.errorMessage = error.localizedDescription }
   }
 
-  // MARK: Content
+  private func receive(_ anchors: [ARAnchor], isNew: Bool) {
+    guard let image = anchors.lazy.compactMap({ $0 as? ARImageAnchor }).first else { return }
+    let sample = MarkerSample(
+      transform: image.transform,
+      isTracked: image.isTracked,
+      scale: Float(image.estimatedScaleFactor),
+      size: image.referenceImage.physicalSize,
+      isNew: isNew
+    )
+    let hop = shared.withLock { state -> Bool in
+      // While covered, ARKit's last pose for the image goes stale, so poses keep using the last tracked one.
+      if sample.isTracked || isNew { state.markerTransform = sample.transform }
+      var merged = sample
+      // A coalesced "added" must not be lost under a later "updated".
+      if state.pending?.isNew == true { merged.isNew = true }
+      state.pending = merged
+      guard !state.hopQueued else { return false }
+      state.hopQueued = true
+      return true
+    }
+    if hop {
+      DispatchQueue.main.async { [weak self] in self?.applyPendingMarker() }
+    }
+  }
 
-  private func attach(to image: ARImageAnchor) {
+  // MARK: Content (main)
+
+  private func applyPendingMarker() {
+    let sample: MarkerSample? = shared.withLock { state in
+      state.hopQueued = false
+      defer { state.pending = nil }
+      return state.pending
+    }
+    guard let sample else { return }
+
+    if sample.isNew || markerAnchor == nil {
+      attach(sample)
+    } else if sample.isTracked {
+      follow(sample, reacquired: !markerTracked)
+    }
+    if markerTracked != sample.isTracked {
+      markerTracked = sample.isTracked
+      updateLostHint()
+    }
+  }
+
+  private func attach(_ sample: MarkerSample) {
     markerAnchor.map { arView.scene.removeAnchor($0) }
 
-    let anchor = AnchorEntity(world: image.transform)
-    let size = image.referenceImage.physicalSize
+    let anchor = AnchorEntity(world: sample.transform)
     markerRoot.children.removeAll()
-    markerRoot.addChild(Shapes.markerOutline(width: Float(size.width), height: Float(size.height)))
+    markerRoot.addChild(Shapes.markerOutline(width: Float(sample.size.width), height: Float(sample.size.height)))
     markerRoot.addChild(Shapes.axisGizmo())
     markerRoot.addChild(stepRoot)
-    markerRoot.scale = SIMD3(repeating: Float(image.estimatedScaleFactor))
+    markerRoot.scale = SIMD3(repeating: sample.scale)
     anchor.addChild(markerRoot)
     arView.scene.addAnchor(anchor)
 
     markerAnchor = anchor
-    markerTransform = image.transform
     markerSeen = true
-    markerTracked = image.isTracked
   }
 
-  private func follow(_ image: ARImageAnchor) {
+  private func follow(_ sample: MarkerSample, reacquired: Bool) {
     guard let markerAnchor else { return }
-    let target = Transform(matrix: image.transform)
+    let target = Transform(matrix: sample.transform)
     let jump = simd_distance(markerAnchor.transform.translation, target.translation)
-    // Small corrections are applied straight away; a big re-find after the marker was covered glides instead of jumping.
-    if jump > 0.02 {
-      markerAnchor.move(to: target, relativeTo: nil, duration: 0.15, timingFunction: .easeOut)
-    } else {
+    if reacquired && jump > 0.02 {
+      // Found again after being covered: glide there once instead of jumping.
+      markerAnchor.move(to: target, relativeTo: nil, duration: 0.2, timingFunction: .easeOut)
+      glideEndsAt = Date().addingTimeInterval(0.2)
+    } else if Date() >= glideEndsAt {
+      // Never restart or fight a glide that's already running; once it lands, follow every update exactly.
       markerAnchor.transform = target
     }
-    markerTransform = image.transform
-    markerRoot.scale = SIMD3(repeating: Float(image.estimatedScaleFactor))
+    markerRoot.scale = SIMD3(repeating: sample.scale)
+  }
+
+  /// After 3 s of not seeing the marker, the UI says the guide is holding where it was.
+  private func updateLostHint() {
+    lostTimer?.cancel()
+    if markerTracked || !markerSeen {
+      markerLostForAWhile = false
+      return
+    }
+    lostTimer = Task { @MainActor [weak self] in
+      try? await Task.sleep(for: .seconds(3))
+      guard let self, !Task.isCancelled, !self.markerTracked else { return }
+      self.markerLostForAWhile = true
+    }
   }
 
   private func renderStep() {

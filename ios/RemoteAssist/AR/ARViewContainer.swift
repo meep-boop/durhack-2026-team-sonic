@@ -4,9 +4,9 @@ import SwiftUI
 struct ARViewContainer: UIViewRepresentable {
   let controller: ARSessionController
 
+  /// The session is started by ContentView once onboarding is closed, so the camera prompt isn't hidden under it.
   func makeUIView(context: Context) -> ARView {
-    controller.start()
-    return controller.arView
+    controller.arView
   }
 
   func updateUIView(_ uiView: ARView, context: Context) {}
