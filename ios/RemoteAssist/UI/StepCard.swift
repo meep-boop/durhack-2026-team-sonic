@@ -15,7 +15,7 @@ struct StepCard: View {
   var body: some View {
     VStack(alignment: .leading, spacing: 14) {
       if let step = player.currentStep, let index = player.currentIndex {
-        ProgressSegments(count: player.guide.steps.count, done: index)
+        ProgressSegments(steps: player.guide.steps, current: index, done: player.doneStepIds)
 
         VStack(alignment: .leading, spacing: 6) {
           HStack {
@@ -98,15 +98,17 @@ struct StepCard: View {
   }
 }
 
+/// Green for steps really tapped done (by id), so a jump from the expert or a guide replay doesn't fake progress.
 private struct ProgressSegments: View {
-  let count: Int
-  let done: Int
+  let steps: [Step]
+  let current: Int
+  let done: Set<String>
 
   var body: some View {
     HStack(spacing: 4) {
-      ForEach(0..<count, id: \.self) { i in
+      ForEach(steps.indices, id: \.self) { i in
         Capsule()
-          .fill(i < done ? Color.green : (i == done ? Color.accentColor : Color.secondary.opacity(0.3)))
+          .fill(i == current ? Color.accentColor : (done.contains(steps[i].id) ? Color.green : Color.secondary.opacity(0.3)))
           .frame(height: 5)
       }
     }

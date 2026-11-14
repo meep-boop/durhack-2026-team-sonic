@@ -14,7 +14,10 @@ final class MessageCodingTests: XCTestCase {
     let decoded = try examples().map { try JSONDecoder().decode(Message.self, from: $0) }
     XCTAssertEqual(
       decoded.map(\.type),
-      ["hello", "guide.set", "step.set", "calib.set", "step.done", "pose", "step.verified", "rtc.signal", "presence", "error"]
+      [
+        "hello", "guide.set", "step.set", "calib.set", "step.done", "pose", "step.verified", "rtc.signal",
+        "labels.request", "labels.result", "presence", "error",
+      ]
     )
   }
 
@@ -49,5 +52,49 @@ final class MessageCodingTests: XCTestCase {
 
     player.jump(to: "s4")
     XCTAssertEqual(player.currentStepId, "s4")
+  }
+
+  /// A message type added to the contract later is ignored, not treated as a broken message.
+  func testUnknownMessageTypeDecodesAsUnknown() throws {
+    let data = Data(#"{"type":"scene.patch","anything":1}"#.utf8)
+    XCTAssertEqual(try JSONDecoder().decode(Message.self, from: data), .unknown("scene.patch"))
+  }
+
+  /// A model the phone doesn't ship yet must not sink the whole guide.
+  func testUnknownModelNameStillDecodes() throws {
+    XCTAssertEqual(try JSONDecoder().decode(ModelName.self, from: Data(#""ssd""#.utf8)), .ssd)
+    XCTAssertEqual(try JSONDecoder().decode(ModelName.self, from: Data(#""cable-plug""#.utf8)), .cablePlug)
+    let other = try JSONDecoder().decode(ModelName.self, from: Data(#""heatsink""#.utf8))
+    XCTAssertEqual(other, .other("heatsink"))
+    XCTAssertEqual(String(decoding: try JSONEncoder().encode(other), as: UTF8.self), #""heatsink""#)
+  }
+
+  /// The relay replays guide.set on every reconnect; a guide finished offline must stay finished.
+  func testReplayAfterFinishingStaysFinished() throws {
+    let guide = try GuidePlayer.loadBundled()
+    let player = GuidePlayer(guide: guide)
+    guide.steps.forEach { _ in player.next() }
+    XCTAssertTrue(player.isFinished)
+    XCTAssertEqual(player.doneStepIds, Set(guide.steps.map(\.id)))
+
+    player.replace(with: guide)
+    XCTAssertTrue(player.isFinished)
+
+    var edited = guide
+    edited.rev += 1
+    edited.steps.append(Step(id: "extra", text: "One more", objects: []))
+    player.replace(with: edited)
+    XCTAssertEqual(player.currentStepId, "extra")
+  }
+
+  func testDifferentGuideStartsFresh() throws {
+    let guide = try GuidePlayer.loadBundled()
+    let player = GuidePlayer(guide: guide)
+    player.next()
+    var other = guide
+    other.id = "another-guide"
+    player.replace(with: other)
+    XCTAssertEqual(player.currentStepId, guide.steps.first?.id)
+    XCTAssertTrue(player.doneStepIds.isEmpty)
   }
 }

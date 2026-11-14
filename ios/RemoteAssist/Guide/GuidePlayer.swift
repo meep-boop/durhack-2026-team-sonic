@@ -7,6 +7,9 @@ import Observation
 final class GuidePlayer {
   private(set) var guide: Guide
   private(set) var currentStepId: String?
+  /// Steps the user has tapped Done on, by id. The relay no longer replays step.set to phones, so the phone owns
+  /// its own place and progress across reconnects and guide edits.
+  private(set) var doneStepIds: Set<String> = []
 
   init(guide: Guide) {
     self.guide = guide
@@ -19,6 +22,7 @@ final class GuidePlayer {
 
   func next() {
     guard let index = currentIndex else { return }
+    doneStepIds.insert(guide.steps[index].id)
     let nextIndex = index + 1
     currentStepId = nextIndex < guide.steps.count ? guide.steps[nextIndex].id : nil
   }
@@ -30,14 +34,30 @@ final class GuidePlayer {
 
   func restart() {
     currentStepId = guide.steps.first?.id
+    doneStepIds = []
   }
 
-  /// `guide.set` always carries the whole guide. Stay on the current step if it still exists (ids, not positions,
-  /// so an inserted step doesn't move us); a new guide starts from its first step.
+  /// `guide.set` always carries the whole guide, and the relay replays it on every reconnect.
+  /// - Same guide: stay where we are, by id (an inserted step doesn't move us). A guide finished offline stays
+  ///   finished, unless the edit added a step that isn't done yet, which we then go to.
+  /// - A different guide starts from its first step.
   func replace(with newGuide: Guide) {
-    let keep = newGuide.id == guide.id && newGuide.steps.contains { $0.id == currentStepId }
+    guard newGuide.id == guide.id else {
+      guide = newGuide
+      currentStepId = newGuide.steps.first?.id
+      doneStepIds = []
+      return
+    }
     guide = newGuide
-    if !keep { currentStepId = newGuide.steps.first?.id }
+    let ids = Set(newGuide.steps.map(\.id))
+    doneStepIds.formIntersection(ids)
+    if let currentStepId, ids.contains(currentStepId) { return }
+    if currentStepId == nil {
+      self.currentStepId = newGuide.steps.first { !doneStepIds.contains($0.id) }?.id
+    } else {
+      // The current step was deleted: go to the first step not yet done.
+      self.currentStepId = newGuide.steps.first { !doneStepIds.contains($0.id) }?.id ?? newGuide.steps.first?.id
+    }
   }
 
   func jump(to stepId: String) {

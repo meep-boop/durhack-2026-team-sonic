@@ -57,9 +57,39 @@ struct Quat: Codable, Equatable {
   }
 }
 
-enum ModelName: String, Codable {
-  case screw, bolt, arrow, screwdriver, hand
-  case cablePlug = "cable-plug"
+/// Decodes any string: a model this build doesn't know yet (say one added to assets/models/ later) becomes
+/// `.other` and is drawn as a stand-in, instead of failing the whole guide.set and leaving the phone on the old guide.
+enum ModelName: Codable, Hashable {
+  case screw, bolt, arrow, screwdriver, hand, cablePlug, ssd
+  case other(String)
+
+  static let known: [ModelName] = [.screw, .bolt, .arrow, .screwdriver, .hand, .cablePlug, .ssd]
+
+  var rawValue: String {
+    switch self {
+    case .screw: "screw"
+    case .bolt: "bolt"
+    case .arrow: "arrow"
+    case .screwdriver: "screwdriver"
+    case .hand: "hand"
+    case .cablePlug: "cable-plug"
+    case .ssd: "ssd"
+    case .other(let name): name
+    }
+  }
+
+  init(rawValue: String) {
+    self = Self.known.first { $0.rawValue == rawValue } ?? .other(rawValue)
+  }
+
+  init(from decoder: Decoder) throws {
+    self.init(rawValue: try decoder.singleValueContainer().decode(String.self))
+  }
+
+  func encode(to encoder: Encoder) throws {
+    var c = encoder.singleValueContainer()
+    try c.encode(rawValue)
+  }
 }
 
 enum Action: String, Codable {
@@ -86,10 +116,32 @@ struct GuideObject: Codable, Identifiable, Equatable {
   var expect: Expect?
 }
 
+extension GuideObject {
+  enum CodingKeys: String, CodingKey {
+    case id, model, pos, rot, size, action, axis, label, cutoutId, expect
+  }
+
+  init(from decoder: Decoder) throws {
+    let c = try decoder.container(keyedBy: CodingKeys.self)
+    id = try c.decode(String.self, forKey: .id)
+    model = try c.decode(ModelName.self, forKey: .model)
+    pos = try c.decode(Vec3.self, forKey: .pos)
+    rot = try c.decode(Quat.self, forKey: .rot)
+    size = try c.decode(Vec3.self, forKey: .size)
+    action = try c.decodeIfPresent(Action.self, forKey: .action)
+    axis = try c.decode(Vec3.self, forKey: .axis)
+    label = try c.decodeIfPresent(String.self, forKey: .label)
+    cutoutId = try c.decodeIfPresent(String.self, forKey: .cutoutId)
+    // The phone never uses `expect`, and its shape has already changed once (cable/port → region/present), which
+    // made every guide fail to decode. Read it if it fits; never let it sink the guide.
+    expect = try? c.decodeIfPresent(Expect.self, forKey: .expect)
+  }
+}
+
+/// The stickered part (the SSD in the demo) present in, or gone from, a region of the Nicla Vision's view.
 struct Expect: Codable, Equatable {
-  enum Cable: String, Codable { case `in`, out }
-  var port: String
-  var cable: Cable
+  var region: String
+  var present: Bool
 }
 
 struct Step: Codable, Identifiable, Equatable {

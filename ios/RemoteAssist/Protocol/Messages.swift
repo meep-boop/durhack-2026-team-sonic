@@ -107,6 +107,30 @@ struct RtcSignalMessage: Codable, Equatable {
   var signal: RtcSignal
 }
 
+/// Expert → relay only. The phone never sends or receives it; mirrored so the shared fixtures all decode.
+struct LabelsRequest: Codable, Equatable {
+  struct Image: Codable, Equatable {
+    var mediaType: String
+    var data: String
+  }
+  var requestId: String
+  var image: Image
+  var width: Int
+  var height: Int
+}
+
+/// Relay → the expert that asked. A made-by-AI label at pixel (x, y) of the snapshot.
+struct LabelsResult: Codable, Equatable {
+  struct Label: Codable, Equatable {
+    var text: String
+    var x: Double
+    var y: Double
+  }
+  var requestId: String
+  var model: String
+  var labels: [Label]
+}
+
 struct Presence: Codable, Equatable {
   struct Client: Codable, Equatable {
     var role: Role
@@ -129,8 +153,12 @@ enum Message: Codable, Equatable {
   case pose(PoseUpdate)
   case stepVerified(StepVerified)
   case rtcSignal(RtcSignalMessage)
+  case labelsRequest(LabelsRequest)
+  case labelsResult(LabelsResult)
   case presence(Presence)
   case error(ErrorMessage)
+  /// A type this build doesn't know yet (the contract grew). Ignored rather than treated as a broken message.
+  case unknown(String)
 
   private enum TypeKey: String, CodingKey { case type }
 
@@ -144,8 +172,11 @@ enum Message: Codable, Equatable {
     case .pose: "pose"
     case .stepVerified: "step.verified"
     case .rtcSignal: "rtc.signal"
+    case .labelsRequest: "labels.request"
+    case .labelsResult: "labels.result"
     case .presence: "presence"
     case .error: "error"
+    case .unknown(let type): type
     }
   }
 
@@ -161,10 +192,11 @@ enum Message: Codable, Equatable {
     case "pose": self = .pose(try PoseUpdate(from: decoder))
     case "step.verified": self = .stepVerified(try StepVerified(from: decoder))
     case "rtc.signal": self = .rtcSignal(try RtcSignalMessage(from: decoder))
+    case "labels.request": self = .labelsRequest(try LabelsRequest(from: decoder))
+    case "labels.result": self = .labelsResult(try LabelsResult(from: decoder))
     case "presence": self = .presence(try Presence(from: decoder))
     case "error": self = .error(try ErrorMessage(from: decoder))
-    default:
-      throw DecodingError.dataCorrupted(.init(codingPath: [TypeKey.type], debugDescription: "unknown message type \(type)"))
+    default: self = .unknown(type)
     }
   }
 
@@ -180,8 +212,11 @@ enum Message: Codable, Equatable {
     case .pose(let m): try m.encode(to: encoder)
     case .stepVerified(let m): try m.encode(to: encoder)
     case .rtcSignal(let m): try m.encode(to: encoder)
+    case .labelsRequest(let m): try m.encode(to: encoder)
+    case .labelsResult(let m): try m.encode(to: encoder)
     case .presence(let m): try m.encode(to: encoder)
     case .error(let m): try m.encode(to: encoder)
+    case .unknown: break
     }
   }
 }

@@ -60,11 +60,28 @@ enum Shapes {
   }
 
   private static var modelCache: [ModelName: Entity] = [:]
+  private static var missingModels: Set<ModelName> = []
+
+  /// Loads every bundled model in the background at launch, so the first step that uses one doesn't stall a frame
+  /// while its USDZ is read from disk.
+  @MainActor
+  static func preloadModels() async {
+    for name in ModelName.known where modelCache[name] == nil && !missingModels.contains(name) {
+      do {
+        modelCache[name] = try await Entity(named: name.rawValue)
+      } catch {
+        missingModels.insert(name)
+      }
+    }
+  }
 
   /// @laura's model from assets/models/ (tip at the origin, +Y up, metres), or a simple stand-in if it won't load.
   static func model(_ name: ModelName) -> Entity {
     if let cached = modelCache[name] { return cached.clone(recursive: true) }
-    guard let loaded = try? Entity.load(named: name.rawValue) else { return placeholder(for: name) }
+    guard !missingModels.contains(name), let loaded = try? Entity.load(named: name.rawValue) else {
+      missingModels.insert(name)
+      return placeholder(for: name)
+    }
     modelCache[name] = loaded
     return loaded.clone(recursive: true)
   }
@@ -118,6 +135,15 @@ enum Shapes {
       return ModelEntity(mesh: .generateSphere(radius: 0.015), materials: [SimpleMaterial(color: .systemPink, isMetallic: false)])
     case .cablePlug:
       return ModelEntity(mesh: .generateBox(size: [0.01, 0.014, 0.01], cornerRadius: 0.001), materials: [SimpleMaterial(color: .systemBlue, isMetallic: false)])
+    case .ssd:
+      // An M.2 2280 stick: 22 × 80 mm, lying flat, its connector edge at the origin along +Z.
+      let stick = ModelEntity(mesh: .generateBox(size: [0.022, 0.0025, 0.08], cornerRadius: 0.0005), materials: [SimpleMaterial(color: .systemGreen, roughness: 0.6, isMetallic: false)])
+      stick.position = [0, 0.00125, 0.04]
+      let root = ModelEntity()
+      root.addChild(stick)
+      return root
+    case .other:
+      return ModelEntity(mesh: .generateBox(size: 0.015, cornerRadius: 0.002), materials: [SimpleMaterial(color: .systemPurple, isMetallic: false)])
     }
   }
 
