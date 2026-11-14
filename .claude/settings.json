@@ -1,0 +1,16 @@
+{
+  "hooks": {
+    "UserPromptSubmit": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "bash \"$CLAUDE_PROJECT_DIR/scripts/claude-hooks/context-sync.sh\" 2>/dev/null || true",
+            "timeout": 30,
+            "statusMessage": "Syncing team context"
+          }
+        ]
+      }
+    ]
+  }
+}
