@@ -28,7 +28,8 @@ so nobody waits for anybody. Until `contracts/protocol.ts` lands, use the draft 
 **Owns:**
 - `relay/`: the Node server every message goes through.
 - `contracts/` and `fixtures/`: the protocol, the sample guide, the fake phone and the fake expert.
-- The labelling endpoint (the AI feature's server side) and the path the hardware's messages take.
+- The labelling endpoint (the AI feature's server side).
+- `hardware/`: the UNO Q rig on the demo set (the RS feature), and the path its messages take.
 - The team kit (`scripts/`, `kit/`, `team.conf`) and the shared docs on `context`.
 
 **Does NOT touch:**
@@ -37,7 +38,7 @@ so nobody waits for anybody. Until `contracts/protocol.ts` lands, use the draft 
 |---|---|
 | `ios/` | @salman |
 | `dashboard/src/scene/`, the dashboard shell, the splat files, `docs/remote-assist/` | @max |
-| `dashboard/src/guide/`, `assets/`, `hardware/`, the pitch material | @laura |
+| `dashboard/src/guide/`, `assets/`, the pitch material, the demo set itself | @laura |
 
 **Shared** (flag every edit in `progress.md` → `⚠️ Conflicts`): `contracts/protocol.ts` and `fixtures/*` are yours,
 but all three teammates build on them, so every change after the first version is flagged to all three.
@@ -47,7 +48,8 @@ but all three teammates build on them, so every change after the first version i
 - One agreed protocol file, with fakes good enough that the phone and the dashboard never wait for each other.
 - A relay that keeps the latest guide and step, replays them on reconnect, and carries WebRTC signalling.
 - The rule for what happens when the phone comes back after being offline.
-- An endpoint that labels parts of the scan, and the path for the hardware's "step verified" message.
+- An endpoint that labels parts of the scan.
+- The UNO Q and camera on the set that notice the cable really moved, tick the step and warn on a wrong port.
 
 **Out of scope:** anything drawn on screen, on either side.
 
@@ -55,6 +57,10 @@ but all three teammates build on them, so every change after the first version i
 - **The guide must never depend on video, the AI labels or the hardware.** The relay treats those as extras.
 - Each new package, the LLM provider, and the resync rule are 🟠 decisions for you before any code.
 - API keys stay in `.env` on the machine running the relay. Commit `.env.example` only.
+- From Max's `docs/remote-assist/open-questions.md` § 3: a laptop on venue Wi-Fi can't be reached from a phone on 4G, so the
+  relay may need a public address (a tunnel is a new dependency, so 🟠); keep a one-hotspot fallback. He also suggests
+  sending the camera pose and lens data with each video frame.
+- The rig is the first thing to drop if the relay, protocol or resync fall behind: three people wait on those.
 
 ---
 
@@ -71,29 +77,35 @@ but all three teammates build on them, so every change after the first version i
      travel in; whether signalling rides this websocket.
    - *Done when:* the file and `fixtures/sample-guide.json` are on `main` and a board entry flags all three teammates.
    - `[⚠ conflicts with @salman @max @laura: they all build on it]`
-3. ⬜ **Fake phone and fake expert**
+3. ⬜ **Ask about the UNO Q today** 🟠 (moved from @laura 2026-11-14: Ahmed took the rig)
+   - The RS challenge needs an Arduino UNO Q and a camera. Find out now whether we can borrow them.
+   - *Done when:* a board entry says we have the kit, or that we don't and the RS feature is parked.
+4. ⬜ **Fake phone and fake expert**
    - Two small scripts in `fixtures/` that speak the protocol, so each side can be built and tested alone.
    - *Done when:* run against each other, they complete the sample guide.
-4. ⬜ **The relay** 🟠
+5. ⬜ **The relay** 🟠
    - Node and `ws` over HTTPS, as planned; confirm the packages first. Keeps the latest guide, calibration and
      step, and replays them to whoever reconnects.
    - *Done when:* the two fakes complete a guide through it, and a fake that reconnects gets the current state.
-5. ⬜ **WebRTC signalling** 🟠
+6. ⬜ **WebRTC signalling** 🟠
    - Agree the library with @salman, then carry offer, answer and candidates.
    - *Done when:* @salman's phone and a browser test page connect through the relay.
    - `[⚠ conflicts with @salman and @laura: both ends of the video]`
-6. ⬜ **Offline resync** 🟠 (the Neptune North feature)
+7. ⬜ **Offline resync** 🟠 (the Neptune North feature)
    - Decide first what happens if the expert edited the guide while the phone was offline. Then accept the phone's
      queued `step.done` on reconnect.
    - *Done when:* the fake phone goes offline mid-guide, finishes, reconnects, and both sides agree on the state.
    - `[⚠ conflicts with @salman: the phone's queue]`
-7. ⬜ **Labelling endpoint** 🟠 (the Accenture feature)
+8. ⬜ **Labelling endpoint** 🟠 (the Accenture feature)
    - Decide the provider and what the model looks at with @max. Return labels with positions.
    - *Done when:* @max's search box finds a labelled part from a real response; a canned response is labelled MOCK.
    - `[⚠ conflicts with @max: the label shape]`
-8. ⬜ **Hardware message path** (the RS feature, only if @laura gets a kit)
-   - Accept `step.verified` from the rig and pass it to both sides.
-   - *Done when:* a fake rig message ticks the step on the fake expert and the fake phone.
+9. ⬜ **The hardware check** 🟠 (the RS feature, only if task 3 found a kit; moved from @laura 2026-11-14)
+   - The UNO Q and camera notice which port the cable is in and send `step.verified` through the relay to both
+     sides. Decide the detection method first.
+   - *Done when:* moving the cable to the right port ticks the step on the dashboard and the phone, and a wrong port
+     warns. Before the kit arrives: a fake rig message does the same on the two fakes.
+   - `[⚠ conflicts with @laura: the rig mounts on her demo set, before it's scanned]`
 
 ## 4. Done log (newest first)
 - _(empty)_
@@ -101,7 +113,7 @@ but all three teammates build on them, so every change after the first version i
 ## 5. Waiting on / owed to others
 - 📤 **Owed to @salman @max @laura:** `contracts/protocol.ts`, the sample guide and the fakes.
 - 📥 **Waiting on @salman:** his pick of WebRTC library.
-- 📥 **Waiting on @laura:** whether we get an UNO Q.
+- 📥 **Waiting on @laura:** a spot on the demo set for the UNO Q rig.
 
 ## 6. Working-style notes for the agent
 - Verbosity: Level 0.

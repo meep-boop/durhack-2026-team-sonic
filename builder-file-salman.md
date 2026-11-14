@@ -32,9 +32,9 @@ so nobody waits for anybody. Until `contracts/protocol.ts` lands, use the draft 
 
 | Area | Owner |
 |---|---|
-| `relay/`, `contracts/`, `fixtures/` | @ahmed |
+| `relay/`, `contracts/`, `fixtures/`, `hardware/` | @ahmed |
 | `dashboard/src/scene/`, the dashboard shell, the splat files, `docs/remote-assist/` | @max |
-| `dashboard/src/guide/`, `assets/`, `hardware/`, the pitch material | @laura |
+| `dashboard/src/guide/`, `assets/`, the pitch material | @laura |
 
 **Shared** (flag every edit in `progress.md` → `⚠️ Conflicts`): `contracts/protocol.ts` (ask @ahmed for changes),
 `fixtures/*`, and `assets/` (you consume the marker image and the USDZ models that @laura makes).

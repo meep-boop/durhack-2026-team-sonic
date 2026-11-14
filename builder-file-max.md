@@ -36,8 +36,8 @@ so nobody waits for anybody. Until `contracts/protocol.ts` lands, use the draft 
 | Area | Owner |
 |---|---|
 | `ios/` | @salman |
-| `relay/`, `contracts/`, `fixtures/` | @ahmed |
-| `dashboard/src/guide/`, `assets/`, `hardware/`, the pitch material | @laura |
+| `relay/`, `contracts/`, `fixtures/`, `hardware/` | @ahmed |
+| `dashboard/src/guide/`, `assets/`, the pitch material | @laura |
 
 **Shared** (flag every edit in `progress.md` → `⚠️ Conflicts`): `contracts/protocol.ts` (ask @ahmed for changes),
 `fixtures/*`, and the seam between scene and guide (`dashboard/src/scene/api.ts`, agreed with @laura).

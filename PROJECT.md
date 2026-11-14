@@ -42,14 +42,15 @@ The idea is Max's (`docs/remote-assist/` on `main` has the full plan). It was ta
 
 | Date | Decision |
 |---|---|
+| 2026-11-14 | Ahmed builds the UNO Q rig, not Laura (Ahmed) |
 | 2026-11-14 | All four build in parallel from the first hour, each against fake peers (Ahmed) |
 | 2026-11-14 | Enter Neptune North, Accenture, Marshall Wace and RS (Ahmed) |
 | 2026-11-14 | Scaniverse is the main splat route; Dawn is an upgrade once someone has logged in (Ahmed) |
 | 2026-11-14 | A cut-out shows on the phone as a highlight box plus the closest built-in model (Ahmed) |
 | 2026-11-14 | Live view is WebRTC from the start (Ahmed, against the recommendation) |
 | 2026-11-14 | The scan is lined up with the room by a printed marker under world tracking (Ahmed) |
-| 2026-11-14 | The split: Salman phone app, Max dashboard 3D view and splats, Laura guide builder, assets, set and pitch, Ahmed relay, protocol and sync (Ahmed) |
-| 2026-11-14 | The phone app is native Swift, ARKit + RealityKit (Max round 1; confirmed by Ahmed) |
+| 2026-11-14 | The split: Salman phone app, Max dashboard 3D view and splats, Laura guide builder, assets, set and pitch, Ahmed relay, protocol, sync and the UNO Q rig (Ahmed) |
+| 2026-11-14 | The phone app is native Swift, built in Xcode, ARKit + RealityKit (Max round 1; confirmed twice by Ahmed) |
 | 2026-11-14 | Round 1: the expert builds the guide and the user follows it; guides can be live or prepared; built-in models plus cut-outs; preset actions; the user taps Next; boxes stay alongside models (Max; agreed by Ahmed) |
 
 **Agreement so far:** Max and Ahmed. Laura and Salman haven't confirmed their roles or these decisions; their
@@ -76,8 +77,14 @@ briefs ask them to object on the board before building.
   call. **Not decided.**
 - **Model formats:** author once and convert, or keep glTF and USDZ by hand. Owner: Laura. **Not decided.**
 - **Demo objects for the set.** Owner: Laura, with the team. **Not decided.**
-- **UNO Q detection method,** and whether we can borrow a kit at all. Owner: Laura. **Not decided.** No kit means
-  the RS feature is parked.
+- **UNO Q detection method,** and whether we can borrow a kit at all. Owner: Ahmed (took it from Laura). **Not
+  decided.** No kit means the RS feature is parked.
+- **`docs/remote-assist/open-questions.md` (Max) is out of step with this page.** Its question 1 (alignment) is
+  marked "needs thought, not assigned", but Ahmed decided option B, the printed marker. Its questions 2 and 3 are
+  framed as decisions for Max, and Max recommends the opposite of what Ahmed chose (the two "Reopen" items above).
+  Owner: Ahmed + Max, to settle together. Max's file is his to update.
+- **Does the relay need a public address?** A phone on 4G can't reach a laptop on venue Wi-Fi (open-questions § 3).
+  A tunnel is a new dependency. Owner: Ahmed. **Not decided.**
 - **May one project enter four sponsor challenges?** Owner: Ahmed, from the event rules. **Not checked.**
 - **Live or prepared guides first?** (Max's open question.) Overtaken by "all in parallel": the phone plays a
   prepared sample guide from its first task, and live building arrives with the guide builder.
@@ -85,10 +92,10 @@ briefs ask them to object on the board before building.
 ### Active tasks (details in each brief)
 | Who | Now |
 |---|---|
-| Ahmed | The event's rules and Clock; then `contracts/protocol.ts`, the sample guide and the fake peers |
+| Ahmed | The event's rules and Clock; then `contracts/protocol.ts`, the sample guide and the fake peers; ask about the UNO Q |
 | Salman | App skeleton and marker detection on a real iPhone |
 | Max | Dashboard shell with a splat on screen, and the scene API for Laura |
-| Laura | The printed marker (Salman and Max are waiting on it); ask about the UNO Q; pick and get the demo objects |
+| Laura | The printed marker (Salman and Max are waiting on it); pick and get the demo objects |
 
 Asked for by Max (19:40 board entry): "Pick and get the demo objects" is Laura's task 3. "Check we have a Mac with
 Xcode" is answered: yes, per Ahmed.
@@ -97,7 +104,9 @@ Xcode" is answered: yes, per Ahmed.
 *Accounts, API keys, access, team registration, hardware, asking the organisers.*
 - **The Clock is empty.** Nobody has written down the submission deadline. Ahmed to paste the schedule.
 - **Dawn login.** Promised by the event, untested by us. Max to try.
-- **An UNO Q and camera** for the RS challenge. Laura to ask today.
+- **An UNO Q and camera** for the RS challenge. Ahmed to ask today.
+- **Xcode and iOS versions.** The Mac needs Xcode to build at all. If cut-outs are ever drawn as real splats on the
+  phone, it needs Xcode 27 and the demo iPhone on iOS 27.2 or later (`research/ledger.md` § 1). Salman to check both.
 - **The demo objects.** A switch or router, a patch panel, a cover with screws: someone has to bring or borrow them.
 - **Printing the marker,** flat and matte, with spares.
 
@@ -140,7 +149,7 @@ Xcode" is answered: yes, per Ahmed.
 | F9 | Live camera over WebRTC | Salman, Ahmed, Laura | P1 | ⬜ |
 | F10 | Cut-outs from the scan | Max | P1 | ⬜ |
 | F11 | Find a part by name, AI labels (Accenture) | Max, Ahmed | P1 | ⬜ |
-| F12 | Hardware check with the UNO Q (RS) | Laura, Ahmed | P1 | ⬜ |
+| F12 | Hardware check with the UNO Q (RS) | Ahmed | P1 | ⬜ |
 | F13 | The user's position shown in the scan | Max | P1 | ⬜ |
 
 **The rule across all of them:** the guide (F1–F8) must never depend on video, the AI labels or the hardware.
@@ -273,13 +282,15 @@ The diagram, components, alignment maths and draft protocol are in `docs/remote-
 - Revisit if: the measured error on our set is too big to tell neighbouring ports apart
 
 ## 2026-11-14 — The split
-- Chose: Salman the phone app; Max the dashboard 3D view and the splats; Laura the guide builder, assets, set,
-  hardware and pitch; Ahmed the relay, protocol, sync, labelling endpoint and docs (Ahmed)
+- Chose: Salman the phone app; Max the dashboard 3D view and the splats; Laura the guide builder, assets, set and
+  pitch; Ahmed the relay, protocol, sync, labelling endpoint, the UNO Q rig and docs (Ahmed)
+- Changed the same evening: the UNO Q rig was first given to Laura (proposed by Ahmed's agent); Ahmed then took it
+  himself. Risk: he also owns the protocol, fakes and relay that three people wait on, so the rig is his first cut.
 - Because: Salman is the confident Swift person, Max wrote the plan and knows the splat side, and the relay sits
   between the two apps, which suits the integrator
 - Rejected: Expo with an AR library (thin AR support); an Expo shell with a Swift AR view (bridge glue)
 - Note: assigning the AI labelling to Max and Ahmed, and the UNO Q rig to Laura, was proposed by Ahmed's agent and
-  approved by Ahmed with the plan. Laura's list is the longest.
+  approved by Ahmed with the plan.
 - Revisit if: Laura or Salman object to their role
 
 ## 2026-11-14 — Round 1 (the shape of the product)

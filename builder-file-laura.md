@@ -1,4 +1,4 @@
-# Laura: the guide builder, the 3D models, the demo set and hardware, and the pitch
+# Laura: the guide builder, the 3D models, the demo set, and the pitch
 **GitHub:** `furtunalaura` · **Branch:** `laura-guide` · **Brief last updated:** 2026-11-14 by ahmed
 **Spec:** `PROJECT.md` (NOW first); the § numbers below refer to it. **Deadlines:** `PROJECT.md` → NOW → Clock.
 **The plan in full:** `docs/remote-assist/README.md` and `architecture.md` (on `main`, written by @max).
@@ -28,7 +28,7 @@ so nobody waits for anybody. Until `contracts/protocol.ts` lands, use the draft 
 **Owns:**
 - `dashboard/src/guide/`: the step timeline the expert builds the guide in, and the live video panel.
 - `assets/`: the printed marker and the built-in 3D models, in both formats.
-- The physical demo set, and `hardware/` (the UNO Q rig on it).
+- The physical demo set. (The UNO Q rig on it is @ahmed's, in `hardware/`.)
 - What judges see: the README, the video, the submission (`pitch` skill).
 
 **Does NOT touch:**
@@ -36,7 +36,7 @@ so nobody waits for anybody. Until `contracts/protocol.ts` lands, use the draft 
 | Area | Owner |
 |---|---|
 | `ios/` | @salman |
-| `relay/`, `contracts/`, `fixtures/` | @ahmed |
+| `relay/`, `contracts/`, `fixtures/`, `hardware/` | @ahmed |
 | `dashboard/src/scene/`, the dashboard shell, the splat files | @max |
 
 **Shared** (flag every edit in `progress.md` → `⚠️ Conflicts`): `contracts/protocol.ts` (ask @ahmed for changes),
@@ -49,14 +49,14 @@ them, so a renamed or resized model breaks two apps).
   one preset action per object, send it, and watch the user's progress.
 - The set of built-in models (screw, bolt, arrow, screwdriver, hand, cable plug) that both apps load.
 - The demo set itself: a small "comms cupboard" with the marker fixed next to the ports.
-- The sensor on the set that notices the cable really moved, and everything the judges read and watch.
+- Everything the judges read and watch.
 
-**Out of scope:** the 3D view itself (call @max's scene API). The phone app. The relay.
+**Out of scope:** the 3D view itself (call @max's scene API). The phone app. The relay. The UNO Q rig (@ahmed took it on
+2026-11-14; leave him room on the set to mount it).
 
 **Guardrails:**
 - **The guide must never depend on video, the AI labels or the hardware.**
-- This is the longest list on the team. If it's too much, say so early on the board; the hardware rig is the first
-  thing to drop.
+- If the list is too much, say so early on the board.
 - Every new package or downloaded model is a 🟠 decision for you. Record each model's licence and source.
 - The marker goes **right next to the ports**: alignment gets worse with distance from it (`research/ledger.md`
   § 3 and § 5).
@@ -72,34 +72,28 @@ them, so a renamed or resized model breaks two apps).
      matte. Measure the printed width with a ruler and commit the image to `assets/marker/` with that width in mm
      beside it: ARKit needs the exact size. Print spares.
    - *Done when:* the file and its width are on `main`, and @salman confirms Xcode accepts it with no warnings.
-2. ⬜ **Ask about the UNO Q today** 🟠
-   - The RS challenge needs an Arduino UNO Q and a camera. Find out now whether we can borrow them.
-   - *Done when:* a board entry says we have the kit, or that we don't and the RS feature is parked.
-3. ⬜ **Pick and get the demo objects** 🟠 (asked for by @max)
+2. ⬜ **Pick and get the demo objects** 🟠 (asked for by @max)
    - What the set is made of (a real switch or router, a patch panel, a cover with screws), who brings or borrows
      it, and whether it can be carried to any table and scanned once.
    - *Done when:* the set is built with the marker fixed on it, and @max has been told it's ready to scan.
-4. ⬜ **The guide builder**
+   - `[⚠ conflicts with @ahmed: his UNO Q rig mounts on the set; agree where before it's scanned]`
+3. ⬜ **The guide builder**
    - Build against the fake phone in `fixtures/` and @max's scene API. Step list, instruction text, model and
      action pickers, send the guide, jump to a step, tick steps as `step.done` arrives.
    - *Done when:* a three-step guide built in the UI appears in the fake phone's log, and its `step.done` ticks the
      step.
    - `[⚠ conflicts with @max: dashboard/src/scene/api.ts]` `[⚠ conflicts with @ahmed: the guide shape in contracts/protocol.ts]`
-5. ⬜ **The built-in models** 🟠
+4. ⬜ **The built-in models** 🟠
    - Screw, bolt, arrow, screwdriver, hand, cable plug, as glTF for the dashboard and USDZ for the phone. Decide
      first: author once and convert, or keep both by hand. Same names, sizes and origins in both.
    - *Done when:* each model loads in the dashboard and in @salman's app, the same size and the same way up.
    - `[⚠ conflicts with @salman and @max: both load these]`
-6. ⬜ **The live video panel**
+5. ⬜ **The live video panel**
    - Show the phone's camera in the dashboard.
    - *Done when:* the stream from the phone (or a fake sender) plays in the panel, and the guide builder still
      works with it switched off.
    - `[⚠ conflicts with @ahmed and @salman: WebRTC signalling]`
-7. ⬜ **The hardware check** (the RS feature, only if task 2 found a kit) 🟠
-   - The UNO Q and camera notice which port the cable is in and report it. Decide the detection method first.
-   - *Done when:* moving the cable to the right port ticks the step on the dashboard, and a wrong port warns.
-   - `[⚠ conflicts with @ahmed: the step.verified message path]`
-8. ⬜ **What the judges see**
+6. ⬜ **What the judges see**
    - README, demo video, submission form (`pitch` skill). Start once a guide plays end to end.
    - *Done when:* `bash scripts/submission-check.sh` passes and the submission is in.
 
@@ -111,6 +105,7 @@ them, so a renamed or resized model breaks two apps).
 - 📥 **Waiting on @ahmed:** `contracts/protocol.ts`, the fake phone, the event's rules and deadlines.
 - 📤 **Owed to @salman and @max:** the marker image and printed width (task 1), then the models.
 - 📤 **Owed to @max:** the finished demo set, to scan.
+- 📤 **Owed to @ahmed:** a spot on the set for his UNO Q rig, agreed before the scan.
 
 ## 6. Working-style notes for the agent
 - Verbosity: project level (Level 0) unless Laura changes it.
@@ -119,5 +114,6 @@ them, so a renamed or resized model breaks two apps).
 - The demo and the challenge fit: `docs/remote-assist/README.md`. Marker evidence: `research/ledger.md` § 3 and § 5.
 
 ---
-── Archived (superseded — do NOT action) ──
-- _(empty)_
+── Archived (superseded 2026-11-14 — do NOT action) ──
+- **Ask about the UNO Q today** and **The hardware check** (the RS feature). Moved to @ahmed on 2026-11-14: he said he'd do the
+  rig himself. Now tasks 3 and 9 in his brief. Would come back only if he hands it back.
