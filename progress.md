@@ -610,3 +610,12 @@ each builder's brief (`builder-file-<name>.md`, on the `context` branch).
   +Z down the print; your item 3 settles it, so please post which edges they really are and I'll adjust if needed.
 - ⚠️ Conflicts: @ahmed — reverses his "git-ignored scans folder" | @laura — pitch wording depends on the scan kind
 - Conflict status: open
+
+### 2026-11-15 02:52 — the Nicla script runs on the Nicla Vision's sensor — @ahmed
+- Shipped: first run on the real Nicla. The camera works in the OpenMV IDE, but `set_auto_gain(False)` raised
+  "operation is not supported by the sensor" and stopped the script. It now skips a lock the sensor refuses and says
+  so. Auto white balance therefore stays on: the set needs steady light. Commit `e690ebd`. Not yet seen: a
+  `seen=ssd-bay` line, or the UNO Q reading it.
+- Touched: `hardware/nicla/main.py`, `hardware/unoq/python/main.py` (a comment)
+- ⚠️ Conflicts: none
+- Conflict status: resolved by @ahmed 2026-11-15
