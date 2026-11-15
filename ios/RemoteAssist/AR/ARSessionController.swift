@@ -929,7 +929,7 @@ final class ARSessionController: NSObject, ARSessionDelegate {
     if !focusCorners.isEmpty {
       return SpotlightTarget(points: live(focusCorners, in: focusAnchor), label: focusLabel)
     }
-    if markerSeen || guideOnLaptop, !stepRoot.children.isEmpty {
+    if markerSeen || guideOnLaptop, stepRoot.isEnabled, !stepRoot.children.isEmpty {
       let points = stepRoot.children.map { $0.position(relativeTo: nil) }
       return SpotlightTarget(points: points, label: step?.objects.first?.label ?? "Here")
     }
@@ -1139,7 +1139,15 @@ final class ARSessionController: NSObject, ARSessionDelegate {
     }
   }
 
+  /// The expert cleared the view: the guide's parts go too, not just the expert's own marks, until the next step (or
+  /// a new guide) brings its parts back.
+  func hideGuideParts() {
+    stepRoot.isEnabled = false
+    Self.log.notice("Guide parts hidden: the expert cleared the view")
+  }
+
   private func renderStep() {
+    stepRoot.isEnabled = true
     stepRoot.children.removeAll()
     guard let step else {
       stepRangeText = ""
