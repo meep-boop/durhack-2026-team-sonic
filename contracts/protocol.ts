@@ -94,8 +94,9 @@ export type GuideSet = { type: "guide.set"; guide: Guide };
 // phones: the phone owns its position, so one that worked offline isn't sent backwards before its queued taps land.
 export type StepSet = { type: "step.set"; guideId: string; stepId: string };
 
-// Expert → relay, replayed to experts only and never sent to the phone. Kept so a reloaded dashboard doesn't lose
-// its calibration. Corners are in splat coordinates, in the order top-left, top-right, bottom-right, bottom-left as
+// Expert → relay, replayed to experts only and never sent to the phone. The relay keeps the latest one per splatId
+// (the scan's file name) and replays them all, so a reloaded dashboard doesn't lose its calibrations. Two scans of
+// the same set, each calibrated on the same printed marker, give positions in the same marker frame. Corners are in splat coordinates, in the order top-left, top-right, bottom-right, bottom-left as
 // the marker reads upright.
 export type CalibSet = {
   type: "calib.set";

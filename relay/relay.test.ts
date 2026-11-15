@@ -143,7 +143,7 @@ test("each role can only send its own messages, and only after hello", async (t)
   assert.match(ofType(user, "error")[3]!.message, /already said hello/);
 });
 
-test("calibration stays between dashboards and comes back after a reload", async (t) => {
+test("calibration stays between dashboards, and each scan's latest comes back after a reload", async (t) => {
   const { port } = await relay(t);
   const expert = await connect(port, "expert");
   const otherExpert = await connect(port, "expert", "second dashboard");
@@ -160,9 +160,15 @@ test("calibration stays between dashboards and comes back after a reload", async
   assert.equal(ofType(user, "calib.set").length, 0);
   await until(() => ofType(otherExpert, "calib.set").length === 1, "calibration on the second dashboard");
 
+  const redone = { ...calib, residual: 0.001 };
+  const openScan = { ...calib, splatId: "desk-open" };
+  expert.send(redone);
+  expert.send(openScan);
+  await until(() => ofType(otherExpert, "calib.set").length === 3, "both later calibrations");
+
   const reloaded = await connect(port, "expert", "reloaded dashboard");
   await until(() => ofType(reloaded, "presence").length > 0, "the reloaded dashboard's presence");
-  assert.deepEqual(ofType(reloaded, "calib.set")[0], calib);
+  assert.deepEqual(ofType(reloaded, "calib.set"), [redone, openScan]);
 });
 
 test("an expert's jump reaches the phone, the rig and other dashboards, and is replayed", async (t) => {
