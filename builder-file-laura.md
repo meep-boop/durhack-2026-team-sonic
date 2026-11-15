@@ -73,7 +73,7 @@ rung 2 a guide built in the scan lines up on the phone; rung 3 the extras. Decis
    off and goes back in the same place: it's Ahmed's only machine, so it can't stay fixed down.
 2. ✅ P0 **The real SSD-swap steps for Ahmed's laptop** (posted on the board 02:11, checked on the laptop): text, model and action per step, power-off first. Post
    them on the board; Ahmed turns them into `fixtures/ssd-swap-guide.json` with ruler-measured positions (rung 0).
-3. ⬜ P0 **`GuidePanel.tsx`** (task 3) on your `guide.ts` and `progress.ts`: step list, instruction, add object
+3. ✅ P0 **`GuidePanel.tsx`** (on main `a61405f` at 02:22; tried end to end with the relay and fake phone) (task 3) on your `guide.ts` and `progress.ts`: step list, instruction, add object
    (model, action, "place" → `pickPoint()`, typed position as the fallback), Send with `sendBlockers`, ticks from
    `step.done` and `step.verified`. Max's shell hands you `scene` and `relay` as props (your ask 1).
 4. ⬜ P0 **What the judges see** (task 6): README, video, Devpost, AI tools credited. Times: `PROJECT.md` → Clock.
@@ -94,7 +94,7 @@ rung 2 a guide built in the scan lines up on the phone; rung 3 the extras. Decis
    - Nobody sprays the laptop for the scan (Ahmed). Ahmed backs the laptop up before any rehearsal.
    - *Done when:* the board is built, @max has been told it's ready to scan, and the rig's spot is agreed with @ahmed.
    - `[⚠ conflicts with @ahmed: the rig's camera spot]` `[⚠ conflicts with @max: he scans it]`
-3. 🟡 **The guide builder** (sweep: step editing and progress tracking on `laura-guide`, not merged; blocked on
+3. ✅ **The guide builder** (done 02:22: a 3-step guide built in the panel reached the fake phone and its taps ticked the steps; was: step editing and progress tracking on `laura-guide`, not merged; blocked on
    @max's answer to your scene-API ask 1)
    - Build against the fake phone in `fixtures/` and @max's scene API. Step list, instruction text, model and
      action pickers, send the guide, jump to a step, tick steps as `step.done` arrives.
@@ -134,6 +134,7 @@ rung 2 a guide built in the scan lines up on the phone; rung 3 the extras. Decis
    - *Done when:* `bash scripts/submission-check.sh` passes and the submission is in.
 
 ## 4. Done log (newest first)
+- 2026-11-15 02:22 · ✅ Guide panel on main (`a61405f`): steps, objects, quarter turns, rig check, Send, ticks, open a guide file. Done-when met against the relay and fake phone. Not yet: 3D dragging, custom axis.
 - 2026-11-15 02:11 · ✅ The 12 SSD-swap steps for the Latitude 5530, from Dell's manual (ledger § 17) and checked on the laptop (8 cover screws, no bracket, 1 SSD screw), posted for Ahmed's `ssd-swap-guide.json`.
 - 2026-11-15 00:58 · ✅ `ssd` model (glb + usdz) and `"ssd"` in `ModelName` + `relay/validate.ts`, one commit on main `61a771e`; all tests green. Salman's Swift enum still needs the case.
 - 2026-11-14 22:30 · 🟡 Six built-in models (glb + usdz, one build script, 7 tests) on main. Decided: metres, +Y up, tip at origin, script committed. Closes when @max and @salman see them the right size and way up.
