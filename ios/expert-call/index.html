@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>Remote Assist · Expert call</title>
+<title>Remote Assist · Technician console</title>
 <style>
   :root {
     --bg: #0b0d12; --panel: #141821; --line: #232937; --text: #e8ecf3; --muted: #8a93a6;
@@ -30,6 +30,16 @@
   .tapdot span { position: absolute; left: 26px; top: -2px; white-space: nowrap; font-size: 12px; font-weight: 600; background: rgba(0,0,0,.6); padding: 2px 8px; border-radius: 999px; }
   .tapdot.ok { border-color: var(--green); background: rgba(34,197,94,.25); }
   .tapdot.miss { border-color: var(--red); background: rgba(239,68,68,.25); }
+  .stage.live.area video#remote { cursor: cell; }
+  .areabox { position: absolute; border: 3px solid var(--accent); background: rgba(139,92,246,.18); border-radius: 10px; pointer-events: none; }
+  .areabox span { position: absolute; left: 0; top: -26px; white-space: nowrap; font-size: 12px; font-weight: 600; background: rgba(0,0,0,.6); padding: 2px 8px; border-radius: 999px; }
+  .areabox.ok { border-color: var(--green); background: rgba(34,197,94,.16); }
+  .areabox.miss { border-color: var(--red); background: rgba(239,68,68,.16); }
+  .tools { display: flex; gap: 6px; margin-top: 10px; }
+  .tools button { flex: 1; background: #262c3a; }
+  .tools button.on { background: var(--accent); }
+  details summary { cursor: pointer; font-size: 12px; text-transform: uppercase; letter-spacing: .08em; color: var(--muted); font-weight: 600; }
+  details[open] summary { margin-bottom: 10px; }
   #selfView { position: absolute; right: 14px; bottom: 14px; width: 180px; border-radius: 12px; border: 1px solid var(--line); display: none; }
   aside { display: flex; flex-direction: column; gap: 14px; overflow: auto; }
   .card { background: var(--panel); border: 1px solid var(--line); border-radius: 16px; padding: 16px; }
@@ -56,9 +66,9 @@
 </head>
 <body>
 <header>
-  <h1>Remote Assist · Expert</h1>
+  <h1>Remote Assist · Technician</h1>
   <span class="pill"><span class="dot" id="relayDot"></span><span id="relayText">Relay offline</span></span>
-  <span class="pill"><span class="dot" id="phoneDot"></span><span id="phoneText">Phone offline</span></span>
+  <span class="pill"><span class="dot" id="phoneDot"></span><span id="phoneText">No phone online</span></span>
   <span class="spacer"></span>
   <span class="pill"><span class="dot" id="markerDot"></span><span id="markerText">Marker: unknown</span></span>
 </header>
@@ -66,41 +76,52 @@
 <main>
   <section class="stage">
     <video id="remote" autoplay playsinline></video>
-    <div class="empty" id="empty"><strong>No live view yet</strong>Connect to the relay, then press Call. The phone gets an incoming call and shares its camera when they accept.</div>
+    <div class="empty" id="empty"><strong>No live view yet</strong>When the phone shows as online, press Call. They tap Accept and you see their camera, live.</div>
     <div class="badge" id="liveBadge"><span class="dot"></span>Live from the phone</div>
     <video id="selfView" autoplay playsinline muted></video>
   </section>
 
   <aside>
     <div class="card">
-      <h2>Relay</h2>
-      <input id="relayUrl" placeholder="ws://192.168.1.20:8080" spellcheck="false">
-      <div class="row"><button id="connectBtn">Connect</button></div>
-      <p class="hint">Use the address the relay prints (not localhost) so the phone can reach it too.</p>
-      <div id="qr"><span class="hint">QR appears here</span></div>
-      <p class="hint">On the phone: tap the status capsule → Scan QR.</p>
-    </div>
-
-    <div class="card">
       <h2>Call</h2>
-      <label class="hint"><input type="checkbox" id="sendCam" style="width:auto"> Send my webcam too</label>
+      <p class="hint" id="callState" style="margin-top:0">Waiting for a phone to come online.</p>
       <div class="row">
         <button id="callBtn" disabled>Call the phone</button>
         <button id="endBtn" class="danger" disabled>End</button>
       </div>
       <div class="row"><button id="muteBtn" class="secondary" disabled>Mute mic</button></div>
-      <p class="hint" id="callState">Not in a call.</p>
-      <h2 style="margin-top:14px">Point at something</h2>
-      <input id="tapLabel" placeholder="Label for the next tap, e.g. this screw" maxlength="40">
-      <div class="row"><button id="clearPins" class="secondary" disabled>Clear pins</button></div>
-      <p class="hint">Click the live video: a pin appears on that spot on the real laptop, in the phone's AR view.</p>
+      <label class="hint"><input type="checkbox" id="sendCam" style="width:auto"> Send my webcam too</label>
       <meter id="level" min="0" max="1" value="0" title="Phone audio level"></meter>
     </div>
 
     <div class="card">
-      <h2>Call transcript</h2>
+      <h2>Guide them</h2>
+      <div class="tools">
+        <button id="toolPoint" class="on">Point</button>
+        <button id="toolArea">Area</button>
+      </div>
+      <p class="hint" id="toolHint">Click the live video: a pin appears on that spot in the phone's AR view.</p>
+      <input id="tapLabel" placeholder="Label, e.g. this screw" maxlength="40" style="margin-top:10px">
+      <div class="row"><button id="clearPins" class="secondary" disabled>Clear marks</button></div>
+      <p class="hint">On the phone, what you mark is lit and the rest goes dark; if it's off screen, they're told which way to turn.</p>
+    </div>
+
+    <div class="card">
+      <h2>Live transcript</h2>
       <ul id="transcript"></ul>
-      <p class="hint" id="transcriptNote">Starts when the call connects. Transcribed live by ElevenLabs; the key stays on the phone.</p>
+      <p class="hint" id="transcriptNote">Starts when the call connects. ElevenLabs Scribe (live); the key stays on the phone.</p>
+      <p class="hint">Say it and the phone acts: <b>next step</b> · <b>go back</b> · <b>look left / right / up / down</b> · <b>clear the marks</b>.</p>
+    </div>
+
+    <div class="card">
+      <details id="connectCard" open>
+        <summary>Connect a phone</summary>
+        <input id="relayUrl" placeholder="ws://192.168.1.20:8080" spellcheck="false">
+        <div class="row"><button id="connectBtn">Connect</button></div>
+        <p class="hint">Use the address the relay prints (not localhost) so the phone can reach it too.</p>
+        <div id="qr"><span class="hint">QR appears here</span></div>
+        <p class="hint">On the phone: tap the status capsule → Scan the expert's QR code. Once is enough; it remembers.</p>
+      </details>
     </div>
 
     <div class="card">
@@ -112,13 +133,26 @@
 
 <script src="vendor/qrcode.js"></script>
 <script>
-// Joins the relay as the expert and runs one WebRTC call with the phone. The phone answers; this page always offers.
-// Messages follow contracts/protocol.ts: hello, rtc.signal, presence, step.done, pose.
+// The technician's console. Joins the relay as the expert and runs one WebRTC call with the phone: this page always
+// offers, the phone rings and answers. Relay messages follow contracts/protocol.ts (hello, rtc.signal, presence,
+// step.done, pose). Pointing and the transcript ride the call's own "control" data channel, peer to peer, so they
+// need no relay or contract change. Its messages (x, y are 0..1 of the upright video; latency in seconds):
+//   page → phone: {kind:"ping", t} · {kind:"tap", id, x, y, label, latency}
+//                 {kind:"area", id, x0, y0, x1, y1, label, latency} · {kind:"clear"}
+//                 {kind:"caption"|"transcript", id?, speaker:"expert"|"user", text} · {kind:"stt-token-request", which}
+//   phone → page: {kind:"pong", t} · {kind:"pinned", id, ok} (for a tap or an area)
+//                 {kind:"stt-tokens", expert, phone} · {kind:"stt-token", which, token} · {kind:"stt-off", reason}
 const $ = (id) => document.getElementById(id);
 const STUN = [{ urls: "stun:stun.l.google.com:19302" }];
-let ws, pc, control, mic, pendingCandidates = [], lastPoseLog = 0, meterTimer, pingTimer, rttMs = 150;
+// The phone stops ringing by itself after 30 s (the contract has no "cancel"), so this page gives up at the same time.
+const RING_SECONDS = 30;
+let ws, pc, control, mic, pendingCandidates = [], lastPoseLog = 0, meterTimer, pingTimer, ringTimer, rttMs = 150;
+let phoneOnline = false, tool = "point";
 
 $("relayUrl").value = new URLSearchParams(location.search).get("relay") || localStorage.getItem("relayUrl") || "";
+
+// Call is only offered while a phone is there to ring and no call is running.
+function updateCallButton() { $("callBtn").disabled = !(ws?.readyState === WebSocket.OPEN && phoneOnline && !pc); }
 
 // Relay messages are untrusted text, so log lines are built as text nodes, never parsed as HTML.
 function log(text) {
@@ -139,13 +173,15 @@ function renderQR(url) {
   $("qr").innerHTML = qr.createImgTag(6, 8);
 }
 
-$("connectBtn").onclick = () => {
-  const url = $("relayUrl").value.trim();
+function start(url) {
   if (!/^wss?:\/\//.test(url)) return log("Enter a ws:// address");
   localStorage.setItem("relayUrl", url);
   renderQR(url);
   connect(url);
-};
+}
+$("connectBtn").onclick = () => start($("relayUrl").value.trim());
+// Opened from the dashboard's Call button (?relay=) or used before: connect straight away.
+if ($("relayUrl").value) start($("relayUrl").value.trim());
 
 function connect(url) {
   ws?.close();
@@ -154,13 +190,14 @@ function connect(url) {
   ws.onopen = () => {
     send({ type: "hello", protocol: 1, role: "expert", client: "Expert call page" });
     setPill("relayDot", "relayText", "green", "Relay connected");
-    $("callBtn").disabled = false;
+    updateCallButton();
     log("Connected to the relay");
   };
   ws.onclose = () => {
     setPill("relayDot", "relayText", "red", "Relay offline");
-    setPill("phoneDot", "phoneText", "", "Phone offline");
-    $("callBtn").disabled = true;
+    setPill("phoneDot", "phoneText", "", "No phone online");
+    phoneOnline = false;
+    updateCallButton();
     // Retry quietly: the relay may be restarting, and the call itself survives a relay blip.
     setTimeout(() => { if (ws.url === url && ws.readyState === WebSocket.CLOSED) connect(url); }, 2000);
   };
@@ -171,7 +208,13 @@ function handle(message) {
   switch (message.type) {
     case "presence": {
       const phone = message.clients.find((c) => c.role === "user");
-      setPill("phoneDot", "phoneText", phone ? "green" : "", phone ? phone.client : "Phone offline");
+      if (phone && !phoneOnline) log(`${phone.client} is online`);
+      phoneOnline = !!phone;
+      setPill("phoneDot", "phoneText", phone ? "green" : "", phone ? "Online: " + phone.client : "No phone online");
+      if (!pc) $("callState").textContent = phone ? "Ready: press Call and they get an incoming call." : "Waiting for a phone to come online.";
+      // Paired: the connect details aren't needed any more, so the call controls get the room.
+      if (phone) $("connectCard").open = false;
+      updateCallButton();
       break;
     }
     case "step.done": log(`Phone finished step ${message.stepId}`); break;
@@ -227,7 +270,12 @@ $("callBtn").onclick = async () => {
   };
   pc.onconnectionstatechange = () => {
     const s = pc?.connectionState;
-    if (s === "connected") { $("callState").textContent = "In call · you can talk"; log("Call connected"); }
+    if (s === "connected") {
+      clearTimeout(ringTimer);
+      $("callState").textContent = "In call · you can talk";
+      $("endBtn").textContent = "End";
+      log("Call connected");
+    }
     if (s === "failed") endCall("Connection failed (are both on the same Wi-Fi?)");
   };
 
@@ -235,7 +283,9 @@ $("callBtn").onclick = async () => {
   await pc.setLocalDescription(offer);
   signal({ kind: "offer", sdp: offer.sdp });
   $("callState").textContent = "Ringing the phone…";
-  $("callBtn").disabled = true; $("endBtn").disabled = false; $("muteBtn").disabled = false;
+  $("endBtn").textContent = "Cancel";
+  updateCallButton(); $("endBtn").disabled = false; $("muteBtn").disabled = false;
+  ringTimer = setTimeout(() => { if (pc && pc.connectionState !== "connected") endCall("No answer"); }, RING_SECONDS * 1000);
   log("Calling the phone");
 };
 
@@ -356,9 +406,9 @@ function onControl(message) {
   if (message.kind === "stt-off") $("transcriptNote").textContent = "Transcript off: " + message.reason;
   if (message.kind === "pong") rttMs = 0.7 * rttMs + 0.3 * (performance.now() - message.t);
   if (message.kind === "pinned") {
-    const dot = document.getElementById("tap-" + message.id);
-    if (dot) dot.classList.add(message.ok ? "ok" : "miss");
-    log(message.ok ? "Pinned on the phone ✓" : "The phone couldn't find a surface there. Try again once it has scanned the desk.");
+    const mark = document.getElementById("mark-" + message.id);
+    if (mark) mark.classList.add(message.ok ? "ok" : "miss");
+    log(message.ok ? "Shown on the phone ✓" : "The phone couldn't find a surface there. Try again once it has looked around the desk.");
   }
 }
 
@@ -374,36 +424,103 @@ async function frameAgeSeconds() {
   return rttMs / 2000 + buffer + 0.03;
 }
 
-$("remote").addEventListener("click", async (e) => {
+// The video is letterboxed (object-fit: contain): where a point on screen falls in the picture itself, 0..1, or null
+// outside it, plus where it is inside the stage, for drawing.
+function inPicture(e) {
   const video = $("remote");
-  if (!pc || !control || control.readyState !== "open" || !video.videoWidth) return;
-  // The video is letterboxed (object-fit: contain): work out where the picture really is inside the element.
+  if (!video.videoWidth) return null;
   const box = video.getBoundingClientRect();
   const scale = Math.min(box.width / video.videoWidth, box.height / video.videoHeight);
   const w = video.videoWidth * scale, h = video.videoHeight * scale;
   const left = box.left + (box.width - w) / 2, top = box.top + (box.height - h) / 2;
   const x = (e.clientX - left) / w, y = (e.clientY - top) / h;
-  if (x < 0 || x > 1 || y < 0 || y > 1) return;
-  const id = Math.random().toString(36).slice(2, 10);
-  const label = $("tapLabel").value.trim() || "here";
-  sendControl({ kind: "tap", id, x, y, label, latency: await frameAgeSeconds() });
+  const stage = video.parentElement.getBoundingClientRect();
+  return { x, y, inside: x >= 0 && x <= 1 && y >= 0 && y <= 1, px: e.clientX - stage.left, py: e.clientY - stage.top };
+}
+const callReady = () => pc && control?.readyState === "open";
+const label = () => $("tapLabel").value.trim() || "here";
+const newId = () => Math.random().toString(36).slice(2, 10);
+
+function setTool(name) {
+  tool = name;
+  $("toolPoint").classList.toggle("on", name === "point");
+  $("toolArea").classList.toggle("on", name === "area");
+  document.querySelector(".stage").classList.toggle("area", name === "area");
+  $("toolHint").textContent = name === "point"
+    ? "Click the live video: a pin appears on that spot in the phone's AR view."
+    : "Drag a box on the live video around what they should look at (the laptop, a part).";
+}
+$("toolPoint").onclick = () => setTool("point");
+$("toolArea").onclick = () => setTool("area");
+
+$("remote").addEventListener("click", async (e) => {
+  if (tool !== "point" || !callReady()) return;
+  const at = inPicture(e);
+  if (!at?.inside) return;
+  const id = newId(), text = label();
+  sendControl({ kind: "tap", id, x: at.x, y: at.y, label: text, latency: await frameAgeSeconds() });
   const dot = document.createElement("div");
   dot.className = "tapdot";
-  dot.id = "tap-" + id;
-  dot.style.left = (e.clientX - video.parentElement.getBoundingClientRect().left) + "px";
-  dot.style.top = (e.clientY - video.parentElement.getBoundingClientRect().top) + "px";
-  const tag = document.createElement("span");
-  tag.textContent = label;
-  dot.append(tag);
-  video.parentElement.append(dot);
+  dot.id = "mark-" + id;
+  dot.style.left = at.px + "px";
+  dot.style.top = at.py + "px";
+  dot.append(Object.assign(document.createElement("span"), { textContent: text }));
+  $("remote").parentElement.append(dot);
   setTimeout(() => dot.remove(), 6000);
-  log(`Pointed at “${label}”`);
+  log(`Pointed at “${text}”`);
+});
+
+// Area: press, drag, release. The latency is taken at the press, when the technician saw what they're boxing.
+let drag = null;
+$("remote").addEventListener("pointerdown", async (e) => {
+  if (tool !== "area" || !callReady()) return;
+  const at = inPicture(e);
+  if (!at?.inside) return;
+  e.preventDefault();
+  $("remote").setPointerCapture(e.pointerId);
+  const box = document.createElement("div");
+  box.className = "areabox";
+  $("remote").parentElement.append(box);
+  // Kept locally: the release can come before the estimate does.
+  const current = { start: at, box, latency: 0.15 };
+  drag = current;
+  current.latency = await frameAgeSeconds();
+});
+$("remote").addEventListener("pointermove", (e) => {
+  if (!drag) return;
+  const at = inPicture(e);
+  if (!at) return;
+  const { start, box } = drag;
+  Object.assign(box.style, {
+    left: Math.min(start.px, at.px) + "px", top: Math.min(start.py, at.py) + "px",
+    width: Math.abs(at.px - start.px) + "px", height: Math.abs(at.py - start.py) + "px",
+  });
+});
+$("remote").addEventListener("pointerup", (e) => {
+  if (!drag) return;
+  const { start, box, latency } = drag;
+  drag = null;
+  const at = inPicture(e);
+  if (!at) return box.remove();
+  const clamp = (v) => Math.min(1, Math.max(0, v));
+  const x0 = clamp(Math.min(start.x, at.x)), x1 = clamp(Math.max(start.x, at.x));
+  const y0 = clamp(Math.min(start.y, at.y)), y1 = clamp(Math.max(start.y, at.y));
+  // A box smaller than a fingertip was probably a click: nothing to light up.
+  if (x1 - x0 < 0.03 || y1 - y0 < 0.03) return box.remove();
+  const id = newId(), text = label();
+  box.id = "mark-" + id;
+  box.append(Object.assign(document.createElement("span"), { textContent: text }));
+  sendControl({ kind: "area", id, x0, y0, x1, y1, label: text, latency });
+  // One thing at a time, as on the phone: a new area replaces the old marks.
+  document.querySelectorAll(".tapdot, .areabox").forEach((m) => { if (m !== box) m.remove(); });
+  setTimeout(() => box.remove(), 6000);
+  log(`Marked an area: “${text}”`);
 });
 
 $("clearPins").onclick = () => {
   sendControl({ kind: "clear" });
-  document.querySelectorAll(".tapdot").forEach((d) => d.remove());
-  log("Cleared the phone's pins");
+  document.querySelectorAll(".tapdot, .areabox").forEach((d) => d.remove());
+  log("Cleared the marks on the phone");
 };
 
 $("endBtn").onclick = () => endCall("You ended the call");
@@ -431,18 +548,19 @@ function startMeter(stream) {
 function endCall(reason) {
   if (!pc) return;
   try { control?.close(); } catch {}
-  clearInterval(pingTimer); $("clearPins").disabled = true;
+  clearInterval(pingTimer); clearTimeout(ringTimer); $("clearPins").disabled = true;
   stopScribes(); scribeRetries.expert = scribeRetries.phone = 0;
   document.querySelector(".stage").classList.remove("live");
-  document.querySelectorAll(".tapdot").forEach((d) => d.remove());
+  document.querySelectorAll(".tapdot, .areabox").forEach((d) => d.remove());
+  drag = null;
   pc.close(); pc = null; control = null; pendingCandidates = [];
   mic?.getTracks().forEach((t) => t.stop()); mic = null;
   clearInterval(meterTimer); $("level").value = 0;
   $("remote").srcObject = null; $("selfView").style.display = "none";
   $("empty").style.display = "block"; $("liveBadge").style.display = "none";
-  $("callBtn").disabled = ws?.readyState !== WebSocket.OPEN; $("endBtn").disabled = true; $("muteBtn").disabled = true;
+  updateCallButton(); $("endBtn").disabled = true; $("endBtn").textContent = "End"; $("muteBtn").disabled = true;
   $("muteBtn").textContent = "Mute mic";
-  $("callState").textContent = "Not in a call.";
+  $("callState").textContent = phoneOnline ? "Ready: press Call and they get an incoming call." : "Waiting for a phone to come online.";
   log(reason);
 }
 </script>
