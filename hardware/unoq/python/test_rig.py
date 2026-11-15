@@ -71,6 +71,21 @@ class RigFollowsTheGuide(unittest.TestCase):
         rig.on_relay({"type": "step.done", "guideId": GUIDE_ID, "stepId": "s1"})
         self.assertEqual(rig.current_step()["id"], "s3")
 
+    def test_a_rig_that_connects_after_the_guide_was_played_stays_on_the_relays_step(self):
+        rig = Rig()
+        rig.reconnected()
+        rig.on_relay({"type": "guide.set", "guide": SAMPLE})
+        rig.on_relay({"type": "step.set", "guideId": GUIDE_ID, "stepId": "s4"})
+        for step in ("s1", "s2", "s3", "s4"):
+            rig.on_relay({"type": "step.done", "guideId": GUIDE_ID, "stepId": step})
+        rig.on_relay({"type": "presence", "clients": []})
+        self.assertEqual(rig.current_step()["id"], "s4")
+        rig.on_relay({"type": "step.set", "guideId": GUIDE_ID, "stepId": "s3"})
+        self.assertEqual(verdicts(rig.on_seen(set())), [("s3", True, None)])
+        # After the replay, a live tap moves it on as before.
+        rig.on_relay({"type": "step.done", "guideId": GUIDE_ID, "stepId": "s3"})
+        self.assertEqual(rig.current_step()["id"], "s4")
+
     def test_messages_for_another_guide_are_ignored(self):
         rig = rig_on("s4")
         rig.on_relay({"type": "step.set", "guideId": "another-guide", "stepId": "s1"})
