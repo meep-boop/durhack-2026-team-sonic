@@ -97,16 +97,11 @@ final class ARSessionController: NSObject, ARSessionDelegate {
   @ObservationIgnored private var runStartedAt: TimeInterval = 0
   /// Set when the camera stopped sending frames and a restart didn't bring it back.
   private(set) var cameraStalled = false
-  /// When RealityKit last updated the scene (it does once per rendered frame), main thread. Frames arriving while
-  /// this stops is the "camera visible but frozen" failure: ARKit is fine, the screen can't get drawables.
-  @ObservationIgnored private var lastRenderAt: TimeInterval = 0
+  /// RealityKit scene updates since the last health line. They keep ticking even when no drawable can be had, so
+  /// they show the render loop is alive, not that frames reach the screen.
   @ObservationIgnored private var renderSubscription: Cancellable?
-  @ObservationIgnored private var renderStallSteps = 0
-  /// Counts since the last health log line.
   @ObservationIgnored private var rendersSinceLog = 0
   @ObservationIgnored private var lastHealthLog: TimeInterval = 0
-  /// Whether something (laptop setup, teaching) needs plane detection right now.
-  @ObservationIgnored private var wantsSurfaces = false
   /// Set on the first memory warning: people occlusion stays off for the rest of the run.
   @ObservationIgnored private var lowMemory = false
 
@@ -171,8 +166,9 @@ final class ARSessionController: NSObject, ARSessionDelegate {
     let config = ARWorldTrackingConfiguration()
     config.detectionImages = [reference]
     config.maximumNumberOfTrackedImages = 1
-    // Plane detection only runs while the laptop's corners or part positions are being tapped
-    // (`setSurfaceDetection`); every other raycast falls back to ARKit's estimated planes.
+    // No plane detection: every raycast uses ARKit's estimated planes. Turning it on later meant re-running a live
+    // session, and every re-run made RealityKit rebuild its render graph and then fail every drawable (the frozen
+    // camera). The session is configured once, here.
     config.planeDetection = CameraLab.planesAlways ? [.horizontal] : []
     config.automaticImageScaleEstimationEnabled = true
     configuration = config
@@ -186,9 +182,7 @@ final class ARSessionController: NSObject, ARSessionDelegate {
     if CameraLab.delegateOffMain { arView.session.delegateQueue = sessionQueue }
     arView.session.delegate = self
     renderSubscription = arView.scene.subscribe(to: SceneEvents.Update.self) { [weak self] _ in
-      guard let self else { return }
-      self.lastRenderAt = ProcessInfo.processInfo.systemUptime
-      self.rendersSinceLog += 1
+      self?.rendersSinceLog += 1
     }
     arView.session.run(config, options: [.resetTracking, .removeExistingAnchors])
     isRunning = true
@@ -224,22 +218,19 @@ final class ARSessionController: NSObject, ARSessionDelegate {
       guard let self, !self.lowMemory, let configuration = self.configuration else { return }
       self.lowMemory = true
       Self.log.notice("Memory warning: people occlusion off for the rest of the run")
+      let before = configuration.frameSemantics
       self.applyThermalLimits(to: configuration)
-      if self.isRunning { self.arView.session.run(configuration) }
+      if self.isRunning, configuration.frameSemantics != before { self.arView.session.run(configuration) }
     }
   }
 
-  /// Both heartbeats measure from here after any (re)start, so a fresh run isn't mistaken for a stall.
+  /// Silence is measured from here after any (re)start, so a fresh run isn't mistaken for a stall.
   private func markRestarted() {
-    let now = ProcessInfo.processInfo.systemUptime
-    runStartedAt = now
-    lastRenderAt = now
+    runStartedAt = ProcessInfo.processInfo.systemUptime
   }
 
-  /// Once a second, while running and active, checks both ends of the pipeline and heals what stopped:
-  /// - no camera frames for 2 s: re-run the session once;
-  /// - frames arriving but nothing rendered for 1.5 s: rebuild the view's drawables, then re-run the session;
-  /// - neither helped: `cameraStalled`, which the screen shows with a Restart camera button.
+  /// Once a second, while running and active: no camera frames for 2 s re-runs the session once (the camera really
+  /// stopped, so a re-run has nothing to lose); if that doesn't help, `cameraStalled` shows a Restart camera button.
   private func startWatchdog() {
     watchdog?.invalidate()
     watchdog = Timer.scheduledTimer(withTimeInterval: 1, repeats: true) { [weak self] _ in
@@ -258,8 +249,6 @@ final class ARSessionController: NSObject, ARSessionDelegate {
     logHealthIfDue(now: now)
 
     let silent = now - max(lastFrame, runStartedAt)
-    let notDrawing = now - max(lastRenderAt, runStartedAt)
-
     if silent > 2 {
       if watchdogRestarts < 1 {
         watchdogRestarts += 1
@@ -273,29 +262,8 @@ final class ARSessionController: NSObject, ARSessionDelegate {
       return
     }
 
-    if notDrawing > 1.5 {
-      renderStallSteps += 1
-      switch renderStallSteps {
-      case 1:
-        Self.log.error("Render stalled \(String(format: "%.1f", notDrawing), privacy: .public) s with camera frames arriving: rebuilding the AR view")
-        rebuildDrawables()
-        markRestarted()
-      case 2:
-        Self.log.error("Render still stalled: re-running the AR session")
-        markRestarted()
-        arView.session.run(configuration)
-      default:
-        if !cameraStalled {
-          Self.log.error("Render stalled after a rebuild and a re-run")
-          cameraStalled = true
-        }
-      }
-      return
-    }
-
     if cameraStalled { cameraStalled = false }
     watchdogRestarts = 0
-    renderStallSteps = 0
   }
 
   @ObservationIgnored private var framesInWindow = 0
@@ -309,46 +277,20 @@ final class ARSessionController: NSObject, ARSessionDelegate {
     let fps = Double(framesInWindow) / span
     let rps = Double(rendersSinceLog) / span
     let freeMB = os_proc_available_memory() / 1_048_576
-    Self.log.notice("AR health: camera \(Int(fps.rounded()), privacy: .public) fps · drawn \(Int(rps.rounded()), privacy: .public) fps · \(freeMB, privacy: .public) MB free")
+    Self.log.notice("AR health: camera \(Int(fps.rounded()), privacy: .public) fps · scene updates \(Int(rps.rounded()), privacy: .public)/s · \(freeMB, privacy: .public) MB free")
     framesInWindow = 0
     rendersSinceLog = 0
     lastHealthLog = now
   }
 
-  /// Taking the view out of the window and putting it back makes its Metal layer drop and reallocate its drawables,
-  /// which is what clears a run of "nextDrawable returning nil". The session and the scene's anchors are untouched.
-  private func rebuildDrawables() {
-    guard let superview = arView.superview else { return }
-    let frame = arView.frame
-    let index = superview.subviews.firstIndex(of: arView) ?? 0
-    arView.removeFromSuperview()
-    arView.frame = frame
-    superview.insertSubview(arView, at: index)
-  }
-
-  /// The user's way out when self-healing didn't work: the view rebuilt and the session run again. No tracking
-  /// reset, so the guide, pins and laptop outline stay where they are.
+  /// The user's way out: the same pause and resume as leaving the app and coming back, which never rebuilds the
+  /// configuration.
   func restartCamera() {
-    guard let configuration else { return }
     Self.log.notice("Restart camera (user)")
-    isRunning = true
-    arView.isHidden = false
-    rebuildDrawables()
     watchdogRestarts = 0
-    renderStallSteps = 0
     cameraStalled = false
-    markRestarted()
-    arView.session.run(configuration)
-  }
-
-  /// Plane detection on while the user taps the laptop's corners or part positions, off otherwise: it's the most
-  /// work the session does after people occlusion.
-  func setSurfaceDetection(_ on: Bool) {
-    guard on != wantsSurfaces else { return }
-    wantsSurfaces = on
-    guard let configuration, !CameraLab.planesAlways else { return }
-    configuration.planeDetection = on ? [.horizontal] : []
-    if isRunning { arView.session.run(configuration) }
+    pause()
+    DispatchQueue.main.async { [weak self] in self?.resume() }
   }
 
   /// Makes sure the view is visible when SwiftUI (re)creates it. Never re-runs a running session: a second `run`
@@ -416,9 +358,11 @@ final class ARSessionController: NSObject, ARSessionDelegate {
     return imageContext.jpegRepresentation(of: image, colorSpace: CGColorSpaceCreateDeviceRGB(), options: [:])
   }
 
-  /// True once ARKit has found a horizontal surface (the desk, or the laptop's cover) to put things on.
+  /// True once ARKit can place things on a flat surface at the middle of the screen. Uses estimated planes, so it
+  /// works without plane detection (which would need a session re-run to turn on).
   var hasHorizontalSurface: Bool {
-    arView.session.currentFrame?.anchors.contains { ($0 as? ARPlaneAnchor)?.alignment == .horizontal } ?? false
+    let centre = CGPoint(x: arView.bounds.midX, y: arView.bounds.midY)
+    return !arView.raycast(from: centre, allowing: .estimatedPlane, alignment: .horizontal).isEmpty
   }
 
   /// The world direction that is "right" on the phone's screen: the camera's +Y (its axes are the sensor's, landscape).

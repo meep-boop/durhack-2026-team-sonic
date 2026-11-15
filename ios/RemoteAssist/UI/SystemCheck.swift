@@ -55,7 +55,7 @@ struct SystemCheckSection: View {
       Toggle(isOn: $handsInFront) {
         VStack(alignment: .leading, spacing: 2) {
           Text("Hands in front of the guide")
-          Text("Your hands hide the 3D parts, like real objects. Uses a lot more battery and GPU.")
+          Text("Your hands hide the 3D parts, like real objects. Uses a lot more battery and GPU, and can freeze the camera when switched: if it does, tap Restart camera or reopen the app.")
             .font(.footnote).foregroundStyle(.secondary)
         }
       }

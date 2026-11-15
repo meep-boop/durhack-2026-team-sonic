@@ -485,8 +485,8 @@ struct ContentView: View {
     ar.clearFocus()
     ar.showCornerMarker(at: nil)
     setupProblem = nil
-    ar.setSurfaceDetection(true)
-    ar.setCoachingGoal(.horizontalPlane)
+    // Not .horizontalPlane: that goal waits for plane anchors, and plane detection is off for good.
+    ar.setCoachingGoal(.tracking)
     ar.tapMode = .surface
     setup = ar.hasHorizontalSurface ? .cornerA : .surface
     spotlight.enabled = false
@@ -498,7 +498,6 @@ struct ContentView: View {
     ar.showCornerMarker(at: nil)
     ar.setCoachingGoal(.tracking)
     ar.tapMode = teaching ? .surface : .pins
-    ar.setSurfaceDetection(teaching)
     spotlight.enabled = true
   }
 
@@ -558,7 +557,6 @@ struct ContentView: View {
     if on, layoutFile == nil { layoutFile = layout.exportFile() }
     teaching = on
     ar.tapMode = on || setup != nil ? .surface : .pins
-    ar.setSurfaceDetection(on || setup != nil)
   }
 
   private func undoTeach() {
