@@ -43,7 +43,11 @@ enum SpotlightPolicy {
 }
 
 /// Follows what the user should look at and says where it is on screen: in a beam, or off one edge.
-/// A display link at up to 20 Hz projects the target, but `state` only changes when something visibly moved.
+/// A 15 Hz timer projects the target, but `state` only changes when something visibly moved.
+///
+/// A timer, not a CADisplayLink: with ARKit's delegate on main, this display link asking for 10–20 fps froze the camera
+/// (RealityKit got about 17 of 60 drawables, "nextDrawable returning nil" every other frame). Measured on an iPhone 16,
+/// iOS 26.3.1: the same build with a timer drew all 60, and so did the display link with the delegate off main.
 @Observable
 final class SpotlightTracker {
   enum State: Equatable {
@@ -61,26 +65,25 @@ final class SpotlightTracker {
   var enabled = true
 
   @ObservationIgnored private weak var ar: ARSessionController?
-  @ObservationIgnored private var link: CADisplayLink?
+  @ObservationIgnored private var timer: Timer?
   @ObservationIgnored private var smoothed: CGRect?
 
   func start(_ ar: ARSessionController) {
     self.ar = ar
-    guard link == nil else { return }
-    let link = CADisplayLink(target: self, selector: #selector(tick))
-    link.preferredFrameRateRange = CAFrameRateRange(minimum: 10, maximum: 20, preferred: 15)
-    link.add(to: .main, forMode: .common)
-    self.link = link
+    guard timer == nil else { return }
+    let timer = Timer(timeInterval: 1.0 / 15, repeats: true) { [weak self] _ in self?.tick() }
+    RunLoop.main.add(timer, forMode: .common)
+    self.timer = timer
   }
 
   func stop() {
-    link?.invalidate()
-    link = nil
+    timer?.invalidate()
+    timer = nil
     smoothed = nil
     setState(.hidden)
   }
 
-  @objc private func tick() {
+  private func tick() {
     guard enabled, let ar, let target = ar.spotlightTarget(), !target.points.isEmpty else {
       smoothed = nil
       setState(.hidden)
