@@ -85,6 +85,13 @@
   .callrow { display: flex; gap: 8px; }
   .callrow > * { flex: 1; }
   #callBtn { padding: 14px; font-size: 16px; }
+  /* The 3D scan beside the live video: Max's dashboard viewer (orbit, zoom) for one scan. */
+  main.with3d { grid-template-columns: 1fr 1fr 340px; }
+  .scan3d { display: none; flex-direction: column; background: #000; border-radius: 18px; overflow: hidden; border: 1px solid var(--line); min-height: 0; }
+  main.with3d .scan3d { display: flex; }
+  .scan3d .bar { display: flex; gap: 8px; align-items: center; padding: 8px 10px; background: var(--panel); border-bottom: 1px solid var(--line); }
+  .scan3d .bar select { padding: 6px 8px; border-radius: 8px; border: 1px solid var(--line); background: var(--bg); color: var(--text); font: inherit; font-size: 13px; }
+  .scan3d iframe { flex: 1; border: 0; width: 100%; background: #000; }
   .rigtoast { position: absolute; top: 16px; left: 50%; transform: translateX(-50%); padding: 10px 18px; border-radius: 14px; font-weight: 700; z-index: 4; color: #fff; box-shadow: 0 8px 24px rgba(0,0,0,.4); }
   .rigtoast.ok { background: rgba(22,163,74,.95); } .rigtoast.bad { background: rgba(220,38,38,.95); }
   @media (max-width: 900px) { main { grid-template-columns: 1fr; height: auto; } .stage { min-height: 50vh; } }
@@ -97,6 +104,7 @@
   <span class="pill"><span class="dot" id="phoneDot"></span><span id="phoneText">No phone online</span></span>
   <span class="pill" title="The UNO Q + Nicla Vision rig: it checks the SSD is where the step says"><span class="dot" id="rigDot"></span><span id="rigText">No rig</span></span>
   <span class="spacer"></span>
+  <button id="toggle3d" class="secondary" style="padding:6px 14px;font-size:13px" title="Show a 3D scan beside the live video">3D ▸</button>
   <span class="pill"><span class="dot" id="markerDot"></span><span id="markerText">Marker: unknown</span></span>
 </header>
 
@@ -124,6 +132,19 @@
       <input id="tapLabel" placeholder="Label, e.g. this screw" maxlength="40" aria-label="Label for the next mark">
       <button id="clearPins" class="secondary" disabled>Clear</button>
     </div>
+  </section>
+
+  <section class="scan3d" id="scan3d" aria-label="3D scan">
+    <div class="bar">
+      <b style="font-size:13px">3D scan</b>
+      <select id="scanPick" aria-label="Which scan">
+        <option value="scan-0801.usdz">Scan 08:01</option>
+        <option value="scan-0809.usdz">Scan 08:09</option>
+        <option value="scan-0735.usdz">Scan 07:35</option>
+      </select>
+      <a id="scanOpen" target="_blank" rel="noopener" style="margin-left:auto;font-size:13px;color:var(--muted)">Open full ↗</a>
+    </div>
+    <iframe id="scanFrame" title="3D scan: drag to turn, scroll to zoom"></iframe>
   </section>
 
   <aside>
@@ -593,6 +614,20 @@ $("remote").addEventListener("pointerup", (e) => {
   setTimeout(() => box.remove(), 6000);
   log(`Marked an area: “${text}”`);
 });
+
+// The 3D scan comes from Max's dashboard on the same laptop (port 5173): its viewer already orbits and zooms the
+// Scaniverse scans in dashboard/public/scans/. Shown beside the live video, never instead of it.
+function scanUrl() {
+  const relay = ws?.url || $("relayUrl").value;
+  return `http://${location.hostname}:5173/?relay=${encodeURIComponent(relay)}&splat=${encodeURIComponent($("scanPick").value)}`;
+}
+function show3d(on) {
+  document.querySelector("main").classList.toggle("with3d", on);
+  $("toggle3d").textContent = on ? "3D ◂" : "3D ▸";
+  if (on) { $("scanFrame").src = scanUrl(); $("scanOpen").href = scanUrl(); }
+}
+$("toggle3d").onclick = () => show3d(!document.querySelector("main").classList.contains("with3d"));
+$("scanPick").onchange = () => show3d(true);
 
 $("clearPins").onclick = () => {
   sendControl({ kind: "clear" });

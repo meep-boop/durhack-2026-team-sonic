@@ -107,4 +107,29 @@ final class PinMathTests: XCTestCase {
     XCTAssertEqual(frame.transform.columns.3.x, 0.18, accuracy: 1e-5)
     XCTAssertEqual(simd_determinant(frame.transform), 1, accuracy: 1e-4, "never mirrored")
   }
+
+  func testACalibrationSavedNextToTheMarkerComesBackWhereverTheMarkerIsNow() {
+    let laptop = LaptopFrame(origin: [0.3, 0, -0.1], xAxis: [1, 0, 0], yAxis: [0, 0, 1], normal: [0, 1, 0], size: [0.3578, 0.2333])
+    var markerThen = simd_float4x4(simd_quatf(angle: 0.4, axis: [0, 1, 0]))
+    markerThen.columns.3 = SIMD4(1, 0.7, -2, 1)
+    let saved = laptop.relative(to: markerThen)
+    XCTAssertEqual(simd_distance(saved.inWorld(marker: markerThen).origin, laptop.origin), 0, accuracy: 1e-5)
+    // The marker seen somewhere else on the next run: the laptop keeps its place next to it.
+    var markerNow = simd_float4x4(simd_quatf(angle: -1.1, axis: [0, 1, 0]))
+    markerNow.columns.3 = SIMD4(-0.5, 0.7, 0.3, 1)
+    let back = saved.inWorld(marker: markerNow)
+    let offsetThen = markerThen.inverse * SIMD4(laptop.origin, 1)
+    let offsetNow = markerNow.inverse * SIMD4(back.origin, 1)
+    XCTAssertEqual(simd_distance(SIMD3(offsetThen.x, offsetThen.y, offsetThen.z), SIMD3(offsetNow.x, offsetNow.y, offsetNow.z)), 0, accuracy: 1e-5)
+  }
+
+  func testAThingPutOnTheMarkerStaysOnItsRealSpot() {
+    var marker = simd_float4x4(simd_quatf(angle: 0.7, axis: [0, 1, 0]))
+    marker.columns.3 = SIMD4(0.4, 0, -1, 1)
+    var spot = matrix_identity_float4x4
+    spot.columns.3 = SIMD4(0.6, 0.02, -0.8, 1)
+    let local = PinMath.local(spot, in: marker)
+    let back = marker * local
+    XCTAssertEqual(simd_distance(SIMD3(back.columns.3.x, back.columns.3.y, back.columns.3.z), [0.6, 0.02, -0.8]), 0, accuracy: 1e-5)
+  }
 }

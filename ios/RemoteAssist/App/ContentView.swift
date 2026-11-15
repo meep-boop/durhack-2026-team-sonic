@@ -1,4 +1,5 @@
 import SwiftUI
+import simd
 
 struct ContentView: View {
   @State var player: GuidePlayer
@@ -452,6 +453,7 @@ struct ContentView: View {
       flashPinMessage("The expert showed: \(box.label)")
       return true
     }
+    ar.onMarkerFound = { marker in restoreLaptop(marker: marker) }
     call.onExpertClear = {
       ar.clearPins(kinds: [.expert])
       ar.clearExpertArea()
@@ -673,6 +675,22 @@ struct ContentView: View {
     }
   }
 
+  /// The marker is in view and the laptop isn't locked yet: put back the laptop calibrated on an earlier run.
+  private func restoreLaptop(marker: simd_float4x4) {
+    guard laptopFrame == nil, setup == nil, let saved = LaptopFrame.savedNextToMarker else { return }
+    let frame = saved.inWorld(marker: marker)
+    laptopFrame = frame
+    ar.showLaptopOutline(frame)
+    if isLaptopGuide {
+      stepChanged()
+    } else {
+      ar.lockGuide(GuideOnLaptop.transform(frame: frame, guideCentre: GuideOnLaptop.centre(of: player.guide)))
+    }
+    pinTicks += 1
+    flashPinMessage("Laptop found from last time: locked to the marker")
+    ARSessionController.log.notice("Laptop calibration restored from the marker")
+  }
+
   private func startSetup() {
     setTeaching(false)
     laptopFrame = nil
@@ -711,6 +729,8 @@ struct ContentView: View {
     case .cornerB(let a, let firstNormal):
       switch LaptopFrame.make(a: a, c: position, normal: firstNormal, footprint: layout.footprintMetres, screenRight: ar.screenRightInWorld ?? [1, 0, 0]) {
       case .success(let frame):
+        // Calibrate once: saved relative to the marker, so the next run puts the laptop back just by seeing it.
+        if let marker = ar.markerWorldTransform { LaptopFrame.savedNextToMarker = frame.relative(to: marker) }
         if !isLaptopGuide {
           ar.lockGuide(GuideOnLaptop.transform(frame: frame, guideCentre: GuideOnLaptop.centre(of: player.guide)))
         }
