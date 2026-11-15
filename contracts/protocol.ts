@@ -18,10 +18,14 @@ export type Quat = [number, number, number, number];
 export type Role = "expert" | "user" | "rig";
 
 // Must match the file names in assets/models/ (glTF for the dashboard, USDZ for the phone). Adding a model is a
-// contract change: flag it to Max, Laura and Salman.
-export type ModelName = "screw" | "bolt" | "arrow" | "screwdriver" | "hand" | "cable-plug";
+// contract change: flag it to Max, Laura and Salman. Every model is in metres, +Y up, with its working tip (screw
+// point, arrow point, fingertip, plug contacts, SSD contact edge) at the origin, so the tip lands exactly on `pos`
+// (assets/models/README.md).
+export type ModelName = "screw" | "bolt" | "arrow" | "screwdriver" | "hand" | "cable-plug" | "ssd";
 
-// Every action moves or turns the model along `axis` and loops until the user taps Next.
+// Every action moves or turns the model along `axis` and loops until the user taps Next. `axis` decides the
+// direction; the guide builder fills it from the model's own +Y after rotation (pull +Y, push -Y, turns around Y)
+// and the expert can change it.
 export type Action = "unscrew" | "pull" | "push" | "flip" | "rotate90";
 
 // The phone compares this with the marker it's tracking; a wrong printed size puts everything off by that ratio.
@@ -46,9 +50,10 @@ export type GuideObject = {
   label?: string;
   // A part lifted out of the scan on the dashboard. The phone may ignore it and draw `model`.
   cutoutId?: string;
-  // What the UNO Q rig should see once the step is done: the cable now "in" port "17", or "out" of port "14". Port
-  // names match the regions set up on the Nicla Vision. Without it, the rig doesn't check this object.
-  expect?: { port: string; cable: "in" | "out" };
+  // What the UNO Q rig should see once the step is done: the stickered part (the SSD in the demo) present in a region
+  // of the Nicla Vision's view, or gone from it. Region names match the Nicla's, e.g. "ssd-bay". Without it, the rig
+  // doesn't check this object.
+  expect?: { region: string; present: boolean };
 };
 
 export type Step = {
@@ -61,7 +66,8 @@ export type Step = {
 
 export type Guide = {
   id: string;
-  // Goes up by one on every edit. Offline resync compares it with the rev a `step.done` was made against.
+  // Goes up by one on every edit. On reconnect the latest guide wins: the phone switches to it and keeps its place
+  // and its done steps by step id, and its taps made on an older rev are still accepted.
   rev: number;
   title: string;
   marker: Marker;
@@ -84,11 +90,13 @@ export type Hello = {
 // an edit.
 export type GuideSet = { type: "guide.set"; guide: Guide };
 
-// Expert → user: jump to a step.
+// Expert → user: jump to a step. On connect the relay replays the current step to dashboards and the rig, never to
+// phones: the phone owns its position, so one that worked offline isn't sent backwards before its queued taps land.
 export type StepSet = { type: "step.set"; guideId: string; stepId: string };
 
-// Expert → relay, replayed to experts only and never sent to the phone. Kept so a reloaded dashboard doesn't lose
-// its calibration. Corners are in splat coordinates, in the order top-left, top-right, bottom-right, bottom-left as
+// Expert → relay, replayed to experts only and never sent to the phone. The relay keeps the latest one per splatId
+// (the scan's file name) and replays them all, so a reloaded dashboard doesn't lose its calibrations. Two scans of
+// the same set, each calibrated on the same printed marker, give positions in the same marker frame. Corners are in splat coordinates, in the order top-left, top-right, bottom-right, bottom-left as
 // the marker reads upright.
 export type CalibSet = {
   type: "calib.set";
@@ -98,7 +106,9 @@ export type CalibSet = {
   residual: number;
 };
 
-// User → expert, when the user taps Next.
+// User → expert, when the user taps Next. The relay also sends each one back to the phone that sent it, once it's
+// saved: that's the receipt. The phone keeps a tap queued until its receipt arrives and resends the queue, in order,
+// when it reconnects.
 export type StepDone = {
   type: "step.done";
   guideId: string;
@@ -125,18 +135,36 @@ export type StepVerified = {
   guideId: string;
   stepId: string;
   ok: boolean;
-  // What the rig saw, e.g. "cable in port 16, expected 17". Shown to both sides when `ok` is false.
+  // What the rig saw, e.g. "seen in slot-2, expected in ssd-bay". Shown to both sides when `ok` is false.
   detail?: string;
 };
 
 // User ↔ expert. WebRTC signalling rides this websocket; the relay passes it to the other side without reading or
-// storing it.
+// storing it. The expert calls: the dashboard sends the offer and the phone answers.
 export type RtcSignal = {
   type: "rtc.signal";
   signal:
     | { kind: "offer" | "answer"; sdp: string }
     | { kind: "candidate"; candidate: string; sdpMid: string | null; sdpMLineIndex: number | null };
 };
+
+// Expert → relay, answered only to that expert, never stored. A snapshot of the dashboard's current 3D view for Claude
+// to label. Keep it at most 1280 px on the long side: a bigger image may be scaled down before Claude sees it, and the
+// positions it returns would no longer match. The relay labels one snapshot at a time, since each one costs money.
+export type LabelsRequest = {
+  type: "labels.request";
+  requestId: string;
+  image: { mediaType: "image/jpeg" | "image/png"; data: string };
+  width: number;
+  height: number;
+};
+
+// A part Claude read in the snapshot, at pixel (x, y) from the image's top-left. The dashboard turns the pixel into a
+// 3D point with its click-pick. Made by AI: show it as such and let the expert fix or delete it.
+export type Label = { text: string; x: number; y: number };
+
+// Relay → the expert that asked. `model` is the Claude model that answered, for the "made by AI" note.
+export type LabelsResult = { type: "labels.result"; requestId: string; model: string; labels: Label[] };
 
 // Relay → every client, on every connect and disconnect, so the dashboard can show "phone offline" during the
 // link-down demo.
@@ -162,6 +190,8 @@ export type Message =
   | PoseUpdate
   | StepVerified
   | RtcSignal
+  | LabelsRequest
+  | LabelsResult
   | Presence
   | ErrorMessage;
 

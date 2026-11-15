@@ -72,11 +72,11 @@ test("unknown models and actions are refused", () => {
   assert.ok(parseMessage(JSON.stringify(guideMessage((g) => (g.steps[0].objects[0].action = null)))).ok);
 });
 
-test("a rig expectation must name a port and whether the cable is in or out", () => {
+test("a rig expectation must name a region and whether the part should be there", () => {
   const expect = (value: unknown) => guideMessage((g) => (g.steps[3].objects[0].expect = value));
-  assert.match(refusal(expect({ port: "17", cable: "maybe" })), /guide\.steps\[3\]\.objects\[0\]\.expect\.cable/);
-  assert.match(refusal(expect({ cable: "in" })), /expect\.port/);
-  assert.match(refusal(expect("port 17")), /expect: expected an object/);
+  assert.match(refusal(expect({ region: "ssd-bay", present: "yes" })), /guide\.steps\[3\]\.objects\[0\]\.expect\.present/);
+  assert.match(refusal(expect({ present: true })), /expect\.region/);
+  assert.match(refusal(expect("ssd-bay")), /expect: expected an object/);
   assert.ok(parseMessage(JSON.stringify(expect(undefined))).ok);
 });
 
@@ -121,6 +121,15 @@ test("pose, verification, presence and error messages are checked field by field
   assert.match(refusal({ type: "presence", clients: [{ role: "boss", client: "x" }] }), /clients\[0\]\.role/);
   assert.match(refusal({ type: "presence", clients: "everyone" }), /clients: expected a list/);
   assert.match(refusal({ type: "error", about: "hello" }), /message/);
+});
+
+test("a snapshot to label must be a JPEG or PNG with a real size", () => {
+  const request = examples.find((m) => m.type === "labels.request") as any;
+  assert.match(refusal({ ...request, image: { ...request.image, mediaType: "image/gif" } }), /image\.mediaType/);
+  assert.match(refusal({ ...request, image: "base64" }), /image: expected an object/);
+  assert.match(refusal({ ...request, width: 0 }), /width/);
+  const result = examples.find((m) => m.type === "labels.result") as any;
+  assert.match(refusal({ ...result, labels: [{ text: "SSD", x: 1 }] }), /labels\[0\]: expected x and y/);
 });
 
 test("calibration needs exactly four corners", () => {
