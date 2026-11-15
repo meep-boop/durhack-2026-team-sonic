@@ -243,7 +243,7 @@ Xcode" is answered: yes, per Ahmed.
 | F9 | Live camera over WebRTC | Salman, Ahmed | P1 | 🟡 phone and expert page on `salman-ios-polish`; that page is the call screen, no dashboard panel |
 | F10 | Cut-outs from the scan | Max | P1 | ⬜ |
 | F11 | Find a part by name, AI labels (Accenture) | Max, Ahmed | P1 | 🟡 relay side on `main`; search box not started; no live call yet |
-| F12 | Hardware check with the UNO Q (RS) | Ahmed | P1 | 🟡 code on `main`, reworked for the SSD; access test in progress |
+| F12 | Hardware check with the UNO Q (RS) | Ahmed | P1 | ✅ runs on the UNO Q and Nicla Vision against the relay (04:50, Ahmed at the board); not yet rehearsed with the real phone |
 | F14 | ElevenLabs voice and transcript (MLH), optional; the Gemini assistant was removed by Salman (`a9a884c`) | Salman | P1 | 🟡 on `salman-ios-ar`, not in the plain demo build |
 | F13 | The user's position shown in the scan | Max | P1 | ⬜ |
 | F15 | The dashboard's relay connection and calibration maths | Ahmed | P0 | ⬜ once Max agrees |

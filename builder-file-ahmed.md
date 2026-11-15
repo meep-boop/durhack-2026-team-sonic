@@ -66,7 +66,7 @@ but all three teammates build on them, so every change after the first version i
 *Status: ⬜ not started · 🟡 in progress · ⏸ blocked · ✅ done*
 
 **▶ What's left (from @ahmed, 2026-11-15 04:12), ahead of the 01:45 block below.** 
-1. 🟡 P0 **Tune the rig on the real SSD** (task 9): sticker colour, the `ssd-bay` region, a tick on the LED matrix,
+1. ✅ (04:50, reported by Ahmed at the board: the SSD shows as `ssd-bay` and the checks work end to end; the Nicla script's example colour and region fitted the green sticker unchanged) P0 **Tune the rig on the real SSD** (task 9): sticker colour, the `ssd-bay` region, a tick on the LED matrix,
    and a `step.verified` seen on the dashboard's live strip.
 2. 🟡 (04:21, on `main`: all 12 steps written, positions still placeholders; left: ruler measurements) P0 **`fixtures/ssd-swap-guide.json`** from Laura's 12 steps (her 02:11 entry), positions by ruler at the table.
 3. ✅ (04:21, on `main`) P0 **Relay `--state <file>`** (Max's ask), so a test relay can't empty the live one's save file.
@@ -201,6 +201,7 @@ rung 2 a guide built in the scan lines up on the phone; rung 3 the extras. Decis
     - *Done when:* a backup exists and you've checked it opens.
 
 ## 4. Done log (newest first)
+- 2026-11-15 04:50: task 9, the rig, works on its hardware end to end (Ahmed at the board).
 - 2026-11-15 03:24: the rig ran on its hardware for the first time: App Lab app up, relay connected, Nicla lines read on the UNO Q (task 9a ✅, 9b/9c running; left: tune the sticker colour and region on the real SSD, see a tick, 9d the LED matrix).
 - 2026-11-15 01:47: the tap receipt (`8756560`) and one calibration per scan (`b9a5e86`); 41 relay tests. Before that, the plan to the deadline in every brief.
 - 2026-11-15 00:51: 9c packaged as an App Lab app and 9d written (`3b4fd51`); 13 rig tests, the chain end to end.
