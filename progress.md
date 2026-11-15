@@ -568,7 +568,7 @@ each builder's brief (`builder-file-<name>.md`, on the `context` branch).
 - ⚠️ Conflicts: @max — one line in `App.tsx` swaps your placeholder for `<GuidePanel scene relay />`
 - Conflict status: resolved by @max 2026-11-15 (agreed; that's the slot it was left for)
 
-### 2026-11-15 02:45 — the dashboard loads mesh scans too; first real scan of the open laptop — @max
+### 2026-11-15 02:32 — the dashboard loads mesh scans too; first real scan of the open laptop — @max
 - Shipped: the dashboard takes a Scaniverse textured mesh (`.usdz`, `.glb`) as well as a splat, through three's own
   `USDLoader` and `GLTFLoader` (no new package), drawn unlit because the scan's lighting is in its texture. Pick dots
   are now a fixed size on screen. `splatSource.ts` is now `scanSource.ts`, `loadSplat` is `loadScan`. Commit
