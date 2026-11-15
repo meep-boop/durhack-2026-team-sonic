@@ -641,17 +641,19 @@ final class ARSessionController: NSObject, ARSessionDelegate {
   /// How far an area's corner may be from the box's centre: more than a laptop's half-diagonal, less than a desk.
   static let areaReach: Float = 0.45
 
-  func placeExpertArea(corners points: [UprightPoint], label: String, secondsAgo: Double) -> Bool {
-    guard points.count == 4, let camera = cameraContext(secondsAgo: secondsAgo) else { return false }
+  /// The box the expert dragged, as four points on the surface under it (clockwise from the top-left as drawn) and
+  /// that surface's normal; nil when there's no surface at all. Each corner is where its ray meets the plane under the
+  /// box's centre, pulled in to at most `areaReach` from the centre: drawn from an angle, a box round a laptop meets the
+  /// table far away at its top corners, and refusing those turned normal areas red.
+  private func footprint(_ points: [UprightPoint], secondsAgo: Double, label: String, kind: String) -> (corners: [SIMD3<Float>], normal: SIMD3<Float>)? {
+    guard points.count == 4, let camera = cameraContext(secondsAgo: secondsAgo) else { return nil }
     let centre = UprightPoint(x: points.map(\.x).reduce(0, +) / 4, y: points.map(\.y).reduce(0, +) / 4)
     guard let plane = surfacePoint(for: centre, camera: camera)
       ?? points.lazy.compactMap({ self.surfacePoint(for: $0, camera: camera) }).first
       ?? lastSurface else {
-      Self.log.notice("Area \"\(label, privacy: .public)\" missed: no surface under the box")
-      return false
+      Self.log.notice("\(kind, privacy: .public) \"\(label, privacy: .public)\" missed: no surface under the box")
+      return nil
     }
-    // Each corner where its ray meets that plane, pulled in to at most 0.45 m from the box's centre. Drawn from an
-    // angle, a box round a laptop meets the table far away at its top corners; refusing those turned normal areas red.
     let up = simd_normalize(plane.normal)
     let centreRay = PinMath.ray(for: centre, in: camera)
     let middle = PinMath.intersect(origin: centreRay.origin, direction: centreRay.direction, planePoint: plane.position, planeNormal: up) ?? plane.position
@@ -667,18 +669,52 @@ final class ARSessionController: NSObject, ARSessionDelegate {
       if corner != target { pulled += 1 }
       return corner
     }
-    Self.log.notice("Area \"\(label, privacy: .public)\": placed, centre \(simd_distance(middle, centreRay.origin), format: .fixed(precision: 2), privacy: .public) m from the camera, \(pulled, privacy: .public)/4 corners pulled in")
+    Self.log.notice("\(kind, privacy: .public) \"\(label, privacy: .public)\": placed, centre \(simd_distance(middle, centreRay.origin), format: .fixed(precision: 2), privacy: .public) m from the camera, \(pulled, privacy: .public)/4 corners pulled in")
     lastSurface = plane
+    return (corners, up)
+  }
 
+  func placeExpertArea(corners points: [UprightPoint], label: String, secondsAgo: Double) -> Bool {
+    guard let (corners, normal) = footprint(points, secondsAgo: secondsAgo, label: label, kind: "Area") else { return false }
+    showExpertMark(Shapes.focusArea(corners: corners, normal: normal, label: label), corners: corners, label: label)
+    return true
+  }
+
+  /// How a box the expert drew moves on the phone.
+  enum BoxMotion: String { case still, flip, turn }
+
+  /// The expert dragged a box and picked a motion: a 3D block on that footprint, 2 cm high, turning over or round.
+  func placeExpertBox(corners points: [UprightPoint], label: String, secondsAgo: Double, motion: BoxMotion) -> Bool {
+    guard let (corners, normal) = footprint(points, secondsAgo: secondsAgo, label: label, kind: "Box") else { return false }
+    let frame = Shapes.boxFrame(corners: corners, normal: normal, height: 0.02)
+    let root = Entity()
+    let block = Shapes.solidBox(size: frame.size)
+    block.transform = Transform(matrix: frame.transform)
+    root.addChild(block)
+    let axisX = SIMD3(frame.transform.columns.0.x, frame.transform.columns.0.y, frame.transform.columns.0.z)
+    switch motion {
+    case .flip: Shapes.animate(block, action: .flip, axis: axisX)
+    case .turn: Shapes.animate(block, action: .rotate90, axis: normal)
+    case .still: break
+    }
+    let tag = Shapes.chip(badge: nil, text: label, badgeColor: Theme.accentUI)
+    tag.position = corners.reduce(.zero, +) / 4 + normal * 0.06
+    root.addChild(tag)
+    showExpertMark(root, corners: corners, label: label)
+    Self.log.notice("Box \"\(label, privacy: .public)\": \(frame.size.x, format: .fixed(precision: 2), privacy: .public) × \(frame.size.z, format: .fixed(precision: 2), privacy: .public) m, \(motion.rawValue, privacy: .public)")
+    return true
+  }
+
+  /// One thing at a time: a new area or box replaces the expert's previous marks.
+  private func showExpertMark(_ entity: Entity, corners: [SIMD3<Float>], label: String) {
     clearPins(kinds: [.expert])
     clearExpertArea()
     let anchor = AnchorEntity(world: matrix_identity_float4x4)
-    anchor.addChild(Shapes.focusArea(corners: corners, normal: plane.normal, label: label))
+    anchor.addChild(entity)
     arView.scene.addAnchor(anchor)
     expertAreaAnchor = anchor
     expertAreaCorners = corners
     expertAreaLabel = label
-    return true
   }
 
   func clearExpertArea() {
@@ -1053,15 +1089,20 @@ final class ARSessionController: NSObject, ARSessionDelegate {
       let node = Entity()
       node.position = object.pos.simd
       node.orientation = object.rot.simd
-      node.addChild(Shapes.highlightBox(size: object.size.simd))
+      // The box and its model together, so a flip or a turn moves the whole part (a laptop-sized box turns over);
+      // an unscrew, pull or push moves only the model, out of its box.
+      let body = Entity()
+      body.addChild(Shapes.highlightBox(size: object.size.simd))
       let ring = Shapes.partRing(radius: max(object.size.x, object.size.z) / 2 + 0.004)
       ring.position.y = -object.size.y / 2 + 0.001
       node.addChild(ring)
       let model = Shapes.model(object.model)
-      node.addChild(model)
+      body.addChild(model)
+      node.addChild(body)
       if let action = object.action {
         // The contract's axis is in the marker frame; the model lives in the object's rotated frame.
-        Shapes.animate(model, action: action, axis: object.rot.simd.inverse.act(object.axis.simd), delay: 0.15 * Double(index))
+        let whole = action == .flip || action == .rotate90
+        Shapes.animate(whole ? body : model, action: action, axis: object.rot.simd.inverse.act(object.axis.simd), delay: 0.15 * Double(index))
       }
       if let text = object.label {
         let label = Shapes.label(text, size: 0.018)

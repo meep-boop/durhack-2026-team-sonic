@@ -61,6 +61,8 @@ final class CallManager: NSObject {
   }
   /// Called on main; returns whether the area landed on a surface, answered like a tap.
   @ObservationIgnored var onExpertArea: ((ExpertArea) -> Bool)?
+  /// The expert dragged a 3D box: the area plus how it should move ("still", "flip", "turn"). Answered like a tap.
+  @ObservationIgnored var onExpertBox: ((ExpertArea, String) -> Bool)?
   /// Each finished line the expert says, once (never the live partial captions). Called on main.
   @ObservationIgnored var onExpertLine: ((TranscriptLine) -> Void)?
   /// Not lazy: the AR session queue pushes frames into it, and a lazy var must not be created from two threads.
@@ -359,7 +361,7 @@ extension CallManager: RTCDataChannelDelegate {
         let ok = self?.onExpertTap?(tap) ?? false
         Self.send(["kind": "pinned", "id": id, "ok": ok], on: dataChannel)
       }
-    case "area":
+    case "area", "box":
       let numbers = ["x0", "y0", "x1", "y1"].compactMap { message[$0] as? Double }
       guard let id = message["id"] as? String, numbers.count == 4, numbers.allSatisfy({ (0...1).contains($0) }) else { return }
       let (x0, y0, x1, y1) = (numbers[0], numbers[1], numbers[2], numbers[3])
@@ -369,8 +371,9 @@ extension CallManager: RTCDataChannelDelegate {
         label: (message["label"] as? String).flatMap { $0.isEmpty ? nil : String($0.prefix(40)) } ?? "here",
         secondsAgo: min(max(message["latency"] as? Double ?? 0.15, 0), 2)
       )
+      let motion = message["motion"] as? String ?? "still"
       onMain { [weak self] in
-        let ok = self?.onExpertArea?(area) ?? false
+        let ok = kind == "box" ? (self?.onExpertBox?(area, motion) ?? false) : (self?.onExpertArea?(area) ?? false)
         Self.send(["kind": "pinned", "id": id, "ok": ok], on: dataChannel)
       }
     case "clear":

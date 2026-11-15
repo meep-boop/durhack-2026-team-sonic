@@ -442,6 +442,16 @@ struct ContentView: View {
       flashPinMessage("The expert marked: \(area.label)")
       return true
     }
+    call.onExpertBox = { box, motion in
+      guard ar.placeExpertBox(
+        corners: box.corners, label: box.label, secondsAgo: box.secondsAgo,
+        motion: ARSessionController.BoxMotion(rawValue: motion) ?? .still
+      ) else { return false }
+      spotlight.enabled = true
+      pinTicks += 1
+      flashPinMessage("The expert showed: \(box.label)")
+      return true
+    }
     call.onExpertClear = {
       ar.clearPins(kinds: [.expert])
       ar.clearExpertArea()

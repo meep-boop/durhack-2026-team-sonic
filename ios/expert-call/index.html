@@ -75,6 +75,7 @@
   .stage.live .toolbar { display: flex; }
   .toolbar .tools { margin: 0; flex-wrap: wrap; justify-content: center; }
   .toolbar .tools button { flex: none; padding: 9px 16px; }
+  .toolbar select { flex: none; padding: 9px 10px; border-radius: 10px; border: 1px solid var(--line); background: var(--bg); color: var(--text); font: inherit; }
   .toolbar input { flex: 1 1 160px; min-width: 120px; width: auto; padding: 9px 12px; }
   .toolbar #clearPins { flex: none; padding: 9px 14px; }
   .toolbar .sep { width: 1px; align-self: stretch; background: rgba(255,255,255,.12); }
@@ -112,7 +113,13 @@
         <button id="toolUnscrew" title="Click a screw: the phone shows it turning anticlockwise">Unscrew ↺</button>
         <button id="toolScrewIn" title="Click a hole: the phone shows a screw turning clockwise">Screw in ↻</button>
         <button id="toolArea" title="Drag a box around what they should look at">Area</button>
+        <button id="toolBox" title="Drag a box: the phone shows a 3D block on that spot, and can turn it over">Box ▣</button>
       </div>
+      <select id="boxMotion" title="How the 3D box moves on the phone" style="display:none">
+        <option value="still">Still</option>
+        <option value="flip" selected>Flip over</option>
+        <option value="turn">Turn round</option>
+      </select>
       <span class="sep"></span>
       <input id="tapLabel" placeholder="Label, e.g. this screw" maxlength="40" aria-label="Label for the next mark">
       <button id="clearPins" class="secondary" disabled>Clear</button>
@@ -165,6 +172,7 @@
 // need no relay or contract change. Its messages (x, y are 0..1 of the upright video; latency in seconds):
 //   page → phone: {kind:"ping", t} · {kind:"tap", id, x, y, label, latency, action?:"unscrew"|"screw-in"}
 //                 {kind:"area", id, x0, y0, x1, y1, label, latency} · {kind:"clear"}
+//                 {kind:"box", id, x0, y0, x1, y1, label, latency, motion:"still"|"flip"|"turn"}
 //                 {kind:"caption"|"transcript", id?, speaker:"expert"|"user", text} · {kind:"stt-token-request", which}
 //   phone → page: {kind:"pong", t} · {kind:"pinned", id, ok} (for a tap or an area)
 //                 {kind:"stt-tokens", expert, phone} · {kind:"stt-token", which, token} · {kind:"stt-off", reason}
@@ -504,22 +512,25 @@ const TOOL_HINTS = {
   unscrew: "Click a screw: the phone shows it turning anticlockwise, to undo it.",
   screwIn: "Click a hole: the phone shows a screw turning clockwise, to tighten it.",
   area: "Drag a box around what they should look at: it's framed on the phone.",
+  box: "Drag a box round the laptop (or a part): the phone shows a 3D block there, turning the way you pick.",
 };
 function setTool(name) {
   tool = name;
-  for (const [id, key] of [["toolPoint", "point"], ["toolUnscrew", "unscrew"], ["toolScrewIn", "screwIn"], ["toolArea", "area"]]) {
+  for (const [id, key] of [["toolPoint", "point"], ["toolUnscrew", "unscrew"], ["toolScrewIn", "screwIn"], ["toolArea", "area"], ["toolBox", "box"]]) {
     $(id).classList.toggle("on", name === key);
   }
-  document.querySelector(".stage").classList.toggle("area", name === "area");
+  document.querySelector(".stage").classList.toggle("area", name === "area" || name === "box");
+  $("boxMotion").style.display = name === "box" ? "" : "none";
   $("toolHint").textContent = TOOL_HINTS[name];
 }
 $("toolPoint").onclick = () => setTool("point");
 $("toolUnscrew").onclick = () => setTool("unscrew");
 $("toolScrewIn").onclick = () => setTool("screwIn");
 $("toolArea").onclick = () => setTool("area");
+$("toolBox").onclick = () => setTool("box");
 
 $("remote").addEventListener("click", async (e) => {
-  if (tool === "area" || !callReady()) return;
+  if (tool === "area" || tool === "box" || !callReady()) return;
   const at = inPicture(e);
   if (!at?.inside) return;
   const id = newId(), text = label(), turn = TURNS[tool];
@@ -538,7 +549,7 @@ $("remote").addEventListener("click", async (e) => {
 // Area: press, drag, release. The latency is taken at the press, when the technician saw what they're boxing.
 let drag = null;
 $("remote").addEventListener("pointerdown", async (e) => {
-  if (tool !== "area" || !callReady()) return;
+  if ((tool !== "area" && tool !== "box") || !callReady()) return;
   const at = inPicture(e);
   if (!at?.inside) return;
   e.preventDefault();
@@ -575,7 +586,8 @@ $("remote").addEventListener("pointerup", (e) => {
   const id = newId(), text = label();
   box.id = "mark-" + id;
   box.append(Object.assign(document.createElement("span"), { textContent: text }));
-  sendControl({ kind: "area", id, x0, y0, x1, y1, label: text, latency });
+  if (tool === "box") sendControl({ kind: "box", id, x0, y0, x1, y1, label: text, latency, motion: $("boxMotion").value });
+  else sendControl({ kind: "area", id, x0, y0, x1, y1, label: text, latency });
   // One thing at a time, as on the phone: a new area replaces the old marks.
   document.querySelectorAll(".tapdot, .areabox").forEach((m) => { if (m !== box) m.remove(); });
   setTimeout(() => box.remove(), 6000);
