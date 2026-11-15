@@ -1170,7 +1170,7 @@ putting the same one back. What are the real steps, screw counts and tools, so t
 - **With a bracket:** two **M2x3** screws hold the bracket; lift it off (re-stick the thermal pad to it if it comes
   loose), then slide the SSD out at an angle ([5]).
 - **Checked on Ahmed's laptop (Laura, 2026-11-15): 8 base-cover screws, no bracket, 1 screw on the SSD**, so the
-  no-bracket path above. Which of the two M.2 slots it sits in is still to check.
+  no-bracket path above. It sits in the M.2 slot next to the fan.
 
 ## Community consensus
 Not searched: the vendor's own service manual is the authority on its own hardware, and the step list only has to be
