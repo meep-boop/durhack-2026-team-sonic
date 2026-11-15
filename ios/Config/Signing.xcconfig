@@ -1,0 +1,5 @@
+// Signing stays out of the repo: each builder's team ID lives in the git-ignored ios/Local.xcconfig.
+CODE_SIGN_STYLE = Automatic
+#include? "../Local.xcconfig"
+// Gemini and ElevenLabs keys, also git-ignored. The app reads them from Info.plist at runtime.
+#include? "../Secrets.xcconfig"

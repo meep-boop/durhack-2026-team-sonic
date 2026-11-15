@@ -1,0 +1,586 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Remote Assist · Technician console</title>
+<style>
+  :root {
+    --bg: #0b0d12; --panel: #141821; --line: #232937; --text: #e8ecf3; --muted: #8a93a6;
+    --accent: #8b5cf6; --green: #22c55e; --amber: #f59e0b; --red: #ef4444;
+  }
+  * { box-sizing: border-box; }
+  body { margin: 0; background: var(--bg); color: var(--text); font: 15px/1.45 -apple-system, BlinkMacSystemFont, "Inter", "Segoe UI", sans-serif; }
+  header { display: flex; align-items: center; gap: 16px; padding: 14px 20px; border-bottom: 1px solid var(--line); }
+  header h1 { font-size: 17px; margin: 0; font-weight: 650; letter-spacing: -0.01em; }
+  .pill { display: inline-flex; align-items: center; gap: 8px; padding: 5px 12px; border-radius: 999px; background: var(--panel); border: 1px solid var(--line); font-size: 13px; color: var(--muted); }
+  .dot { width: 9px; height: 9px; border-radius: 50%; background: var(--muted); }
+  .dot.green { background: var(--green); } .dot.amber { background: var(--amber); } .dot.red { background: var(--red); }
+  .spacer { flex: 1; }
+  main { display: grid; grid-template-columns: 1fr 340px; gap: 20px; padding: 20px; height: calc(100vh - 60px); }
+  .stage { position: relative; background: #000; border-radius: 18px; overflow: hidden; border: 1px solid var(--line); display: grid; place-items: center; }
+  .stage video { width: 100%; height: 100%; object-fit: contain; background: #000; }
+  .stage .empty { position: absolute; text-align: center; color: var(--muted); padding: 24px; }
+  .stage .empty strong { display: block; color: var(--text); font-size: 18px; margin-bottom: 6px; }
+  .badge { position: absolute; top: 14px; left: 14px; display: none; align-items: center; gap: 8px; background: rgba(0,0,0,.55); backdrop-filter: blur(10px); padding: 6px 12px; border-radius: 999px; font-size: 13px; }
+  .badge .dot { background: var(--red); animation: pulse 1.4s infinite; }
+  @keyframes pulse { 50% { opacity: .35; } }
+  .stage.live video#remote { cursor: crosshair; }
+  .tapdot { position: absolute; width: 22px; height: 22px; margin: -11px 0 0 -11px; border-radius: 50%; border: 3px solid var(--accent); background: rgba(139,92,246,.25); pointer-events: none; }
+  .tapdot span { position: absolute; left: 26px; top: -2px; white-space: nowrap; font-size: 12px; font-weight: 600; background: rgba(0,0,0,.6); padding: 2px 8px; border-radius: 999px; }
+  .tapdot.ok { border-color: var(--green); background: rgba(34,197,94,.25); }
+  .tapdot.miss { border-color: var(--red); background: rgba(239,68,68,.25); }
+  .stage.live.area video#remote { cursor: cell; }
+  .areabox { position: absolute; border: 3px solid var(--accent); background: rgba(139,92,246,.18); border-radius: 10px; pointer-events: none; }
+  .areabox span { position: absolute; left: 0; top: -26px; white-space: nowrap; font-size: 12px; font-weight: 600; background: rgba(0,0,0,.6); padding: 2px 8px; border-radius: 999px; }
+  .areabox.ok { border-color: var(--green); background: rgba(34,197,94,.16); }
+  .areabox.miss { border-color: var(--red); background: rgba(239,68,68,.16); }
+  .tools { display: flex; gap: 6px; margin-top: 10px; }
+  .tools button { flex: 1; background: #262c3a; }
+  .tools button.on { background: var(--accent); }
+  details summary { cursor: pointer; font-size: 12px; text-transform: uppercase; letter-spacing: .08em; color: var(--muted); font-weight: 600; }
+  details[open] summary { margin-bottom: 10px; }
+  #selfView { position: absolute; right: 14px; bottom: 14px; width: 180px; border-radius: 12px; border: 1px solid var(--line); display: none; }
+  aside { display: flex; flex-direction: column; gap: 14px; overflow: auto; }
+  .card { background: var(--panel); border: 1px solid var(--line); border-radius: 16px; padding: 16px; }
+  .card h2 { font-size: 12px; text-transform: uppercase; letter-spacing: .08em; color: var(--muted); margin: 0 0 10px; font-weight: 600; }
+  input { width: 100%; padding: 10px 12px; border-radius: 10px; border: 1px solid var(--line); background: var(--bg); color: var(--text); font: inherit; }
+  button { font: inherit; font-weight: 600; border: 0; border-radius: 12px; padding: 11px 14px; cursor: pointer; color: white; background: var(--accent); }
+  button.secondary { background: #262c3a; } button.danger { background: var(--red); }
+  button:disabled { opacity: .45; cursor: default; }
+  .row { display: flex; gap: 8px; margin-top: 10px; } .row > * { flex: 1; }
+  #qr { display: grid; place-items: center; background: white; border-radius: 12px; padding: 12px; margin-top: 10px; min-height: 60px; }
+  #qr img { width: 180px; height: 180px; image-rendering: pixelated; }
+  .hint { color: var(--muted); font-size: 13px; margin: 8px 0 0; }
+  meter { width: 100%; height: 10px; margin-top: 10px; }
+  #transcript { list-style: none; margin: 0; padding: 0; max-height: 240px; overflow: auto; font-size: 14px; }
+  #transcript li { padding: 5px 0; border-bottom: 1px solid var(--line); }
+  #transcript li b { font-weight: 700; margin-right: 6px; }
+  #transcript li.expert b { color: var(--accent); }
+  #transcript li.partial { color: var(--muted); font-style: italic; }
+  #log { list-style: none; margin: 0; padding: 0; font-size: 13px; max-height: 220px; overflow: auto; }
+  #log li { padding: 6px 0; border-bottom: 1px solid var(--line); color: var(--muted); }
+  #log li b { color: var(--text); font-weight: 600; }
+  @media (max-width: 900px) { main { grid-template-columns: 1fr; height: auto; } .stage { min-height: 50vh; } }
+</style>
+</head>
+<body>
+<header>
+  <h1>Remote Assist · Technician</h1>
+  <span class="pill"><span class="dot" id="relayDot"></span><span id="relayText">Relay offline</span></span>
+  <span class="pill"><span class="dot" id="phoneDot"></span><span id="phoneText">No phone online</span></span>
+  <span class="spacer"></span>
+  <span class="pill"><span class="dot" id="markerDot"></span><span id="markerText">Marker: unknown</span></span>
+</header>
+
+<main>
+  <section class="stage">
+    <video id="remote" autoplay playsinline></video>
+    <div class="empty" id="empty"><strong>No live view yet</strong>When the phone shows as online, press Call. They tap Accept and you see their camera, live.</div>
+    <div class="badge" id="liveBadge"><span class="dot"></span>Live from the phone</div>
+    <video id="selfView" autoplay playsinline muted></video>
+  </section>
+
+  <aside>
+    <div class="card">
+      <h2>Call</h2>
+      <p class="hint" id="callState" style="margin-top:0">Waiting for a phone to come online.</p>
+      <div class="row">
+        <button id="callBtn" disabled>Call the phone</button>
+        <button id="endBtn" class="danger" disabled>End</button>
+      </div>
+      <div class="row"><button id="muteBtn" class="secondary" disabled>Mute mic</button></div>
+      <label class="hint"><input type="checkbox" id="sendCam" style="width:auto"> Send my webcam too</label>
+      <meter id="level" min="0" max="1" value="0" title="Phone audio level"></meter>
+    </div>
+
+    <div class="card">
+      <h2>Guide them</h2>
+      <div class="tools">
+        <button id="toolPoint" class="on">Point</button>
+        <button id="toolArea">Area</button>
+      </div>
+      <p class="hint" id="toolHint">Click the live video: a pin appears on that spot in the phone's AR view.</p>
+      <input id="tapLabel" placeholder="Label, e.g. this screw" maxlength="40" style="margin-top:10px">
+      <div class="row"><button id="clearPins" class="secondary" disabled>Clear marks</button></div>
+      <p class="hint">On the phone, what you mark is lit and the rest goes dark; if it's off screen, they're told which way to turn.</p>
+    </div>
+
+    <div class="card">
+      <h2>Live transcript</h2>
+      <ul id="transcript"></ul>
+      <p class="hint" id="transcriptNote">Starts when the call connects. ElevenLabs Scribe (live); the key stays on the phone.</p>
+      <p class="hint">Say it and the phone acts: <b>next step</b> · <b>go back</b> · <b>look left / right / up / down</b> · <b>clear the marks</b>.</p>
+    </div>
+
+    <div class="card">
+      <details id="connectCard" open>
+        <summary>Connect a phone</summary>
+        <input id="relayUrl" placeholder="ws://192.168.1.20:8080" spellcheck="false">
+        <div class="row"><button id="connectBtn">Connect</button></div>
+        <p class="hint">Use the address the relay prints (not localhost) so the phone can reach it too.</p>
+        <div id="qr"><span class="hint">QR appears here</span></div>
+        <p class="hint">On the phone: tap the status capsule → Scan the expert's QR code. Once is enough; it remembers.</p>
+      </details>
+    </div>
+
+    <div class="card">
+      <h2>Activity</h2>
+      <ul id="log"></ul>
+    </div>
+  </aside>
+</main>
+
+<script src="vendor/qrcode.js"></script>
+<script>
+// The technician's console. Joins the relay as the expert and runs one WebRTC call with the phone: this page always
+// offers, the phone rings and answers. Relay messages follow contracts/protocol.ts (hello, rtc.signal, presence,
+// step.done, pose). Pointing and the transcript ride the call's own "control" data channel, peer to peer, so they
+// need no relay or contract change. Its messages (x, y are 0..1 of the upright video; latency in seconds):
+//   page → phone: {kind:"ping", t} · {kind:"tap", id, x, y, label, latency}
+//                 {kind:"area", id, x0, y0, x1, y1, label, latency} · {kind:"clear"}
+//                 {kind:"caption"|"transcript", id?, speaker:"expert"|"user", text} · {kind:"stt-token-request", which}
+//   phone → page: {kind:"pong", t} · {kind:"pinned", id, ok} (for a tap or an area)
+//                 {kind:"stt-tokens", expert, phone} · {kind:"stt-token", which, token} · {kind:"stt-off", reason}
+const $ = (id) => document.getElementById(id);
+const STUN = [{ urls: "stun:stun.l.google.com:19302" }];
+// The phone stops ringing by itself after 30 s (the contract has no "cancel"), so this page gives up at the same time.
+const RING_SECONDS = 30;
+let ws, pc, control, mic, pendingCandidates = [], lastPoseLog = 0, meterTimer, pingTimer, ringTimer, rttMs = 150;
+let phoneOnline = false, tool = "point";
+
+$("relayUrl").value = new URLSearchParams(location.search).get("relay") || localStorage.getItem("relayUrl") || "";
+
+// Call is only offered while a phone is there to ring and no call is running.
+function updateCallButton() { $("callBtn").disabled = !(ws?.readyState === WebSocket.OPEN && phoneOnline && !pc); }
+
+// Relay messages are untrusted text, so log lines are built as text nodes, never parsed as HTML.
+function log(text) {
+  const li = document.createElement("li");
+  const time = document.createElement("b");
+  time.textContent = new Date().toLocaleTimeString();
+  li.append(time, " · ", text);
+  $("log").prepend(li);
+}
+function setPill(dot, text, color, label) { $(dot).className = "dot " + color; $(text).textContent = label; }
+function send(message) { if (ws?.readyState === WebSocket.OPEN) ws.send(JSON.stringify(message)); }
+function signal(payload) { send({ type: "rtc.signal", signal: payload }); }
+
+function renderQR(url) {
+  const qr = qrcode(0, "M");
+  qr.addData(url);
+  qr.make();
+  $("qr").innerHTML = qr.createImgTag(6, 8);
+}
+
+function start(url) {
+  if (!/^wss?:\/\//.test(url)) return log("Enter a ws:// address");
+  renderQR(url);
+  connect(url);
+}
+$("connectBtn").onclick = () => start($("relayUrl").value.trim());
+
+// A relay on this machine or the local network, as on the team's hotspot. Only those connect without a click: a link
+// with someone else's ?relay= would otherwise point the console (and, on Call, the technician's mic) at their relay.
+function isLocalRelay(url) {
+  try {
+    const host = new URL(url).hostname;
+    if (host === location.hostname || host === "localhost" || host.endsWith(".local")) return true;
+    // Private ranges only as a literal IPv4 address: a name like 10.example.com is anyone's server.
+    const octets = host.match(/^(\d{1,3})\.(\d{1,3})\.(\d{1,3})\.(\d{1,3})$/)?.slice(1).map(Number);
+    if (!octets || octets.some((n) => n > 255)) return false;
+    const [a, b] = octets;
+    return a === 127 || a === 10 || (a === 192 && b === 168) || (a === 172 && b >= 16 && b <= 31);
+  } catch { return false; }
+}
+// Opened from the dashboard's Call button (?relay=) or used before: connect straight away if it's a local relay;
+// anything else is filled in and waits for Connect (and is only remembered once connected).
+const initialRelay = $("relayUrl").value.trim();
+if (initialRelay && isLocalRelay(initialRelay)) start(initialRelay);
+else if (initialRelay) log("Check the relay address below, then press Connect");
+
+function connect(url) {
+  ws?.close();
+  setPill("relayDot", "relayText", "amber", "Connecting…");
+  ws = new WebSocket(url);
+  ws.onopen = () => {
+    send({ type: "hello", protocol: 1, role: "expert", client: "Expert call page" });
+    // Remembered only once it has really connected.
+    localStorage.setItem("relayUrl", url);
+    setPill("relayDot", "relayText", "green", "Relay connected · " + new URL(url).host);
+    updateCallButton();
+    log("Connected to the relay");
+  };
+  ws.onclose = () => {
+    setPill("relayDot", "relayText", "red", "Relay offline");
+    setPill("phoneDot", "phoneText", "", "No phone online");
+    phoneOnline = false;
+    updateCallButton();
+    // Retry quietly: the relay may be restarting, and the call itself survives a relay blip.
+    setTimeout(() => { if (ws.url === url && ws.readyState === WebSocket.CLOSED) connect(url); }, 2000);
+  };
+  ws.onmessage = (event) => handle(JSON.parse(event.data));
+}
+
+function handle(message) {
+  switch (message.type) {
+    case "presence": {
+      const phone = message.clients.find((c) => c.role === "user");
+      if (phone && !phoneOnline) log(`${phone.client} is online`);
+      phoneOnline = !!phone;
+      setPill("phoneDot", "phoneText", phone ? "green" : "", phone ? "Online: " + phone.client : "No phone online");
+      if (!pc) $("callState").textContent = phone ? "Ready: press Call and they get an incoming call." : "Waiting for a phone to come online.";
+      // Paired: the connect details aren't needed any more, so the call controls get the room.
+      if (phone) $("connectCard").open = false;
+      updateCallButton();
+      break;
+    }
+    case "step.done": log(`Phone finished step ${message.stepId}`); break;
+    case "pose":
+      setPill("markerDot", "markerText", message.markerTracked ? "green" : "amber", message.markerTracked ? "Marker tracked" : "Marker out of view");
+      if (message.t - lastPoseLog > 5000) { lastPoseLog = message.t; log(`Phone camera ${message.camera.p.map((n) => n.toFixed(2)).join(", ")} m from the marker`); }
+      break;
+    case "step.verified": log(`Rig on ${message.stepId}: ${message.ok ? "✓ correct" : "✗ " + (message.detail || "wrong")}`); break;
+    case "rtc.signal": onSignal(message.signal); break;
+    case "error": log(`Relay refused ${message.about || "a message"}: ${message.message}`); break;
+  }
+}
+
+async function onSignal(s) {
+  if (!pc) return;
+  if (s.kind === "answer") {
+    await pc.setRemoteDescription({ type: "answer", sdp: s.sdp });
+    for (const c of pendingCandidates) await pc.addIceCandidate(c);
+    pendingCandidates = [];
+    $("callState").textContent = "Connecting media…";
+  } else if (s.kind === "candidate") {
+    const c = { candidate: s.candidate, sdpMid: s.sdpMid, sdpMLineIndex: s.sdpMLineIndex };
+    if (pc.remoteDescription) await pc.addIceCandidate(c); else pendingCandidates.push(c);
+  }
+}
+
+$("callBtn").onclick = async () => {
+  try {
+    mic = await navigator.mediaDevices.getUserMedia({ audio: { echoCancellation: true, noiseSuppression: true }, video: $("sendCam").checked });
+  } catch (e) {
+    return log("Microphone blocked: " + e.message + " (open the page on http://localhost)");
+  }
+  pc = new RTCPeerConnection({ iceServers: STUN });
+  // The phone ends the call by closing this channel, so both sides hang up at once.
+  control = pc.createDataChannel("control");
+  control.onclose = () => endCall("The phone ended the call");
+  control.onopen = () => {
+    $("clearPins").disabled = false;
+    // Round trips over this channel estimate how old the video frame under the cursor is, so the phone projects a
+    // tap through the camera pose that filmed that frame, not where the phone points now.
+    pingTimer = setInterval(() => sendControl({ kind: "ping", t: performance.now() }), 2000);
+  };
+  control.onmessage = (e) => onControl(JSON.parse(e.data));
+  mic.getTracks().forEach((t) => pc.addTrack(t, mic));
+  if (!$("sendCam").checked) pc.addTransceiver("video", { direction: "recvonly" });
+  if ($("sendCam").checked) { $("selfView").srcObject = mic; $("selfView").style.display = "block"; }
+
+  pc.onicecandidate = (e) => { if (e.candidate) signal({ kind: "candidate", candidate: e.candidate.candidate, sdpMid: e.candidate.sdpMid, sdpMLineIndex: e.candidate.sdpMLineIndex }); };
+  pc.ontrack = (e) => {
+    $("remote").srcObject = e.streams[0] || new MediaStream([e.track]);
+    if (e.track.kind === "video") { $("empty").style.display = "none"; $("liveBadge").style.display = "flex"; document.querySelector(".stage").classList.add("live"); }
+    if (e.track.kind === "audio") startMeter($("remote").srcObject);
+  };
+  pc.onconnectionstatechange = () => {
+    const s = pc?.connectionState;
+    if (s === "connected") {
+      clearTimeout(ringTimer);
+      $("callState").textContent = "In call · you can talk";
+      $("endBtn").textContent = "End";
+      log("Call connected");
+    }
+    if (s === "failed") endCall("Connection failed (are both on the same Wi-Fi?)");
+  };
+
+  const offer = await pc.createOffer();
+  await pc.setLocalDescription(offer);
+  signal({ kind: "offer", sdp: offer.sdp });
+  $("callState").textContent = "Ringing the phone…";
+  $("endBtn").textContent = "Cancel";
+  updateCallButton(); $("endBtn").disabled = false; $("muteBtn").disabled = false;
+  ringTimer = setTimeout(() => { if (pc && pc.connectionState !== "connected") endCall("No answer"); }, RING_SECONDS * 1000);
+  log("Calling the phone");
+};
+
+function sendControl(message) { if (control?.readyState === "open") control.send(JSON.stringify(message)); }
+
+// ---- Live transcript (ElevenLabs Scribe realtime) ----
+// The phone holds the ElevenLabs key and sends single-use tokens over this channel; this page has both voices (its
+// own mic and the phone's audio), so it runs one transcription session per voice and sends the lines back.
+// API: https://elevenlabs.io/docs/api-reference/speech-to-text/v-1-speech-to-text-realtime
+const PCM_WORKLET = `
+class Pcm16 extends AudioWorkletProcessor {
+  process(inputs) {
+    const channel = inputs[0] && inputs[0][0];
+    if (channel) {
+      const out = new Int16Array(channel.length);
+      for (let i = 0; i < channel.length; i++) out[i] = Math.max(-1, Math.min(1, channel[i])) * 0x7fff;
+      this.port.postMessage(out.buffer, [out.buffer]);
+    }
+    return true;
+  }
+}
+registerProcessor("pcm16", Pcm16);`;
+const workletUrl = URL.createObjectURL(new Blob([PCM_WORKLET], { type: "application/javascript" }));
+const scribes = {};
+let lastCaptionAt = 0;
+const scribeRetries = { expert: 0, phone: 0 };
+
+function startScribe(which, token) {
+  scribes[which]?.stop();
+  const stream = which === "expert" ? mic : $("remote").srcObject;
+  const tracks = stream?.getAudioTracks() ?? [];
+  if (!tracks.length) return log(`No ${which === "expert" ? "microphone" : "phone"} audio to transcribe yet`);
+  const speaker = which === "expert" ? "expert" : "user";
+  const url = "wss://api.elevenlabs.io/v1/speech-to-text/realtime?model_id=scribe_v2_realtime&audio_format=pcm_16000&commit_strategy=vad&token=" + encodeURIComponent(token);
+  const ws = new WebSocket(url);
+  const ctx = new AudioContext({ sampleRate: 16000 });
+  let node, pending = [], pendingSamples = 0, stopped = false;
+
+  const flush = () => {
+    if (ws.readyState !== WebSocket.OPEN || !pendingSamples) return;
+    const joined = new Int16Array(pendingSamples);
+    let offset = 0;
+    for (const part of pending) { joined.set(part, offset); offset += part.length; }
+    pending = []; pendingSamples = 0;
+    const bytes = new Uint8Array(joined.buffer);
+    let binary = "";
+    for (let i = 0; i < bytes.length; i++) binary += String.fromCharCode(bytes[i]);
+    ws.send(JSON.stringify({ message_type: "input_audio_chunk", audio_base_64: btoa(binary), commit: false, sample_rate: 16000 }));
+  };
+
+  ctx.audioWorklet.addModule(workletUrl).then(() => {
+    const source = ctx.createMediaStreamSource(new MediaStream(tracks));
+    node = new AudioWorkletNode(ctx, "pcm16");
+    // About 100 ms per message, as the API suggests; silent output keeps the node running without echoing the audio.
+    node.port.onmessage = (e) => { const part = new Int16Array(e.data); pending.push(part); pendingSamples += part.length; if (pendingSamples >= 1600) flush(); };
+    const mute = ctx.createGain(); mute.gain.value = 0;
+    source.connect(node).connect(mute).connect(ctx.destination);
+  });
+
+  ws.onmessage = (event) => {
+    const m = JSON.parse(event.data);
+    if (m.message_type === "partial_transcript" && m.text) {
+      showPartial(speaker, m.text);
+      if (performance.now() - lastCaptionAt > 200) { lastCaptionAt = performance.now(); sendControl({ kind: "caption", speaker, text: m.text }); }
+    } else if (m.message_type === "committed_transcript" && m.text?.trim()) {
+      const line = { kind: "transcript", id: Math.random().toString(36).slice(2) + Date.now().toString(36), speaker, text: m.text.trim(), at: Date.now() };
+      showLine(line);
+      sendControl(line);
+    } else if (m.error) {
+      log(`Transcript (${speaker === "expert" ? "you" : "phone"}): ${m.message_type}: ${m.error}`);
+    }
+  };
+  ws.onopen = () => { scribeRetries[which] = 0; };
+  ws.onclose = () => {
+    // A session ends at its time limit or on a network blip: ask the phone for a fresh token while the call lasts,
+    // backing off, and giving up after six tries (the phone also limits how many tokens it will mint).
+    if (stopped || control?.readyState !== "open") return;
+    const attempt = ++scribeRetries[which];
+    if (attempt > 6) return log(`Transcript stopped for ${which === "expert" ? "you" : "the phone"} after repeated failures`);
+    setTimeout(() => sendControl({ kind: "stt-token-request", which }), Math.min(30000, 1000 * 2 ** attempt));
+  };
+
+  scribes[which] = {
+    stop() { stopped = true; try { ws.close(); } catch {} ctx.close(); },
+  };
+}
+
+function stopScribes() {
+  Object.values(scribes).forEach((s) => s.stop());
+  for (const key of Object.keys(scribes)) delete scribes[key];
+}
+
+function showPartial(speaker, text) {
+  let li = document.querySelector(`#transcript li.partial.${speaker}`);
+  if (!li) { li = document.createElement("li"); li.className = `partial ${speaker}`; $("transcript").append(li); }
+  li.replaceChildren(Object.assign(document.createElement("b"), { textContent: speaker === "expert" ? "You" : "On-site" }), text);
+  $("transcript").scrollTop = $("transcript").scrollHeight;
+}
+
+function showLine(line) {
+  document.querySelector(`#transcript li.partial.${line.speaker}`)?.remove();
+  const li = document.createElement("li");
+  li.className = line.speaker;
+  li.append(Object.assign(document.createElement("b"), { textContent: line.speaker === "expert" ? "You" : "On-site" }), line.text);
+  $("transcript").append(li);
+  $("transcript").scrollTop = $("transcript").scrollHeight;
+}
+
+function onControl(message) {
+  if (message.kind === "stt-tokens") {
+    $("transcriptNote").textContent = "Transcribing live with ElevenLabs.";
+    startScribe("expert", message.expert);
+    // The phone's audio track may arrive a moment after the channel opens.
+    const startPhone = () => { if (!pc) return; $("remote").srcObject?.getAudioTracks().length ? startScribe("phone", message.phone) : setTimeout(startPhone, 500); };
+    startPhone();
+  }
+  if (message.kind === "stt-token") startScribe(message.which, message.token);
+  if (message.kind === "stt-off") $("transcriptNote").textContent = "Transcript off: " + message.reason;
+  if (message.kind === "pong") rttMs = 0.7 * rttMs + 0.3 * (performance.now() - message.t);
+  if (message.kind === "pinned") {
+    const mark = document.getElementById("mark-" + message.id);
+    if (mark) mark.classList.add(message.ok ? "ok" : "miss");
+    log(message.ok ? "Shown on the phone ✓" : "The phone couldn't find a surface there. Try again once it has looked around the desk.");
+  }
+}
+
+// How long ago the frame on screen left the phone: half a round trip plus the receiver's jitter buffer.
+async function frameAgeSeconds() {
+  let buffer = 0.1;
+  try {
+    const stats = await pc.getStats();
+    stats.forEach((r) => {
+      if (r.type === "inbound-rtp" && r.kind === "video" && r.jitterBufferEmittedCount > 0) buffer = r.jitterBufferDelay / r.jitterBufferEmittedCount;
+    });
+  } catch {}
+  return rttMs / 2000 + buffer + 0.03;
+}
+
+// The video is letterboxed (object-fit: contain): where a point on screen falls in the picture itself, 0..1, or null
+// outside it, plus where it is inside the stage, for drawing.
+function inPicture(e) {
+  const video = $("remote");
+  if (!video.videoWidth) return null;
+  const box = video.getBoundingClientRect();
+  const scale = Math.min(box.width / video.videoWidth, box.height / video.videoHeight);
+  const w = video.videoWidth * scale, h = video.videoHeight * scale;
+  const left = box.left + (box.width - w) / 2, top = box.top + (box.height - h) / 2;
+  const x = (e.clientX - left) / w, y = (e.clientY - top) / h;
+  const stage = video.parentElement.getBoundingClientRect();
+  return { x, y, inside: x >= 0 && x <= 1 && y >= 0 && y <= 1, px: e.clientX - stage.left, py: e.clientY - stage.top };
+}
+const callReady = () => pc && control?.readyState === "open";
+const label = () => $("tapLabel").value.trim() || "here";
+const newId = () => Math.random().toString(36).slice(2, 10);
+
+function setTool(name) {
+  tool = name;
+  $("toolPoint").classList.toggle("on", name === "point");
+  $("toolArea").classList.toggle("on", name === "area");
+  document.querySelector(".stage").classList.toggle("area", name === "area");
+  $("toolHint").textContent = name === "point"
+    ? "Click the live video: a pin appears on that spot in the phone's AR view."
+    : "Drag a box on the live video around what they should look at (the laptop, a part).";
+}
+$("toolPoint").onclick = () => setTool("point");
+$("toolArea").onclick = () => setTool("area");
+
+$("remote").addEventListener("click", async (e) => {
+  if (tool !== "point" || !callReady()) return;
+  const at = inPicture(e);
+  if (!at?.inside) return;
+  const id = newId(), text = label();
+  sendControl({ kind: "tap", id, x: at.x, y: at.y, label: text, latency: await frameAgeSeconds() });
+  const dot = document.createElement("div");
+  dot.className = "tapdot";
+  dot.id = "mark-" + id;
+  dot.style.left = at.px + "px";
+  dot.style.top = at.py + "px";
+  dot.append(Object.assign(document.createElement("span"), { textContent: text }));
+  $("remote").parentElement.append(dot);
+  setTimeout(() => dot.remove(), 6000);
+  log(`Pointed at “${text}”`);
+});
+
+// Area: press, drag, release. The latency is taken at the press, when the technician saw what they're boxing.
+let drag = null;
+$("remote").addEventListener("pointerdown", async (e) => {
+  if (tool !== "area" || !callReady()) return;
+  const at = inPicture(e);
+  if (!at?.inside) return;
+  e.preventDefault();
+  $("remote").setPointerCapture(e.pointerId);
+  const box = document.createElement("div");
+  box.className = "areabox";
+  $("remote").parentElement.append(box);
+  // Kept locally: the release can come before the estimate does.
+  const current = { start: at, box, latency: 0.15 };
+  drag = current;
+  current.latency = await frameAgeSeconds();
+});
+$("remote").addEventListener("pointermove", (e) => {
+  if (!drag) return;
+  const at = inPicture(e);
+  if (!at) return;
+  const { start, box } = drag;
+  Object.assign(box.style, {
+    left: Math.min(start.px, at.px) + "px", top: Math.min(start.py, at.py) + "px",
+    width: Math.abs(at.px - start.px) + "px", height: Math.abs(at.py - start.py) + "px",
+  });
+});
+$("remote").addEventListener("pointerup", (e) => {
+  if (!drag) return;
+  const { start, box, latency } = drag;
+  drag = null;
+  const at = inPicture(e);
+  if (!at) return box.remove();
+  const clamp = (v) => Math.min(1, Math.max(0, v));
+  const x0 = clamp(Math.min(start.x, at.x)), x1 = clamp(Math.max(start.x, at.x));
+  const y0 = clamp(Math.min(start.y, at.y)), y1 = clamp(Math.max(start.y, at.y));
+  // A box smaller than a fingertip was probably a click: nothing to light up.
+  if (x1 - x0 < 0.03 || y1 - y0 < 0.03) return box.remove();
+  const id = newId(), text = label();
+  box.id = "mark-" + id;
+  box.append(Object.assign(document.createElement("span"), { textContent: text }));
+  sendControl({ kind: "area", id, x0, y0, x1, y1, label: text, latency });
+  // One thing at a time, as on the phone: a new area replaces the old marks.
+  document.querySelectorAll(".tapdot, .areabox").forEach((m) => { if (m !== box) m.remove(); });
+  setTimeout(() => box.remove(), 6000);
+  log(`Marked an area: “${text}”`);
+});
+
+$("clearPins").onclick = () => {
+  sendControl({ kind: "clear" });
+  document.querySelectorAll(".tapdot, .areabox").forEach((d) => d.remove());
+  log("Cleared the marks on the phone");
+};
+
+$("endBtn").onclick = () => endCall("You ended the call");
+$("muteBtn").onclick = () => {
+  const track = mic?.getAudioTracks()[0];
+  if (!track) return;
+  track.enabled = !track.enabled;
+  $("muteBtn").textContent = track.enabled ? "Mute mic" : "Unmute mic";
+};
+
+function startMeter(stream) {
+  const ctx = new AudioContext();
+  const analyser = ctx.createAnalyser();
+  ctx.createMediaStreamSource(stream).connect(analyser);
+  const data = new Uint8Array(analyser.fftSize);
+  clearInterval(meterTimer);
+  meterTimer = setInterval(() => {
+    analyser.getByteTimeDomainData(data);
+    let peak = 0;
+    for (const v of data) peak = Math.max(peak, Math.abs(v - 128) / 128);
+    $("level").value = peak;
+  }, 100);
+}
+
+function endCall(reason) {
+  if (!pc) return;
+  try { control?.close(); } catch {}
+  clearInterval(pingTimer); clearTimeout(ringTimer); $("clearPins").disabled = true;
+  stopScribes(); scribeRetries.expert = scribeRetries.phone = 0;
+  document.querySelector(".stage").classList.remove("live");
+  document.querySelectorAll(".tapdot, .areabox").forEach((d) => d.remove());
+  drag = null;
+  pc.close(); pc = null; control = null; pendingCandidates = [];
+  mic?.getTracks().forEach((t) => t.stop()); mic = null;
+  clearInterval(meterTimer); $("level").value = 0;
+  $("remote").srcObject = null; $("selfView").style.display = "none";
+  $("empty").style.display = "block"; $("liveBadge").style.display = "none";
+  updateCallButton(); $("endBtn").disabled = true; $("endBtn").textContent = "End"; $("muteBtn").disabled = true;
+  $("muteBtn").textContent = "Mute mic";
+  $("callState").textContent = phoneOnline ? "Ready: press Call and they get an incoming call." : "Waiting for a phone to come online.";
+  log(reason);
+}
+</script>
+</body>
+</html>

@@ -867,3 +867,76 @@ each builder's brief (`builder-file-<name>.md`, on the `context` branch).
 - 📨 To @ahmed: nothing for you. The Spark isn't in the live demo path, and no contract changes.
 - ⚠️ Conflicts: none
 - Conflict status: n/a
+
+### 2026-11-15 05:07 — the rig checks the SSD on real hardware — @ahmed
+- Shipped: no code change. Ahmed at the board: with the sticker on the SSD, the Nicla Vision reports `ssd-bay`, the
+  UNO Q app shows it, and the take-out and put-back checks work through the relay on Max's laptop (driven by
+  `fixtures/fake-expert.ts --step`, a test tool). The script's example colour (bright green) and region fitted
+  unchanged, so `hardware/nicla/main.py` on `main` is what's on the board. Not yet done with the real phone and the
+  real guide. The Nicla can't lock white balance: if the table's light changes, re-run the Threshold Editor.
+- Touched: on `context`: `builder-file-ahmed.md`, `PROJECT.md` (F12)
+- 📨 To @max: the Rig light and the strip's ✓ / ✗ now have a real rig behind them; say if they misbehave.
+- 📨 To @laura: the Nicla's view must stay as it is now; tell Ahmed before moving the table, the laptop or the lamp.
+- ⚠️ Conflicts: none
+- Conflict status: resolved by @ahmed 2026-11-15
+
+### 2026-11-15 05:24 — Pixal3D runs on the Spark; first prop: the screwdriver — @max
+- Shipped: no repo code. Pixal3D built in `~/pixal3d` on the Spark in 22 min (three fixes; ledger § 19 "Measured on
+  our Spark"). From one phone photo of our #0 screwdriver it made a textured 3D model in 136–247 s, scaled to the
+  real 164 mm, bit at the origin, handle up +Y (Laura's model conventions), about 99k faces, 2048² texture, 3.8 MB.
+  It shows correctly in the dashboard. The back of the handle is the AI's guess. A second seed removed a stray fin
+  the first one had. SSD photo next.
+- Touched: on `context`: `research/ledger.md` § 19 (measured results), `builder-file-max.md` (task C status). On the
+  Spark: `~/pixal3d` only. Nothing in the repo; test files were kept out of git.
+- 📨 To @laura: your `assets/models/screwdriver` is untouched. Max will ask you whether an AI-made one should show
+  anywhere next to or instead of yours; it's far heavier (3.8 MB, textured) than your under-7 KB orange models.
+- 📨 To @salman: nothing yet; the phone keeps Laura's models.
+- 📨 To @ahmed: nothing for you.
+- ⚠️ Conflicts: @laura — a possible future change to how the `screwdriver` model looks; nothing changed yet
+- Conflict status: open
+
+### 2026-11-15 07:37 — the last stretch: why boxes hover, and the demo's shape — @ahmed
+- Shipped: no code. Ahmed reports the phone works and a guide sent from the dashboard reaches it. **Boxes hover
+  above the laptop because no guide has real positions:** the only scan on `main` has no marker, so nothing can be
+  calibrated or placed in it, and `fixtures/ssd-swap-guide.json` has placeholders. Each brief has a "last stretch"
+  block on top.
+- Touched: on `context`: the four briefs, `PROJECT.md` (Decisions in force)
+- Decision (Ahmed): rescan twice with the marker in view and place parts by clicking in the scan, with a top-down
+  ruler photo as the fallback; bigger animations (pull / push 4 cm, unscrew two turns rising 15 mm), no message
+  change; the demo is "expert builds, user follows"; #11 on `main` is the demo build.
+- Beat sheet draft (under 5 min): problem 0:30 · expert clicks a screw, picks unscrew, sends 0:45 · it lands on the
+  real screw 0:30 · taps and ticks 0:30 · phone Wi-Fi off, keeps going, syncs 0:45 · SSD out, the rig's ✓ 0:30 · call
+  with tap-to-point 0:30 · extras 0:30 · what's real 0:30.
+- 📨 To @max @laura: rescan now, closed then cover off, marker fully in view; ruler photos at the same time. Then
+  build the guide in the scan. Ahmed's laptop is the prop from then on, so Max is the docs owner on duty.
+- 📨 To @salman: bigger animations in `Shapes.animate`, check and merge PR #12, and be at the table for the first
+  real run with the expert's guide.
+- ⚠️ Conflicts: @salman — one post-freeze change asked of the phone | @max — the preview must match it
+- Conflict status: open
+
+### 2026-11-15 07:38 — correction: what the animations really do on main — @ahmed
+- Shipped: no code. My 07:37 entry gave the phone's current animation sizes from an old branch. Read from `main`
+  (`ios/RemoteAssist/AR/Shapes.swift`, `dashboard/src/scene/preview.ts`): `unscrew` on the phone only spins the
+  screw in place, which a round screw barely shows; `pull` / `push` slide 2 cm and come back, so they read as a
+  wobble; the dashboard preview moves differently (3 cm, two turns rising 5 mm). The corrected spec is in Salman's
+  and Max's briefs: unscrew rises 15 mm over two turns, pull / push go 4 cm one way, loops restart, objects start
+  0.15 s apart, and on the phone a pulsing ring, thicker box lines and a bigger label.
+- Touched: on `context`: `builder-file-salman.md`, `builder-file-max.md`
+- ⚠️ Conflicts: @salman @max — the spec in their briefs changed
+- Conflict status: open
+
+### 2026-11-15 07:40 — a check of main from the code itself — @ahmed
+- Shipped: no code. Run on `main` on Ahmed's laptop: relay 42/42 and type-check; dashboard 54/54, type-check and
+  build; rig 13/13. The model tests didn't run here (`usd-core` isn't installed on this laptop). Swift not compiled.
+- Found by reading the code:
+  - **The phone starts on the bundled SAMPLE guide** (`RemoteAssistApp.swift:18`, `fixtures/sample-guide.json`),
+    whose positions are invented, so its boxes float wherever they fall. Only a guide sent by the dashboard
+    replaces it (`ContentView.swift:343`).
+  - **"Add at marker" puts a new object at the marker's centre** (`GuidePanel.tsx:225`) until a position is typed,
+    and "Place on scan" can't work yet: `dashboard/public/scans/` still has only the scan with no marker.
+  - The phone scales the guide by ARKit's size estimate of the marker (`ARSessionController.swift:200`, `889`).
+  - The root `README.md` is still the team-kit README; the judges' version is a draft in `docs/`.
+  - The dashboard's Call button expects Salman's page on port 8000 of the dashboard laptop (`App.tsx:20`).
+- 📨 To @laura: swap the judges' README in before submitting. 📨 To @max: the rescans are what unblock placing.
+- ⚠️ Conflicts: none
+- Conflict status: n/a
