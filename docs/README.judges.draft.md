@@ -169,6 +169,5 @@ DurHack asks for AI tools to be credited explicitly. We used:
 - **Claude (Anthropic API)**, inside the product: it suggests labels for parts in a snapshot of the scan, so the
   expert can find a part by name. Labels are marked as made by AI, never reach the phone, and the expert can fix or
   delete each one.
-- **Gemini (Google)** and **ElevenLabs**, inside the iPhone app as optional extras: a step-by-step assistant and a
-  spoken voice. Their steps are AI-generated and labelled so on the phone. _TODO: confirm with Salman they're in the
-  demo build._
+- **ElevenLabs**, inside the iPhone app as an optional spoken voice. _TODO: keep this line only if ElevenLabs is in the
+  demo build (ask Salman); otherwise delete it._
