@@ -1042,3 +1042,27 @@ each builder's brief (`builder-file-<name>.md`, on the `context` branch).
 - Touched: `docs/README.judges.draft.md`
 - ⚠️ Conflicts: none
 - Conflict status: resolved by @laura 2026-11-15
+
+### 2026-11-15 11:04 — a full test run on Laura's laptop: what works, and two things to fix — @laura
+- Shipped: README draft now titled **Sonic Assist**. Tested everything else on `main` (`b327dea`) with a relay on its
+  own `--state` file, the dashboard, `fixtures/fake-phone.ts` and the rig's `main.py` fed Nicla lines on stdin.
+- All green: relay 42/42 + type-check · dashboard 54/54 + type-check + build · models 7/7 · rig 13/13. No console
+  errors in the dashboard at any point.
+- Works end to end: the scan loads; calibration refuses bad clicks ("off by 17.6 mm, the limit is 5 mm"); "Open a guide
+  file…" loads `fixtures/ssd-swap-guide.json`; Send reaches the phone; the phone drops offline mid-guide, queues 2
+  taps, reconnects and every step ticks; Jump + the rig give **✓ checked** on "Slide the SSD out" live.
+- **Problem 1 (rig):** a rig that connects *after* steps were already tapped gets every past `step.done` replayed,
+  counts past the end of the guide, and never verifies a step the expert jumps back to (`Rig.on_relay`, step.done
+  branch). Reproduced: rig started after a full run → no verdict on s8. Started first, it works. Restarting the
+  UNO Q mid-demo would hit this.
+- **Problem 2 (name):** the project is Sonic Assist (`team.conf`), but judges see **"Remote Assist"** in the dashboard
+  header and tab (`dashboard/src/shell/Header.tsx`, `dashboard/index.html`) and on the iPhone app's screens
+  (`HomeView.swift`, `Onboarding.swift`, `SystemCheck.swift`, `Info.plist`, …).
+- Not tested here: the real iPhone, the video call, AI labels (costs money), and calibration on a scan with the
+  marker (the two new scans aren't on `main`).
+- Touched: `docs/README.judges.draft.md`
+- 📨 To @ahmed: problem 1 is in `hardware/unoq/python/rig.py`; simplest guard is to start the rig before the run, or
+  have it ignore replayed `step.done` until the relay's current `step.set` arrives.
+- 📨 To @max: rename the dashboard header and tab. 📨 To @salman: rename the app's visible text, if there's time.
+- ⚠️ Conflicts: @ahmed @max @salman — reported in their files; I changed none of them
+- Conflict status: open
