@@ -25,6 +25,7 @@ The one research file for this project (`research-ledger` skill). Every source g
 | 15 | Phone → DGX Spark → mesh back on the phone (2026-11-14) | ARKit camera positions, upload, USDZ/GLB conversion |
 | 16 | App Lab app layout and the UNO Q's LED matrix over the Bridge (2026-11-15) | Packaging the rig; drawing ✓ / ✗ |
 | 17 | Swapping the SSD on a Dell Latitude 5530 (2026-11-15) | The demo guide's real steps, screw counts and tools |
+| 18 | One photo of an object → AI-made 3D model on the DGX Spark (2026-11-15) | TRELLIS.2 / Hunyuan3D / SAM 3D vs the scan routes; props like the SSD or screwdriver |
 
 ---
 
@@ -1201,3 +1202,71 @@ guide is final.
   but it is a mirror of [3]–[5], not an independent source.
 ### DO NOT USE
 - _(none)_
+
+# § 18 One photo of an object → AI-made 3D model on the DGX Spark (2026-11-15)
+**Question:** can the DGX Spark turn a few pictures of a thing into a 3D model with the new generative image-to-3D
+models (TRELLIS.2, Hunyuan3D 2.1, SAM 3D Objects), how long does it take, and how does that differ from the scan
+routes in § 9, § 12, § 14 and § 15? Asked by Max at 03:40.
+
+**How this pass was done:** about 10 minutes by Max's agent: two web searches, four pages opened. Community view from
+the NVIDIA developer forums only; Reddit and Hacker News not tried. Most numbers have one source; treat them as
+estimates.
+
+## Findings
+### Two different jobs
+- **Scan routes (§ 9, § 12, § 14):** 100s of photos or a video of the real set → a measured copy (splat or mesh).
+  Slow (hours), but the shape is real and the marker scales it.
+- **Generative routes (this section):** one photo of one object → the model *guesses* a full textured 3D model,
+  including the sides it never saw. Fast per object, but the shape is invented and has no real-world size (our
+  reading: one photo carries no scale). Useless for the set we calibrate against; fits small props (the M.2 2280
+  SSD, the #0 screwdriver from § 17) scaled by hand to a known size.
+### What runs on the Spark
+- **TRELLIS.2 (Microsoft) runs on the Spark through community ports:** a DGX OS fork with a `setup.sh` [1], and a
+  Docker route someone used end to end with GLB export [2]; an NVIDIA forum thread points to the fork [4]. Output is
+  a textured GLB mesh (base colour, roughness, metallic) [1]. Needs about 24 GB GPU memory upstream [1]; the Spark's
+  128 GB shared memory covers it.
+- **Speed on the Spark: not published for TRELLIS.2.** H100 times are about 3 s / 17 s / 60 s for 512³ / 1024³ /
+  1536³ [1]; the Spark is a much smaller GPU, so expect slower (no number).
+- **Hunyuan3D 2.1 (Tencent) on the Spark, textured:** "about 170 seconds" per model from the thread's author; a
+  second user saw 1200 s at first, later 190 s [3]. Docker fork; `bpy` and permission errors fixed by rebuilding [3].
+- **SAM 3D Objects (Meta):** no Spark or ARM report found. About 9–12 s per object on a desktop RTX card and 32 GB
+  GPU memory asked for officially (search snippets only) [W3].
+### Setup cost on ARM
+- **Hours, mostly waiting:** FlashAttention has to compile from source on ARM, "which takes a long time" [1]; one
+  person's whole Docker setup took "about 2 hours" including the model download [2]; a Pixal3D report had two such
+  builds take about 73 minutes [W2]. Model weights need an approved Hugging Face login (dinov3, RMBG-2.0) [1].
+### Into our app
+- The dashboard already loads GLB (mesh scans). The phone needs USDZ with a UV texture; the GLB → USDZ step is in
+  § 15 (usd-core on aarch64 + a small script).
+
+## Community consensus
+NVIDIA forum users run TRELLIS.2 and Hunyuan3D 2.1 on the Spark through Docker forks; nothing works out of the box,
+and the build is the painful part [3], [4]. Generated textured models take minutes each on the Spark [3]. No
+contrasting report found; the forums are a thin sample.
+
+## Final call (professional + community)
+Not a replacement for the scan: a generated model is a guess with no scale, so it can't be calibrated or clicked to
+the centimetre. It can make clean, textured props (the SSD, the screwdriver) for the guide, as a stand-in for fuzzy
+splat cut-outs. Budget about 2 h of unattended setup, then minutes per object; nothing measured on our Spark. Label
+it "AI-generated from a photo" wherever it shows, and scale it from the part's real size.
+
+## Source ledger
+### KEEP
+- [1] raziel2001au/dgx-trellis2 README (DGX OS fork of TRELLIS.2), GitHub, https://github.com/raziel2001au/dgx-trellis2:
+  setup steps, FlashAttention compiled from source, ≥24 GB, H100 timings, textured GLB output
+- [2] npaka, "Trying out 3D model generation with Trellis.2 on DGX Spark", note.com, 2026-05-31 (auto-translated),
+  https://note.com/npaka/n/n344aae232ac0?hl=en: Docker route works on the Spark, about 2 h setup, GLB export
+- [3] NVIDIA Developer Forums, "DGX Spark + Hunyuan3d 2.1", 2025-12-01 to 2026-02-02,
+  https://forums.developer.nvidia.com/t/dgx-spark-hunyuan3d-2-1/353211: about 170 s / 190 s per textured model,
+  Docker fork, build errors and fixes
+- [4] NVIDIA Developer Forums, "TRELLIS.2 on DGX Spark", 2025-12-27,
+  https://forums.developer.nvidia.com/t/trellis-2-on-dgx-spark/355816: points to [1]
+### WEAK
+- [W1] Hunyuan3D-2.1 README (search snippet: 10 GB shape, 21 GB texture, 29 GB both), https://github.com/tencent-hunyuan/hunyuan3d-2.1
+- [W2] MindrLabs Pixal3D on DGX Spark (search snippet: flash-attn + natten built from source, about 73 min),
+  https://github.com/MindrLabs/image-to-3d-pixal3d
+- [W3] SAM 3D Objects timings and memory (search snippets: Fast-SAM3D arXiv 2602.05293; lab-robot benchmark arXiv
+  2608.26383; official 32 GB), https://arxiv.org/abs/2602.05293
+- [W4] halldm2000/image-to-3d, a multi-backend wrapper said to target the Spark (snippet only), https://github.com/halldm2000/image-to-3d
+### DO NOT USE
+- Any "seconds per model" claim for the Spark: the second figures are H100 or desktop-card numbers ([1], [W3]).
