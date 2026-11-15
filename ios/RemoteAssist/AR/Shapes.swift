@@ -43,7 +43,7 @@ enum Shapes {
     let root = Entity()
     let fill = ModelEntity(
       mesh: .generateBox(size: size),
-      materials: [UnlitMaterial(color: UIColor.systemYellow.withAlphaComponent(0.18))]
+      materials: [UnlitMaterial(color: Theme.accentUI.withAlphaComponent(0.18))]
     )
     root.addChild(fill)
 
@@ -54,7 +54,7 @@ enum Shapes {
     ]
     let edges = [(0, 1), (1, 2), (2, 3), (3, 0), (4, 5), (5, 6), (6, 7), (7, 4), (0, 4), (1, 5), (2, 6), (3, 7)]
     for (a, b) in edges {
-      root.addChild(bar(from: corners[a], to: corners[b], thickness: 0.0012, color: .systemYellow))
+      root.addChild(bar(from: corners[a], to: corners[b], thickness: 0.0012, color: Theme.accentUI))
     }
     return root
   }
@@ -156,9 +156,9 @@ enum Shapes {
 
     var color: UIColor {
       switch self {
-      case .ai: .systemTeal
-      case .expert: .systemOrange
-      case .refit: .systemYellow
+      case .ai: Theme.accentUI
+      case .expert: .white
+      case .refit: Theme.accentSoftUI
       }
     }
   }
@@ -220,7 +220,7 @@ enum Shapes {
     // Both windings, so it shows whichever side the camera is on.
     descriptor.primitives = .triangles([0, 1, 2, 0, 2, 3, 0, 2, 1, 0, 3, 2])
     if let mesh = try? MeshResource.generate(from: [descriptor]) {
-      let fill = ModelEntity(mesh: mesh, materials: [UnlitMaterial(color: UIColor.systemTeal.withAlphaComponent(0.22))])
+      let fill = ModelEntity(mesh: mesh, materials: [UnlitMaterial(color: Theme.accentUI.withAlphaComponent(0.22))])
       root.addChild(fill)
       if let animation = try? AnimationResource.generate(with: FromToByAnimation<Float>(
         from: 0.45, to: 1, duration: 1.1, timing: .easeInOut, bindTarget: .opacity, repeatMode: .autoReverse
@@ -230,7 +230,7 @@ enum Shapes {
       }
     }
     for i in 0..<4 {
-      root.addChild(bar(from: lifted[i], to: lifted[(i + 1) % 4], thickness: 0.0025, color: .systemTeal))
+      root.addChild(bar(from: lifted[i], to: lifted[(i + 1) % 4], thickness: 0.0025, color: Theme.accentUI))
     }
     let centre = lifted.reduce(.zero, +) / 4
     let tag = label(text, size: 0.013)

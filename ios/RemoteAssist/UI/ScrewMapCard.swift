@@ -35,7 +35,7 @@ struct ScrewMapCard: View {
                       .font(.caption2.weight(.heavy))
                       .foregroundStyle(.black)
                       .frame(width: 20, height: 20)
-                      .background(entry.note == nil ? Color.yellow : Color.orange, in: Circle())
+                      .background(entry.note == nil ? Color.white : Theme.accentSoft, in: Circle())
                       .position(x: point.x * proxy.size.width, y: point.y * proxy.size.height)
                   }
                 }

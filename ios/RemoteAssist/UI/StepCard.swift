@@ -39,7 +39,7 @@ struct StepCard: View {
             if let heard = handsFree.heard {
               Text("“\(heard)”")
                 .font(.caption.weight(.semibold))
-                .foregroundStyle(Color.accentColor)
+                .foregroundStyle(Theme.accent)
                 .transition(.opacity.combined(with: .scale))
             }
             Button(action: onToggleHandsFree) {
@@ -49,7 +49,7 @@ struct StepCard: View {
                 .symbolEffect(.pulse, isActive: handsFree.on)
             }
             .buttonStyle(.plain)
-            .foregroundStyle(handsFree.on ? Color.accentColor : .secondary)
+            .foregroundStyle(handsFree.on ? Theme.accent : .secondary)
             .accessibilityLabel(handsFree.on ? "Stop hands-free commands" : "Hands-free: say next, back, check my work")
             Button {
               voiceOn.toggle()
@@ -59,7 +59,7 @@ struct StepCard: View {
                 .frame(width: 32, height: 32)
             }
             .buttonStyle(.plain)
-            .foregroundStyle(voiceOn ? Color.accentColor : .secondary)
+            .foregroundStyle(voiceOn ? Theme.accent : .secondary)
             .accessibilityLabel(voiceOn ? "Stop reading steps aloud" : "Read steps aloud")
           }
           Text(step.text)
@@ -83,7 +83,7 @@ struct StepCard: View {
         if let pinProgress {
           HStack(spacing: 8) {
             Image(systemName: pinProgress.done == pinProgress.total ? "checkmark.circle.fill" : "hand.tap.fill")
-              .foregroundStyle(pinProgress.done == pinProgress.total ? .green : .accentColor)
+              .foregroundStyle(pinProgress.done == pinProgress.total ? Color.green : Theme.accent)
             Text(pinProgress.done == pinProgress.total
               ? "All \(pinProgress.total) \(pinProgress.verb). Tap Done."
               : "\(pinProgress.done) of \(pinProgress.total) \(pinProgress.verb) · tap each pin as you go")
@@ -157,7 +157,7 @@ private struct ProgressSegments: View {
     HStack(spacing: 4) {
       ForEach(steps.indices, id: \.self) { i in
         Capsule()
-          .fill(i == current ? Color.accentColor : (done.contains(steps[i].id) ? Color.green : Color.secondary.opacity(0.3)))
+          .fill(i == current ? Theme.accent : (done.contains(steps[i].id) ? Color.white : Color.secondary.opacity(0.3)))
           .frame(height: 5)
       }
     }

@@ -149,7 +149,7 @@ struct SpotlightOverlay: View {
     let point = Self.edgePoint(direction, in: size)
     let angle = Angle(radians: atan2(direction.dy, direction.dx))
     return ZStack {
-      RadialGradient(colors: [Color.accentColor.opacity(0.75), .clear], center: .center, startRadius: 0, endRadius: 170)
+      RadialGradient(colors: [Theme.accent.opacity(0.75), .clear], center: .center, startRadius: 0, endRadius: 170)
         .frame(width: 340, height: 340)
         .position(point)
         .blendMode(.screen)
