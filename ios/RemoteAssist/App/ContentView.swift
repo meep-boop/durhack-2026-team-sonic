@@ -95,6 +95,11 @@ struct ContentView: View {
 
         Spacer()
 
+        if isAIGuide, currentPhase == "refit", !screwMemory.isEmpty {
+          ScrewMapCard(memory: screwMemory)
+            .transition(.move(edge: .bottom).combined(with: .opacity))
+        }
+
         StepCard(
           player: player,
           canAdvance: ar.markerSeen || isAIGuide,
@@ -329,7 +334,9 @@ struct ContentView: View {
           camera: snapshot.camera
         )
         lastLocate = (snapshot, located)
-        if placed > 0 {
+        if placed > 0, currentPhase == "remove" {
+          pinMessage = "Found \(placed). Tap each as it comes out, and lay the screws down in order 1 to \(placed)."
+        } else if placed > 0 {
           pinMessage = "Found \(placed) × \(target). Tap each one as you go."
         } else if located.focus != nil {
           pinMessage = "Work in the highlighted area"
