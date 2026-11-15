@@ -4,7 +4,7 @@ import unittest
 
 from rig import Rig, judge, parse_seen
 
-SAMPLE = json.loads((pathlib.Path(__file__).parents[2] / "fixtures" / "sample-guide.json").read_text(encoding="utf-8"))
+SAMPLE = json.loads((pathlib.Path(__file__).parents[3] / "fixtures" / "sample-guide.json").read_text(encoding="utf-8"))
 GUIDE_ID = SAMPLE["id"]
 IN_BAY = [{"region": "ssd-bay", "present": True}]
 OUT_OF_BAY = [{"region": "ssd-bay", "present": False}]
