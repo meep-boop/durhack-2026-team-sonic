@@ -9,7 +9,7 @@ struct HomeView: View {
 
   var body: some View {
     ZStack {
-      if !CameraLab.overlaysOff { Color.black.opacity(0.55).ignoresSafeArea() }
+      Color.black.opacity(0.55).ignoresSafeArea()
 
       VStack(alignment: .leading, spacing: 16) {
         Spacer()

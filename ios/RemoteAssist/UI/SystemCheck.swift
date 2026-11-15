@@ -13,29 +13,9 @@ struct SystemCheckSection: View {
   }
 
   @State private var eleven: Status = .idle
-  @State private var labDelegate = CameraLab.delegateOffMain
-  @State private var labPlanes = CameraLab.planesAlways
-  @State private var labOverlays = CameraLab.overlaysOff
 
   var body: some View {
     checks
-    cameraLab
-  }
-
-  /// Only for chasing a frozen camera: each switch brings back one thing from the build where it froze.
-  private var cameraLab: some View {
-    Section {
-      Toggle("AR updates off the main thread", isOn: $labDelegate)
-        .onChange(of: labDelegate) { CameraLab.delegateOffMain = labDelegate }
-      Toggle("Surface detection always on", isOn: $labPlanes)
-        .onChange(of: labPlanes) { CameraLab.planesAlways = labPlanes }
-      Toggle("No spotlight or dimming", isOn: $labOverlays)
-        .onChange(of: labOverlays) { CameraLab.overlaysOff = labOverlays }
-    } header: {
-      Text("Camera lab")
-    } footer: {
-      Text("Leave these off. If the camera ever freezes, turn one on, close and reopen the app, and send the log. It starts with \"lab:\" so we can see which one does it.")
-    }
   }
 
   private var checks: some View {
@@ -55,7 +35,7 @@ struct SystemCheckSection: View {
       Toggle(isOn: $handsInFront) {
         VStack(alignment: .leading, spacing: 2) {
           Text("Hands in front of the guide")
-          Text("Your hands hide the 3D parts, like real objects. Uses a lot more battery and GPU, and can freeze the camera when switched: if it does, tap Restart camera or reopen the app.")
+          Text("Your hands hide the 3D parts, like real objects. Uses a lot more battery and GPU.")
             .font(.footnote).foregroundStyle(.secondary)
         }
       }

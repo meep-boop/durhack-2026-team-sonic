@@ -6,7 +6,6 @@ struct ARViewContainer: UIViewRepresentable {
   /// SwiftUI owns the host; the controller owns the AR view inside it and may replace it at any time.
   func makeUIView(context: Context) -> CameraHost {
     let host = CameraHost()
-    host.backgroundColor = .black
     controller.attach(to: host)
     return host
   }

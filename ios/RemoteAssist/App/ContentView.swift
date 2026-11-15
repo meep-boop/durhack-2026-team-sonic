@@ -89,7 +89,7 @@ struct ContentView: View {
   /// bottom: never both, and at most one line of extra information.
   private var guideScreen: some View {
     ZStack {
-      if !CameraLab.overlaysOff { SpotlightOverlay(tracker: spotlight) }
+      SpotlightOverlay(tracker: spotlight)
 
       if !ar.markerSeen && !isLaptopGuide && player.currentStep != nil {
         FindMarkerHint().transition(.opacity)
@@ -283,7 +283,7 @@ struct ContentView: View {
     ar.step = player.currentStep
     ar.onPinToggled = { pin in pinToggled(pin) }
     ar.onSurfaceTap = { position, normal in surfaceTapped(position, normal) }
-    if !CameraLab.overlaysOff { spotlight.start(ar) }
+    spotlight.start(ar)
     ar.onPose = { [relay] pose in relay.sendPose(pose) }
     // Runs on the AR session queue; the source checks its own thread-safe switch, set by CallManager.
     ar.onCameraFrame = { [videoSource = call.videoSource] buffer, time in
@@ -331,7 +331,7 @@ struct ContentView: View {
       call.setBackgrounded(true)
     case .active:
       updateListening()
-      if !CameraLab.overlaysOff { spotlight.start(ar) }
+      spotlight.start(ar)
       call.setBackgrounded(false)
       if onboarded { ar.resume() }
       relay.appBecameActive()
