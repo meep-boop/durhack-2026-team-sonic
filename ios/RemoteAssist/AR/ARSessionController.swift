@@ -20,6 +20,29 @@ final class ARSessionController: NSObject, ARSessionDelegate {
   /// True while the marker was found once but isn't visible right now, for long enough to be worth saying.
   private(set) var markerLostForAWhile = false
 
+  /// A pin on the real surface: from the AI, from the expert tapping the video, or a screw going back in.
+  struct PinInfo: Identifiable, Equatable {
+    let id: UUID
+    let number: Int
+    let label: String
+    let kind: Shapes.PinKind
+    var done: Bool
+    /// Where it stands in the world (+Y is the surface normal), kept for screw memory.
+    let transform: simd_float4x4
+    /// Where it was in the photo it came from, for the screw map.
+    let photoPoint: UprightPoint?
+    var position: SIMD3<Float> { SIMD3(transform.columns.3.x, transform.columns.3.y, transform.columns.3.z) }
+  }
+
+  private(set) var pins: [PinInfo] = []
+  private(set) var hasFocusArea = false
+  /// Set while the ghost screwdriver should show on the next pin: the way to turn, or nil to hide it.
+  var ghostTurnsAnticlockwise: Bool? {
+    didSet { if ghostTurnsAnticlockwise != oldValue { updateGhost(rebuild: true) } }
+  }
+  /// Called on main when the user taps a pin to tick or untick it.
+  @ObservationIgnored var onPinToggled: ((PinInfo) -> Void)?
+
   /// The step being shown. Drawn as soon as the marker is found, and redrawn when it changes.
   var step: Step? {
     didSet { if step != oldValue { renderStep() } }
@@ -45,7 +68,12 @@ final class ARSessionController: NSObject, ARSessionDelegate {
   @ObservationIgnored private var configuration: ARWorldTrackingConfiguration?
   @ObservationIgnored private var isRunning = false
   @ObservationIgnored private let coaching = ARCoachingOverlayView()
-  @ObservationIgnored private var pinAnchors: [AnchorEntity] = []
+  @ObservationIgnored private var pinEntities: [UUID: (anchor: AnchorEntity, arAnchor: ARAnchor, entity: Entity)] = [:]
+  @ObservationIgnored private var focusAnchor: AnchorEntity?
+  @ObservationIgnored private var focusCorners: [SIMD3<Float>] = []
+  @ObservationIgnored private var focusLabel = ""
+  @ObservationIgnored private var ghost: Entity?
+  @ObservationIgnored private var ghostPinId: UUID?
   @ObservationIgnored private let imageContext = CIContext()
   @ObservationIgnored private var glideEndsAt: Date = .distantPast
   @ObservationIgnored private var lostTimer: Task<Void, Never>?
@@ -63,6 +91,9 @@ final class ARSessionController: NSObject, ARSessionDelegate {
     /// The newest marker state waiting for main, and whether a hop to main is already queued.
     var pending: MarkerSample?
     var hopQueued = false
+    /// The last ~2.5 s of camera poses, so an expert's tap on a video frame that left the phone a moment ago is
+    /// projected through the camera that filmed it.
+    var cameraHistory: [CameraContext] = []
   }
 
   /// A copy of what main needs from an ARImageAnchor, so no ARKit object crosses threads.
@@ -105,7 +136,8 @@ final class ARSessionController: NSObject, ARSessionDelegate {
     let config = ARWorldTrackingConfiguration()
     config.detectionImages = [reference]
     config.maximumNumberOfTrackedImages = 1
-    config.planeDetection = []
+    // Surfaces are what AI pins and expert taps land on. Without them, raycasts guessed (often the desk, or air).
+    config.planeDetection = [.horizontal, .vertical]
     config.automaticImageScaleEstimationEnabled = true
     configuration = config
     applyThermalLimits(to: config)
@@ -122,6 +154,7 @@ final class ARSessionController: NSObject, ARSessionDelegate {
     coaching.autoresizingMask = [.flexibleWidth, .flexibleHeight]
     coaching.frame = arView.bounds
     if coaching.superview == nil { arView.addSubview(coaching) }
+    arView.addGestureRecognizer(UITapGestureRecognizer(target: self, action: #selector(tapped(_:))))
 
     // A hot phone drops the people-occlusion model first: it's the most expensive thing the session runs.
     thermalObserver = NotificationCenter.default.addObserver(
@@ -158,43 +191,265 @@ final class ARSessionController: NSObject, ARSessionDelegate {
     }
   }
 
-  // MARK: Camera snapshots and AI pins (main)
+  // MARK: Snapshots (main)
 
-  /// The current camera image, upright for a phone held in portrait, as a JPEG small enough to send to Gemini.
-  func snapshotJPEG(maxSide: CGFloat = 1024) -> Data? {
-    guard isRunning, let buffer = arView.session.currentFrame?.capturedImage else { return nil }
-    let upright = CIImage(cvPixelBuffer: buffer).oriented(.right)
+  /// A photo plus the camera that took it. Points found in the photo later are projected through `camera`.
+  struct Snapshot {
+    let camera: CameraContext
+    /// Full resolution, upright for a phone held in portrait. Crops for the zoomed second pass come from this.
+    let image: CGImage
+    /// Scaled to at most `maxSide`, for Gemini's first pass.
+    let jpeg: Data
+  }
+
+  func captureSnapshot(maxSide: CGFloat = 1536) -> Snapshot? {
+    guard isRunning, let frame = arView.session.currentFrame else { return nil }
+    let camera = CameraContext(frame)
+    let upright = CIImage(cvPixelBuffer: frame.capturedImage).oriented(.right)
+    guard let image = imageContext.createCGImage(upright, from: upright.extent) else { return nil }
     let scale = min(1, maxSide / max(upright.extent.width, upright.extent.height))
-    let image = upright.transformed(by: CGAffineTransform(scaleX: scale, y: scale))
-    return imageContext.jpegRepresentation(of: image, colorSpace: CGColorSpaceCreateDeviceRGB(), options: [:])
+    let scaled = upright.transformed(by: CGAffineTransform(scaleX: scale, y: scale))
+    guard let jpeg = imageContext.jpegRepresentation(of: scaled, colorSpace: CGColorSpaceCreateDeviceRGB(), options: [:]) else { return nil }
+    return Snapshot(camera: camera, image: image, jpeg: jpeg)
   }
 
-  /// Drops a pin on the real surface under each point, given as fractions of the portrait snapshot (top-left origin).
-  /// Returns how many points hit a surface.
-  @discardableResult
-  func placePins(_ points: [(x: Double, y: Double, label: String)]) -> Int {
-    clearPins()
-    guard let frame = arView.session.currentFrame else { return 0 }
-    let viewSize = arView.bounds.size
-    // The snapshot was the sensor image turned upright, so undo that turn, then let ARKit map sensor → screen.
-    let toView = frame.displayTransform(for: .portrait, viewportSize: viewSize)
-    var placed = 0
-    for point in points {
-      let sensor = CGPoint(x: point.y, y: 1 - point.x).applying(toView)
-      let screen = CGPoint(x: sensor.x * viewSize.width, y: sensor.y * viewSize.height)
-      guard let hit = arView.raycast(from: screen, allowing: .estimatedPlane, alignment: .any).first else { continue }
-      let anchor = AnchorEntity(world: hit.worldTransform)
-      anchor.addChild(Shapes.pin(label: point.label))
-      arView.scene.addAnchor(anchor)
-      pinAnchors.append(anchor)
-      placed += 1
+  /// The current camera image as a JPEG, for the AI's identify and check calls.
+  func snapshotJPEG(maxSide: CGFloat = 1024) -> Data? {
+    captureSnapshot(maxSide: maxSide)?.jpeg
+  }
+
+  /// True once ARKit has found a horizontal surface (the desk or the laptop's underside) to put pins on.
+  var hasHorizontalSurface: Bool {
+    arView.session.currentFrame?.anchors.contains { ($0 as? ARPlaneAnchor)?.alignment == .horizontal } ?? false
+  }
+
+  /// The camera as it was `secondsAgo`, from the last ~2.5 s.
+  func cameraContext(secondsAgo: Double) -> CameraContext? {
+    shared.withLock { state in
+      guard let latest = state.cameraHistory.last else { return nil }
+      let target = latest.timestamp - secondsAgo
+      return state.cameraHistory.min { abs($0.timestamp - target) < abs($1.timestamp - target) }
     }
-    return placed
   }
 
-  func clearPins() {
-    pinAnchors.forEach { arView.scene.removeAnchor($0) }
-    pinAnchors.removeAll()
+  // MARK: Pins (main)
+
+  private struct SurfacePoint {
+    var position: SIMD3<Float>
+    var normal: SIMD3<Float>
+  }
+
+  /// Places numbered pins (and the "Work here" area) for points in a photo, through the camera that took it.
+  /// Returns how many pins landed on a surface.
+  @discardableResult
+  func placePins(
+    _ points: [(point: UprightPoint, label: String)],
+    focus: [UprightPoint]? = nil,
+    focusLabel: String = "Work here",
+    camera: CameraContext,
+    kind: Shapes.PinKind = .ai
+  ) -> Int {
+    var surfaces = points.map { surfacePoint(for: $0.point, camera: camera) }
+    // The laptop's underside is flat: a point the raycast missed goes onto the plane of one that hit.
+    let reference = surfaces.compactMap { $0 }.first
+    for i in surfaces.indices where surfaces[i] == nil {
+      surfaces[i] = fallbackSurfacePoint(for: points[i].point, camera: camera, reference: reference)
+    }
+
+    // Reading order (top to bottom, then left to right), so "screw 1" is where a person would start.
+    let ordered = zip(points, surfaces)
+      .compactMap { item, surface in surface.map { (item, $0) } }
+      .sorted { a, b in
+        let rowA = (a.0.point.y / 0.08).rounded(), rowB = (b.0.point.y / 0.08).rounded()
+        return rowA == rowB ? a.0.point.x < b.0.point.x : rowA < rowB
+      }
+    let firstNumber = (pins.filter { $0.kind == kind }.map(\.number).max() ?? 0) + 1
+    for (offset, (item, surface)) in ordered.enumerated() {
+      addPin(
+        number: firstNumber + offset, label: item.label, kind: kind,
+        transform: PinMath.standing(at: surface.position, normal: surface.normal), photoPoint: item.point
+      )
+    }
+
+    if let focus, focus.count == 4 {
+      let corners = focus.map { surfacePoint(for: $0, camera: camera) ?? fallbackSurfacePoint(for: $0, camera: camera, reference: reference) }
+      if corners.allSatisfy({ $0 != nil }) {
+        showFocus(corners: corners.compactMap { $0 }, label: focusLabel)
+      }
+    }
+    updateGhost(rebuild: false)
+    return ordered.count
+  }
+
+  /// Puts back pins at transforms saved earlier (screw memory), numbered as given.
+  func placeStoredPins(_ stored: [(number: Int, label: String, transform: simd_float4x4)], kind: Shapes.PinKind) {
+    for item in stored {
+      addPin(number: item.number, label: item.label, kind: kind, transform: item.transform, photoPoint: nil)
+    }
+    updateGhost(rebuild: false)
+  }
+
+  /// The expert tapped the live video: a pin where they tapped, through the camera that filmed that frame.
+  func placeExpertPin(at point: UprightPoint, label: String, secondsAgo: Double) -> Bool {
+    guard let camera = cameraContext(secondsAgo: secondsAgo) else { return false }
+    guard let surface = surfacePoint(for: point, camera: camera)
+      ?? fallbackSurfacePoint(for: point, camera: camera, reference: nil) else { return false }
+    let number = (pins.filter { $0.kind == .expert }.map(\.number).max() ?? 0) + 1
+    addPin(number: number, label: label, kind: .expert, transform: PinMath.standing(at: surface.position, normal: surface.normal), photoPoint: nil)
+    return true
+  }
+
+  /// Clears pins of the given kinds (all by default) and the "Work here" area.
+  func clearPins(kinds: Set<Shapes.PinKind> = [.ai, .expert, .refit], focus: Bool = true) {
+    for pin in pins where kinds.contains(pin.kind) {
+      if let entry = pinEntities.removeValue(forKey: pin.id) {
+        arView.scene.removeAnchor(entry.anchor)
+        arView.session.remove(anchor: entry.arAnchor)
+      }
+    }
+    pins.removeAll { kinds.contains($0.kind) }
+    if focus {
+      focusAnchor.map { arView.scene.removeAnchor($0) }
+      focusAnchor = nil
+      focusCorners = []
+      hasFocusArea = false
+    }
+    updateGhost(rebuild: false)
+  }
+
+  private func addPin(number: Int, label: String, kind: Shapes.PinKind, transform: simd_float4x4, photoPoint: UprightPoint?) {
+    // A session anchor, not a free world position, so ARKit keeps refining where it is as it learns the room.
+    let arAnchor = ARAnchor(name: "pin", transform: transform)
+    arView.session.add(anchor: arAnchor)
+    let anchor = AnchorEntity(anchor: arAnchor)
+    let entity = Shapes.pin(number: number, label: label, kind: kind)
+    anchor.addChild(entity)
+    arView.scene.addAnchor(anchor)
+    let info = PinInfo(id: UUID(), number: number, label: label, kind: kind, done: false, transform: transform, photoPoint: photoPoint)
+    pinEntities[info.id] = (anchor, arAnchor, entity)
+    pins.append(info)
+  }
+
+  private func showFocus(corners: [SurfacePoint], label: String) {
+    focusAnchor.map { arView.scene.removeAnchor($0) }
+    let normal = simd_normalize(corners.map(\.normal).reduce(.zero, +))
+    let anchor = AnchorEntity(world: matrix_identity_float4x4)
+    anchor.addChild(Shapes.focusArea(corners: corners.map(\.position), normal: normal, label: label))
+    arView.scene.addAnchor(anchor)
+    focusAnchor = anchor
+    focusCorners = corners.map(\.position)
+    focusLabel = label
+    hasFocusArea = true
+  }
+
+  private func surfacePoint(for point: UprightPoint, camera: CameraContext) -> SurfacePoint? {
+    let ray = PinMath.ray(for: point, in: camera)
+    // Real detected planes first: they're measured. Estimated planes are ARKit's guess from feature points.
+    for target in [ARRaycastQuery.Target.existingPlaneGeometry, .estimatedPlane] {
+      let query = ARRaycastQuery(origin: ray.origin, direction: ray.direction, allowing: target, alignment: .any)
+      if let hit = arView.session.raycast(query).first {
+        let t = hit.worldTransform
+        return SurfacePoint(position: SIMD3(t.columns.3.x, t.columns.3.y, t.columns.3.z), normal: SIMD3(t.columns.1.x, t.columns.1.y, t.columns.1.z))
+      }
+    }
+    return nil
+  }
+
+  private func fallbackSurfacePoint(for point: UprightPoint, camera: CameraContext, reference: SurfacePoint?) -> SurfacePoint? {
+    let ray = PinMath.ray(for: point, in: camera)
+    if let reference, let hit = PinMath.intersect(origin: ray.origin, direction: ray.direction, planePoint: reference.position, planeNormal: reference.normal) {
+      return SurfacePoint(position: hit, normal: reference.normal)
+    }
+    // Otherwise the nearest detected horizontal plane, extended past its measured edges.
+    let planes = arView.session.currentFrame?.anchors.compactMap { $0 as? ARPlaneAnchor }.filter { $0.alignment == .horizontal } ?? []
+    let hits = planes.compactMap { plane -> SurfacePoint? in
+      let t = plane.transform
+      let normal = SIMD3(t.columns.1.x, t.columns.1.y, t.columns.1.z)
+      guard let hit = PinMath.intersect(origin: ray.origin, direction: ray.direction, planePoint: SIMD3(t.columns.3.x, t.columns.3.y, t.columns.3.z), planeNormal: normal) else { return nil }
+      return SurfacePoint(position: hit, normal: normal)
+    }
+    return hits.min { simd_distance($0.position, ray.origin) < simd_distance($1.position, ray.origin) }
+  }
+
+  @objc private func tapped(_ gesture: UITapGestureRecognizer) {
+    let location = gesture.location(in: arView)
+    // Nearest pin on screen within a finger's width: kinder than hit-testing a 7 mm ball.
+    let nearest = pins.indices
+      .compactMap { i -> (Int, CGFloat)? in
+        guard let screen = arView.project(pins[i].position + SIMD3(pins[i].transform.columns.1.x, pins[i].transform.columns.1.y, pins[i].transform.columns.1.z) * 0.02) else { return nil }
+        return (i, hypot(screen.x - location.x, screen.y - location.y))
+      }
+      .min { $0.1 < $1.1 }
+    guard let (index, distance) = nearest, distance < 50 else { return }
+    pins[index].done.toggle()
+    let pin = pins[index]
+    if let entity = pinEntities[pin.id]?.entity {
+      Shapes.setPin(entity, done: pin.done, number: pin.number, label: pin.label, kind: pin.kind)
+    }
+    updateGhost(rebuild: false)
+    onPinToggled?(pin)
+  }
+
+  /// The ghost screwdriver sits on the first pin not yet done (AI or refit pins only).
+  private func updateGhost(rebuild: Bool) {
+    let target = pins.first { !$0.done && $0.kind != .expert }
+    guard let anticlockwise = ghostTurnsAnticlockwise, let target, let anchor = pinEntities[target.id]?.anchor else {
+      ghost?.removeFromParent()
+      ghost = nil
+      ghostPinId = nil
+      return
+    }
+    if rebuild || ghost == nil {
+      ghost?.removeFromParent()
+      ghost = Shapes.ghostTool(anticlockwise: anticlockwise)
+      ghostPinId = nil
+    }
+    guard let ghost, ghostPinId != target.id else { return }
+    ghost.removeFromParent()
+    anchor.addChild(ghost)
+    ghostPinId = target.id
+  }
+
+  // MARK: Spotlight (main)
+
+  /// What the spotlight should light up right now, as world points, plus what to call it.
+  struct SpotlightTarget {
+    var points: [SIMD3<Float>]
+    var label: String
+  }
+
+  /// The expert's newest pin first, then the "Work here" area, then the pins still to do, then the marker step.
+  func spotlightTarget() -> SpotlightTarget? {
+    if let expert = pins.last(where: { $0.kind == .expert && !$0.done }) {
+      return SpotlightTarget(points: [expert.position], label: "Expert: \(expert.label)")
+    }
+    if !focusCorners.isEmpty, pins.contains(where: { !$0.done }) || pins.isEmpty {
+      return SpotlightTarget(points: focusCorners, label: focusLabel)
+    }
+    let pending = pins.filter { !$0.done }
+    if !pending.isEmpty {
+      let label = pending.count == 1 ? "\(pending[0].number) · \(pending[0].label)" : "\(pending.count) left"
+      return SpotlightTarget(points: pending.map(\.position), label: label)
+    }
+    if markerSeen, !stepRoot.children.isEmpty {
+      let points = stepRoot.children.map { $0.position(relativeTo: nil) }
+      return SpotlightTarget(points: points, label: step?.objects.first?.label ?? "Here")
+    }
+    return nil
+  }
+
+  func project(_ point: SIMD3<Float>) -> CGPoint? {
+    arView.project(point)
+  }
+
+  /// Which way to turn the phone to face a point: a unit vector in screen space (x right, y down).
+  func screenDirection(to point: SIMD3<Float>) -> CGVector? {
+    guard let camera = arView.session.currentFrame?.camera.transform else { return nil }
+    let local = camera.inverse * SIMD4(point.x, point.y, point.z, 1)
+    // The camera's axes are the sensor's (landscape): its +Y is the portrait screen's right, its +X the screen's down.
+    let vector = CGVector(dx: CGFloat(local.y), dy: CGFloat(local.x))
+    let length = hypot(vector.dx, vector.dy)
+    return length > 1e-4 ? CGVector(dx: vector.dx / length, dy: vector.dy / length) : nil
   }
 
   // MARK: ARSessionDelegate (sessionQueue)
@@ -202,6 +457,11 @@ final class ARSessionController: NSObject, ARSessionDelegate {
   func session(_ session: ARSession, didUpdate frame: ARFrame) {
     let timestamp = frame.timestamp
     let cameraTransform = frame.camera.transform
+    let cameraContext = CameraContext(frame)
+    shared.withLock { state in
+      state.cameraHistory.append(cameraContext)
+      if state.cameraHistory.count > 150 { state.cameraHistory.removeFirst(state.cameraHistory.count - 150) }
+    }
 
     // Synchronous: the handler copies what it needs, so ARKit's buffer is free again when this returns.
     if let onCameraFrame { onCameraFrame(frame.capturedImage, timestamp) }
@@ -352,5 +612,16 @@ final class ARSessionController: NSObject, ARSessionDelegate {
       }
       stepRoot.addChild(node)
     }
+  }
+}
+
+extension CameraContext {
+  init(_ frame: ARFrame) {
+    self.init(
+      transform: frame.camera.transform,
+      intrinsics: frame.camera.intrinsics,
+      imageResolution: frame.camera.imageResolution,
+      timestamp: frame.timestamp
+    )
   }
 }

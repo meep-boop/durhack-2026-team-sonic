@@ -101,11 +101,10 @@ enum Shapes {
     case .push:
       end.translation -= direction * 0.02
     case .unscrew:
-      // Half turns repeated: a screw looks the same every 180°, so the restart is invisible.
-      end.rotation = simd_quatf(angle: -.pi, axis: direction) * start.rotation
-      end.translation += direction * 0.003
-      mode = .repeat
-      duration = 0.9
+      // Anticlockwise seen from +axis (out of the hole), the way a screw comes undone. Spin, not a from–to half
+      // turn: a half turn starts and ends at the same orientation, so it could play in either direction.
+      spin(entity, anticlockwise: true, axis: direction)
+      return
     case .flip:
       end.rotation = simd_quatf(angle: .pi, axis: direction) * start.rotation
       duration = 1.2
@@ -147,21 +146,121 @@ enum Shapes {
     }
   }
 
-  /// A pulsing ring and a stem with a label, standing on the surface: "this one".
-  static func pin(label text: String) -> Entity {
-    let root = Entity()
-    let ring = ModelEntity(mesh: .generateCylinder(height: 0.001, radius: 0.012), materials: [UnlitMaterial(color: UIColor.systemTeal.withAlphaComponent(0.6))])
-    root.addChild(ring)
-    let stem = ModelEntity(mesh: .generateCylinder(height: 0.04, radius: 0.0015), materials: [UnlitMaterial(color: .systemTeal)])
-    stem.position.y = 0.02
-    root.addChild(stem)
-    let head = ModelEntity(mesh: .generateSphere(radius: 0.006), materials: [UnlitMaterial(color: .systemTeal)])
-    head.position.y = 0.042
-    root.addChild(head)
-    let tag = label(text)
-    tag.position.y = 0.055
-    root.addChild(tag)
+  enum PinKind {
+    /// Found by the AI on the laptop.
+    case ai
+    /// Tapped by the expert on the live video.
+    case expert
+    /// A screw going back into the hole it came out of.
+    case refit
 
+    var color: UIColor {
+      switch self {
+      case .ai: .systemTeal
+      case .expert: .systemOrange
+      case .refit: .systemYellow
+      }
+    }
+  }
+
+  private static let tintName = "pin-tint"
+  private static let ringName = "pin-ring"
+  private static let tagName = "pin-tag"
+
+  /// A numbered pin standing on the surface: a pulsing ring, a stem, a ball and "3 · screw" above it.
+  /// Built along +Y, so a transform from `PinMath.standing` makes it stand up off any surface.
+  static func pin(number: Int, label text: String, kind: PinKind) -> Entity {
+    let root = Entity()
+    let tint = UnlitMaterial(color: kind.color)
+    let ring = ModelEntity(mesh: .generateCylinder(height: 0.001, radius: 0.011), materials: [UnlitMaterial(color: kind.color.withAlphaComponent(0.55))])
+    ring.name = ringName
+    root.addChild(ring)
+    let stem = ModelEntity(mesh: .generateCylinder(height: 0.035, radius: 0.0012), materials: [tint])
+    stem.position.y = 0.0175
+    stem.name = tintName
+    root.addChild(stem)
+    let head = ModelEntity(mesh: .generateSphere(radius: 0.007), materials: [tint])
+    head.position.y = 0.037
+    head.name = tintName
+    root.addChild(head)
+    let tag = label("\(number) · \(text)", size: 0.011)
+    tag.position.y = 0.05
+    tag.name = tagName
+    root.addChild(tag)
+    pulse(ring)
+    return root
+  }
+
+  /// Green with a tick once the user has done it; back to its kind's colour if they untick it.
+  static func setPin(_ pin: Entity, done: Bool, number: Int, label text: String, kind: PinKind) {
+    let color = done ? UIColor.systemGreen : kind.color
+    for child in pin.children {
+      guard let model = child as? ModelEntity, child.name == tintName || child.name == ringName else { continue }
+      model.model?.materials = [UnlitMaterial(color: color.withAlphaComponent(child.name == ringName ? 0.55 : 1))]
+    }
+    if let old = pin.children.first(where: { $0.name == tagName }) {
+      let tag = label(done ? "✓ \(number)" : "\(number) · \(text)", size: 0.011)
+      tag.position = old.position
+      tag.name = tagName
+      old.removeFromParent()
+      pin.addChild(tag)
+    }
+  }
+
+  /// "Work here": a translucent quad lying on the surface through four world points, with a glowing outline.
+  /// Its parent should be a world anchor at the origin, since the points are already in world space.
+  static func focusArea(corners: [SIMD3<Float>], normal: SIMD3<Float>, label text: String) -> Entity {
+    let root = Entity()
+    guard corners.count == 4 else { return root }
+    // Lifted 2 mm off the surface so it doesn't flicker against the real laptop's depth.
+    let lifted = corners.map { $0 + simd_normalize(normal) * 0.002 }
+
+    var descriptor = MeshDescriptor(name: "focus")
+    descriptor.positions = MeshBuffers.Positions(lifted)
+    // Both windings, so it shows whichever side the camera is on.
+    descriptor.primitives = .triangles([0, 1, 2, 0, 2, 3, 0, 2, 1, 0, 3, 2])
+    if let mesh = try? MeshResource.generate(from: [descriptor]) {
+      let fill = ModelEntity(mesh: mesh, materials: [UnlitMaterial(color: UIColor.systemTeal.withAlphaComponent(0.22))])
+      root.addChild(fill)
+      if let animation = try? AnimationResource.generate(with: FromToByAnimation<Float>(
+        from: 0.45, to: 1, duration: 1.1, timing: .easeInOut, bindTarget: .opacity, repeatMode: .autoReverse
+      )) {
+        fill.components.set(OpacityComponent(opacity: 1))
+        fill.playAnimation(animation)
+      }
+    }
+    for i in 0..<4 {
+      root.addChild(bar(from: lifted[i], to: lifted[(i + 1) % 4], thickness: 0.0025, color: .systemTeal))
+    }
+    let centre = lifted.reduce(.zero, +) / 4
+    let tag = label(text, size: 0.013)
+    tag.position = centre + simd_normalize(normal) * 0.03
+    root.addChild(tag)
+    return root
+  }
+
+  /// A see-through screwdriver standing on a pin, turning the way the user should turn theirs.
+  static func ghostTool(anticlockwise: Bool) -> Entity {
+    let tool = model(.screwdriver)
+    tool.components.set(OpacityComponent(opacity: 0.45))
+    spin(tool, anticlockwise: anticlockwise)
+    return tool
+  }
+
+  /// Quarter turns repeated forever about the entity's +Y. A half turn (π) is ambiguous: the start and end
+  /// orientations are the same, so the interpolation can go either way. A quarter turn always goes the stated way.
+  /// Seen from +Y looking down at the screw head, a positive angle is anticlockwise: undoing it.
+  static func spin(_ entity: Entity, anticlockwise: Bool, axis: SIMD3<Float> = [0, 1, 0], duration: Double = 0.35) {
+    let start = entity.transform
+    var end = start
+    end.rotation = simd_quatf(angle: (anticlockwise ? 1 : -1) * .pi / 2, axis: simd_normalize(axis)) * start.rotation
+    let definition = FromToByAnimation(from: start, to: end, duration: duration, timing: .linear, bindTarget: .transform, repeatMode: .repeat)
+    if let animation = try? AnimationResource.generate(with: definition) {
+      entity.playAnimation(animation)
+    }
+  }
+
+  private static func pulse(_ ring: Entity) {
     var pulse = Transform(scale: [1.8, 1, 1.8])
     pulse.translation = ring.position
     if let animation = try? AnimationResource.generate(with: FromToByAnimation(
@@ -169,11 +268,10 @@ enum Shapes {
     )) {
       ring.playAnimation(animation)
     }
-    return root
   }
 
-  static func label(_ text: String) -> Entity {
-    let mesh = MeshResource.generateText(text, extrusionDepth: 0.0005, font: .systemFont(ofSize: 0.012, weight: .semibold))
+  static func label(_ text: String, size: CGFloat = 0.012) -> Entity {
+    let mesh = MeshResource.generateText(text, extrusionDepth: 0.0005, font: .systemFont(ofSize: size, weight: .semibold))
     let model = ModelEntity(mesh: mesh, materials: [UnlitMaterial(color: .white)])
     // Text meshes start at their bottom-left corner; centre it over the object.
     let bounds = model.visualBounds(relativeTo: nil)

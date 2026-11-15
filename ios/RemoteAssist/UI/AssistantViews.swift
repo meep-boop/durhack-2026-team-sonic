@@ -134,10 +134,11 @@ struct ConfidenceBadge: View {
   private var color: Color { value >= 0.75 ? .green : (value >= 0.45 ? .orange : .red) }
 }
 
-/// The two AI helpers under an AI-generated step: point at the part, and check the work.
+/// The AI helpers under an AI-generated step: look again for the parts, and check the work.
 struct AIStepTools: View {
   let assistant: LaptopAssistant
   let busy: Bool
+  @Binding var ghostToolOn: Bool
   let onShowWhere: () -> Void
   let onCheck: () -> Void
 
@@ -145,7 +146,7 @@ struct AIStepTools: View {
     VStack(alignment: .leading, spacing: 10) {
       HStack(spacing: 10) {
         Button(action: onShowWhere) {
-          Label("Show me where", systemImage: "scope").frame(maxWidth: .infinity)
+          Label("Re-scan", systemImage: "viewfinder").frame(maxWidth: .infinity)
         }
         Button(action: onCheck) {
           Label("Check my work", systemImage: "checkmark.viewfinder").frame(maxWidth: .infinity)
@@ -166,9 +167,18 @@ struct AIStepTools: View {
         }
       }
 
-      Label("AI-generated: check with the expert if unsure", systemImage: "sparkles")
-        .font(.caption2)
-        .foregroundStyle(.secondary)
+      HStack {
+        Label("AI-placed: check each one before you unscrew", systemImage: "sparkles")
+          .font(.caption2)
+          .foregroundStyle(.secondary)
+        Spacer(minLength: 8)
+        Toggle(isOn: $ghostToolOn) {
+          Image(systemName: "screwdriver")
+        }
+        .toggleStyle(.button)
+        .controlSize(.mini)
+        .accessibilityLabel(ghostToolOn ? "Hide the ghost screwdriver" : "Show the ghost screwdriver")
+      }
     }
   }
 }

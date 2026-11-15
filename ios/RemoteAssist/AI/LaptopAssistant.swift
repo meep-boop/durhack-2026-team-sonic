@@ -1,6 +1,7 @@
 import CoreGraphics
 import Foundation
 import Observation
+import UIKit
 
 /// Looks at the laptop through the camera with Gemini, works out the SSD swap, and checks each step.
 /// Everything it says is labelled AI-generated in the UI, and it refuses to guide when the swap looks unsafe.
@@ -23,12 +24,35 @@ final class LaptopAssistant {
     /// What the camera should look for to point at this step, e.g. "the screws on the bottom panel".
     var lookFor: String
     var caution: String?
+    /// "remove" (taking screws or parts out), "refit" (putting them back) or "other". Drives screw memory and which
+    /// way the ghost screwdriver turns. Optional so a plan without it still decodes.
+    var phase: String?
   }
 
-  struct Point: Codable, Equatable {
-    var x: Double
-    var y: Double
+  /// One part found in the photo, as an upright point.
+  struct LocatedItem: Equatable {
+    var point: UprightPoint
     var label: String
+    /// Set when this one differs from the rest, e.g. "longer screw".
+    var note: String?
+  }
+
+  struct Located: Equatable {
+    var items: [LocatedItem]
+    /// The four corners of the area to work on (upright points, clockwise from top-left), if the AI gave one.
+    var focus: [UprightPoint]?
+    var focusLabel: String
+  }
+
+  /// "yes" | "no" | "unknown" for each, judged only from the photo.
+  struct SafetyCheck: Codable, Equatable {
+    var chargerUnplugged: String
+    var poweredOff: String
+    var laptopUpsideDown: String
+    var onSoftSurface: String
+    var issues: [String]
+
+    var allClear: Bool { [chargerUnplugged, poweredOff, laptopUpsideDown, onSoftSurface].allSatisfy { $0 == "yes" } }
   }
 
   struct Check: Codable, Equatable {
@@ -45,6 +69,9 @@ final class LaptopAssistant {
   private(set) var identification: Identification?
   private(set) var plan: [PlannedStep] = []
   private(set) var lastCheck: Check?
+  private(set) var safety: SafetyCheck?
+  /// True when the user started despite the AI not seeing everything as safe (they confirmed they'd checked).
+  private(set) var safetyOverridden = false
 
   var isAvailable: Bool { client != nil }
   private let client = GeminiClient.fromBundle()
@@ -84,7 +111,8 @@ final class LaptopAssistant {
         battery if this model needs it, find the SSD, remove its retaining screw, slide it out at about 30 degrees,
         insert the new one, refit the screw, reassemble, power on and check it's detected. title is at most 6 words.
         detail is 1 to 2 plain sentences. lookFor names the part to point at for that step. caution only when there's a
-        real risk.
+        real risk. phase is "remove" for a step that takes screws or parts out, "refit" for one that puts them back,
+        otherwise "other".
         """,
         jpeg: nil,
         schema: Self.planSchema
@@ -116,20 +144,99 @@ final class LaptopAssistant {
 
   // MARK: Point and check
 
-  /// Points in the photo as fractions (0–1) of its width and height, top-left origin.
-  func locate(_ target: String, jpeg: Data) async throws -> [Point] {
-    guard let client else { return [] }
+  func phase(stepIndex: Int) -> String? {
+    plan.indices.contains(stepIndex) ? plan[stepIndex].phase : nil
+  }
+
+  /// Finds every `target` in the photo in two passes.
+  /// - Pass 1, whole photo: a box per part plus the area to work on, in Gemini's own `box_2d` format.
+  /// - Pass 2, small parts only (screws): a zoomed crop around each box, asking for the exact centre. At 1536 px a
+  ///   laptop screw is a handful of pixels; in a 256 px crop it fills the frame.
+  func locate(_ target: String, step: String, snapshot: ARSessionController.Snapshot) async throws -> Located {
+    guard let client else { return Located(items: [], focus: nil, focusLabel: "") }
     let found = try await client.generate(
-      PointsEnvelope.self,
+      LocateEnvelope.self,
       prompt: """
-      In this photo of a laptop, find: \(target). Return up to 6 points, one per item (for example one per screw).
-      x and y are integers from 0 to 1000: x across the image width from the left, y down the image height from the
-      top. label is 1 to 3 words. If you can't see it, return an empty list. Never invent a point.
+      This photo shows a laptop. The person is doing this step: "\(step)".
+      Find every \(target) you can actually see. One item per individual part (one per screw), up to 16.
+      box_2d is [ymin, xmin, ymax, xmax], each normalised to 0-1000 over the image height and width. label is 1 to 3
+      words. note only when this part differs from the others (for example "longer screw" or "under a rubber foot").
+      focus is the box around the whole area the person should work on for this step (for example the bottom panel).
+      If you can't see any, return an empty list. Never invent a part.
+      """,
+      jpeg: snapshot.jpeg,
+      schema: Self.locateSchema
+    )
+
+    let imageSize = CGSize(width: snapshot.image.width, height: snapshot.image.height)
+    let boxes = found.items.prefix(16).compactMap { item in PinMath.rect(fromBox2D: item.box_2d).map { (item, $0) } }
+
+    var items: [LocatedItem] = Array(repeating: LocatedItem(point: .zero, label: ""), count: boxes.count)
+    // Four crops at a time: quick, without tripping Gemini's rate limit.
+    for chunk in stride(from: 0, to: boxes.count, by: 4) {
+      try await withThrowingTaskGroup(of: (Int, LocatedItem).self) { group in
+        for index in chunk..<min(chunk + 4, boxes.count) {
+          let (item, rect) = boxes[index]
+          group.addTask {
+            let centre = CGPoint(x: rect.midX, y: rect.midY)
+            var located = LocatedItem(point: centre, label: item.label, note: item.note)
+            if max(rect.width, rect.height) < 0.12,
+               let refined = try? await self.refine(item.label, box: rect, image: snapshot.image, imageSize: imageSize, client: client) {
+              located.point = refined
+            }
+            return (index, located)
+          }
+        }
+        for try await (index, item) in group { items[index] = item }
+      }
+    }
+
+    let focusRect = found.focus.flatMap { PinMath.rect(fromBox2D: $0.box_2d) }
+    let corners = focusRect.map { r in
+      [CGPoint(x: r.minX, y: r.minY), CGPoint(x: r.maxX, y: r.minY), CGPoint(x: r.maxX, y: r.maxY), CGPoint(x: r.minX, y: r.maxY)]
+    }
+    return Located(items: items, focus: corners, focusLabel: found.focus?.label ?? "Work here")
+  }
+
+  private func refine(_ label: String, box: CGRect, image: CGImage, imageSize: CGSize, client: GeminiClient) async throws -> UprightPoint? {
+    let crop = PinMath.cropRect(around: box, imageSize: imageSize)
+    guard let cropped = image.cropping(to: crop), let jpeg = UIImage(cgImage: cropped).jpegData(compressionQuality: 0.9) else { return nil }
+    let answer = try await client.generate(
+      RefineEnvelope.self,
+      prompt: """
+      This is a zoomed-in crop of a laptop around one \(label). Find that \(label).
+      point is [y, x], normalised to 0-1000 over this crop's height and width, at its exact centre (for a screw, the
+      centre of its head). If it isn't in the crop, set found to false.
       """,
       jpeg: jpeg,
-      schema: Self.pointsSchema
+      schema: Self.refineSchema
     )
-    return found.points.map { Point(x: $0.x / 1000, y: $0.y / 1000, label: $0.label) }
+    guard answer.found else { return nil }
+    return PinMath.point(fromCropPoint: answer.point, crop: crop, imageSize: imageSize)
+  }
+
+  /// Before the first step: is it safe to open this laptop now? Judged only from what the photo shows.
+  func checkSafety(jpeg: Data) async {
+    guard let client else { return }
+    safety = nil
+    safetyOverridden = false
+    safety = try? await client.generate(
+      SafetyCheck.self,
+      prompt: """
+      Someone is about to open this laptop to replace its SSD. Judge only from this photo, answering "yes", "no" or
+      "unknown" for each. chargerUnplugged: no charging cable is plugged into the laptop. poweredOff: the laptop is
+      off (no lit screen, power or keyboard lights). laptopUpsideDown: the underside is facing up. onSoftSurface: it
+      lies on a cloth, towel or mat, not bare metal or carpet. issues: short, specific things to fix before starting.
+      Say "unknown" rather than guess.
+      """,
+      jpeg: jpeg,
+      schema: Self.safetySchema
+    )
+  }
+
+  /// The user confirmed they checked themselves, after the AI couldn't see everything as safe.
+  func overrideSafety() {
+    safetyOverridden = true
   }
 
   func check(step: String, jpeg: Data) async {
@@ -156,12 +263,30 @@ final class LaptopAssistant {
     identification = nil
     plan = []
     lastCheck = nil
+    safety = nil
+    safetyOverridden = false
   }
 
   // MARK: Schemas
 
   private struct PlanEnvelope: Codable { var steps: [PlannedStep] }
-  private struct PointsEnvelope: Codable { var points: [Point] }
+  private struct LocateEnvelope: Codable {
+    struct Item: Codable {
+      var box_2d: [Double]
+      var label: String
+      var note: String?
+    }
+    struct Focus: Codable {
+      var box_2d: [Double]
+      var label: String
+    }
+    var items: [Item]
+    var focus: Focus?
+  }
+  private struct RefineEnvelope: Codable {
+    var found: Bool
+    var point: [Double]
+  }
 
   private static let identificationSchema: [String: Any] = [
     "type": "object",
@@ -190,27 +315,60 @@ final class LaptopAssistant {
             "detail": ["type": "string"],
             "lookFor": ["type": "string"],
             "caution": ["type": "string"],
+            "phase": ["type": "string", "enum": ["remove", "refit", "other"]],
           ],
-          "required": ["title", "detail", "lookFor"],
+          "required": ["title", "detail", "lookFor", "phase"],
         ],
       ],
     ],
     "required": ["steps"],
   ]
 
-  private static let pointsSchema: [String: Any] = [
+  private static let box: [String: Any] = [
+    "type": "array", "items": ["type": "integer"], "minItems": 4, "maxItems": 4,
+  ]
+
+  private static let locateSchema: [String: Any] = [
     "type": "object",
     "properties": [
-      "points": [
+      "items": [
         "type": "array",
         "items": [
           "type": "object",
-          "properties": ["x": ["type": "number"], "y": ["type": "number"], "label": ["type": "string"]],
-          "required": ["x", "y", "label"],
+          "properties": ["box_2d": box, "label": ["type": "string"], "note": ["type": "string"]],
+          "required": ["box_2d", "label"],
         ],
       ],
+      "focus": [
+        "type": "object",
+        "properties": ["box_2d": box, "label": ["type": "string"]],
+        "required": ["box_2d", "label"],
+      ],
     ],
-    "required": ["points"],
+    "required": ["items"],
+  ]
+
+  private static let refineSchema: [String: Any] = [
+    "type": "object",
+    "properties": [
+      "found": ["type": "boolean"],
+      "point": ["type": "array", "items": ["type": "integer"], "minItems": 2, "maxItems": 2],
+    ],
+    "required": ["found", "point"],
+  ]
+
+  private static let tri: [String: Any] = ["type": "string", "enum": ["yes", "no", "unknown"]]
+
+  private static let safetySchema: [String: Any] = [
+    "type": "object",
+    "properties": [
+      "chargerUnplugged": tri,
+      "poweredOff": tri,
+      "laptopUpsideDown": tri,
+      "onSoftSurface": tri,
+      "issues": ["type": "array", "items": ["type": "string"]],
+    ],
+    "required": ["chargerUnplugged", "poweredOff", "laptopUpsideDown", "onSoftSurface", "issues"],
   ]
 
   private static let checkSchema: [String: Any] = [

@@ -13,6 +13,12 @@ struct ContentView: View {
   @State private var pinMessage: String?
   @State private var verified: [String: StepVerified] = [:]
   @State private var syncedToast: String?
+  @State private var locateTask: Task<Void, Never>?
+  /// The last AI locate on this step: the photo (for the screw map) and the notes per part.
+  @State private var lastLocate: (snapshot: ARSessionController.Snapshot, located: LaptopAssistant.Located)?
+  @State private var screwMemory = ScrewMemory()
+  @State private var pinTicks = 0
+  @AppStorage("ghostToolOn") private var ghostToolOn = true
   @AppStorage("onboarded") private var onboarded = false
   @AppStorage("voiceOn") private var voiceOn = true
   @Environment(\.scenePhase) private var scenePhase
@@ -92,6 +98,7 @@ struct ContentView: View {
           outboxCount: relay.outboxCount,
           voiceOn: $voiceOn,
           tools: isAIGuide && player.currentStep != nil ? AnyView(aiTools) : nil,
+          pinProgress: pinProgress,
           verification: player.currentStepId.flatMap { verified[$0] },
           onNext: next,
           onBack: player.back
@@ -146,16 +153,20 @@ struct ContentView: View {
     .onChange(of: scenePhase) { _, phase in handle(phase) }
     .task { await Shapes.preloadModels() }
     // Step is compared by value, so a guide.set that edits the current step's objects redraws it too.
-    .onChange(of: player.currentStep) {
-      ar.step = player.currentStep
-      ar.clearPins()
-      pinMessage = nil
+    .onChange(of: player.currentStep) { old, new in
+      ar.step = new
       speakCurrentStep()
+      // Same step, edited by a guide.set: just redraw. A new step clears this step's pins and looks again.
+      guard old?.id != new?.id else { return }
+      stepChanged()
     }
+    .onChange(of: ghostToolOn) { updateGhost() }
+    .sensoryFeedback(.success, trigger: pinTicks)
     .onChange(of: voiceOn) { voiceOn ? speakCurrentStep() : voice.stop() }
     .onChange(of: call.state) { old, new in
       // AI pins are for working alone; when the expert joins they point at things themselves.
-      if old == .ringing, new == .connecting { ar.clearPins(); pinMessage = nil }
+      if old == .ringing, new == .connecting { ar.clearPins(kinds: [.ai], focus: true); pinMessage = nil }
+      if new == .idle { ar.clearPins(kinds: [.expert], focus: false) }
     }
     .onChange(of: relay.state) {
       // A call can't survive losing its signalling path for long; end it rather than leave it hanging.
@@ -164,11 +175,12 @@ struct ContentView: View {
   }
 
   private var aiTools: some View {
-    AIStepTools(assistant: assistant, busy: aiBusy, onShowWhere: showWhere, onCheck: checkWork)
+    AIStepTools(assistant: assistant, busy: aiBusy, ghostToolOn: $ghostToolOn, onShowWhere: showWhere, onCheck: checkWork)
   }
 
   private func wire() {
     ar.step = player.currentStep
+    ar.onPinToggled = { pin in pinToggled(pin) }
     ar.onPose = { [relay] pose in relay.sendPose(pose) }
     // Runs on the AR session queue; the source checks its own thread-safe switch, set by CallManager.
     ar.onCameraFrame = { [videoSource = call.videoSource] buffer, time in
@@ -215,16 +227,98 @@ struct ContentView: View {
     voice.speak(step.text)
   }
 
+  /// Pins still to do on this step (AI or refit), for "3 of 8 removed" on the step card.
+  private var pinProgress: StepCard.PinProgress? {
+    let relevant = ar.pins.filter { $0.kind != .expert }
+    guard !relevant.isEmpty else { return nil }
+    let refit = relevant.contains { $0.kind == .refit }
+    return StepCard.PinProgress(done: relevant.filter(\.done).count, total: relevant.count, verb: refit ? "put back" : "done")
+  }
+
+  private var currentPhase: String? {
+    player.currentIndex.flatMap { assistant.phase(stepIndex: $0) }
+  }
+
+  private func stepChanged() {
+    locateTask?.cancel()
+    locateTask = nil
+    aiBusy = false
+    ar.clearPins(kinds: [.ai, .refit], focus: true)
+    lastLocate = nil
+    pinMessage = nil
+    updateGhost()
+    guard isAIGuide, player.currentStep != nil else { return }
+
+    if currentPhase == "refit", !screwMemory.isEmpty {
+      // Screw memory: the same holes come back, last out first in, so each screw returns where it came from.
+      ar.placeStoredPins(screwMemory.entries.reversed().map { ($0.number, $0.label, $0.transform) }, kind: .refit)
+      pinMessage = "Put each screw back in its numbered hole"
+    } else {
+      showWhere()
+    }
+  }
+
+  private func updateGhost() {
+    guard isAIGuide, ghostToolOn else { ar.ghostTurnsAnticlockwise = nil; return }
+    switch currentPhase {
+    case "remove": ar.ghostTurnsAnticlockwise = true
+    case "refit": ar.ghostTurnsAnticlockwise = false
+    default: ar.ghostTurnsAnticlockwise = nil
+    }
+  }
+
+  private func pinToggled(_ pin: ARSessionController.PinInfo) {
+    pinTicks += 1
+    guard pin.kind == .ai, currentPhase == "remove" else { return }
+    if pin.done {
+      let note = lastLocate?.located.items.first { $0.point == pin.photoPoint }?.note
+      screwMemory.remember(pin, note: note, photo: lastLocate?.snapshot.image)
+    } else {
+      screwMemory.forget(pin.id)
+    }
+  }
+
+  /// Finds the step's parts on the real laptop and pins them there. Runs by itself when an AI step opens.
   private func showWhere() {
-    guard let index = player.currentIndex, let target = assistant.lookFor(stepIndex: index), let jpeg = ar.snapshotJPEG() else { return }
+    guard let index = player.currentIndex, let step = player.currentStep, let target = assistant.lookFor(stepIndex: index) else { return }
+    locateTask?.cancel()
+    let stepId = step.id
     aiBusy = true
-    Task {
-      defer { aiBusy = false }
+    locateTask = Task {
+      defer { if player.currentStepId == stepId { aiBusy = false } }
+      // Pins land on surfaces ARKit has found; without one they'd float or fall to the floor.
+      var waited = 0.0
+      while !ar.hasHorizontalSurface, waited < 8 {
+        pinMessage = "Move the phone slowly around the laptop so I can see its surface"
+        try? await Task.sleep(for: .milliseconds(400))
+        if Task.isCancelled { return }
+        waited += 0.4
+      }
+      pinMessage = "Hold still: looking for \(target)…"
+      guard let snapshot = ar.captureSnapshot() else {
+        pinMessage = "The camera isn't ready yet. Try Re-scan."
+        return
+      }
       do {
-        let points = try await assistant.locate(target, jpeg: jpeg)
-        let placed = ar.placePins(points.map { ($0.x, $0.y, $0.label) })
-        pinMessage = placed > 0 ? "Pinned \(placed) × \(target)" : "Couldn't spot \(target). Move closer and try again."
+        let located = try await assistant.locate(target, step: step.text, snapshot: snapshot)
+        guard !Task.isCancelled, player.currentStepId == stepId else { return }
+        ar.clearPins(kinds: [.ai], focus: true)
+        let placed = ar.placePins(
+          located.items.map { ($0.point, $0.label) },
+          focus: located.focus,
+          focusLabel: located.focusLabel,
+          camera: snapshot.camera
+        )
+        lastLocate = (snapshot, located)
+        if placed > 0 {
+          pinMessage = "Found \(placed) × \(target). Tap each one as you go."
+        } else if located.focus != nil {
+          pinMessage = "Work in the highlighted area"
+        } else {
+          pinMessage = "Couldn't spot \(target). Move closer and tap Re-scan."
+        }
       } catch {
+        guard !Task.isCancelled else { return }
         pinMessage = "Couldn't look: \(error.localizedDescription)"
       }
     }

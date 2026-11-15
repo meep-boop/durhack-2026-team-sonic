@@ -1,12 +1,20 @@
 import SwiftUI
 
 struct StepCard: View {
+  struct PinProgress: Equatable {
+    var done: Int
+    var total: Int
+    var verb: String
+  }
+
   let player: GuidePlayer
   /// Marker guides only make sense once the marker is found; AI laptop guides don't use it.
   let canAdvance: Bool
   let outboxCount: Int
   @Binding var voiceOn: Bool
   var tools: AnyView? = nil
+  /// "3 of 8 done" while there are pins to tick on this step.
+  var pinProgress: PinProgress? = nil
   /// Ahmed's UNO Q rig's verdict on this step, when it checks it.
   var verification: StepVerified? = nil
   let onNext: () -> Void
@@ -43,6 +51,19 @@ struct StepCard: View {
         }
 
         if let tools { tools }
+
+        if let pinProgress {
+          HStack(spacing: 8) {
+            Image(systemName: pinProgress.done == pinProgress.total ? "checkmark.circle.fill" : "hand.tap.fill")
+              .foregroundStyle(pinProgress.done == pinProgress.total ? .green : .accentColor)
+            Text(pinProgress.done == pinProgress.total
+              ? "All \(pinProgress.total) \(pinProgress.verb). Tap Done."
+              : "\(pinProgress.done) of \(pinProgress.total) \(pinProgress.verb) · tap each pin as you go")
+              .font(.subheadline.weight(.semibold))
+              .contentTransition(.numericText())
+          }
+          .animation(.snappy, value: pinProgress)
+        }
 
         if let verification {
           Label(
