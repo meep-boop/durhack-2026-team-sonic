@@ -49,6 +49,7 @@ Source: `EVENT.md` §1 (one notes file, not yet checked against Devpost). The 02
 
 | Date | Decision |
 |---|---|
+| 2026-11-15 | The project's name is **Sonic Assist** (Ahmed, 10:18); "Remote Assist" was the working name. Devpost, the README and the pitch use Sonic Assist; code and folder names stay as they are |
 | 2026-11-15 | Scanning inside our own app, as a side route next to Scaniverse: the phone records photos with ARKit's camera poses in the marker's frame (`max-ios-scan`, merged only once Salman agrees and has built it in Xcode); an upload server on the relay laptop (port 8090) receives the zip and Max copies it to the Spark; our own gsplat script trains the splat in `~/scan`. Scaniverse stays the demo's scan; not shown as working until a real run has (Max, 08:00) |
 | 2026-11-15 | The demo opens with Salman's technician console (the expert clicks the live video, the mark lands on the real part), then the guide dashboard for the prepared guide, offline and the rig; replaces "scan first" in the 07:40 order (Ahmed, 08:30) |
 | 2026-11-15 | The demo is "expert builds, user follows": click a screw in the scan, it lands on the real screw, taps and ticks, offline and sync, the rig's ✓; extras last, only if they work (Ahmed, 07:40) |

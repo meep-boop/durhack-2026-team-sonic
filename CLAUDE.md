@@ -9,7 +9,7 @@ apply; the step-by-step protocols live in the skills it names (§ Triggers).*
 
 | Slot | Value |
 |---|---|
-| Project | **Remote Assist** (working name, from Max's plan; DurHack 2026) · team **Team Sonic** |
+| Project | **Sonic Assist** (decided by Ahmed, 2026-11-15; "Remote Assist" was the working name and is still in code, folder and app names) · team **Team Sonic** |
 | One-line pitch | Step-by-step 3D guidance on a phone, built by a remote engineer from a scan of the room, that keeps working when the network is down. |
 | Repo · main branch | `github.com/meep-boop/durhack-2026-team-sonic` · `main`. Builder branches: `<name>-<area>` |
 | Team | `progress.md` → **Who owns what** (names, GitHub logins, roles, branches). Docs owners: **ahmed, max** (`team.conf`) |
