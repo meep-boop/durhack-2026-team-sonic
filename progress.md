@@ -27,7 +27,7 @@ bottom, pushed to `main` straight away:
    git config user.email "<the email on YOUR GitHub account>"   # judges read who committed
    bash scripts/setup.sh <your key from team.conf>              # who you are, commit hooks, first docs sync
    ```
-   Not in `team.conf` yet? Ask a docs owner (ahmed) to add your key and brief.
+   Not in `team.conf` yet? Ask a docs owner (ahmed, max) to add your key and brief.
 2. **Claude Code:** start it **in the repo root**, so the every-prompt hook in `.claude/settings.json` runs (trust the
    folder when it asks). Then say "fetch the context".
 3. **Optional, but it's what we use:** `gitleaks` (secret scan on every commit), plus the Claude Code plugins listed
@@ -45,7 +45,7 @@ each builder's brief (`builder-file-<name>.md`, on the `context` branch).
 | Who | Role | Branch | Owns (paths / pieces) | How the rest plugs into it |
 |---|---|---|---|---|
 | **Ahmed** `meep-boop` | Docs owner; relay, protocol, sync, UNO Q rig | `ahmed-relay` | `relay/`, `contracts/`, `fixtures/`, `hardware/` (the UNO Q rig), the labelling endpoint; the team kit (`scripts/`, `kit/`, `team.conf`) and the shared docs on `context` | Build against `contracts/protocol.ts` and the fake peers in `fixtures/`. Ask Ahmed for protocol changes |
-| **Max** `xaw1` | Dashboard 3D view and the splats | `max-scene` | `dashboard/src/scene/`, the `dashboard/` shell, `splats/`, `pipeline/`, `docs/remote-assist/` | The guide builder calls `dashboard/src/scene/api.ts` |
+| **Max** `xaw1` | Docs owner; dashboard 3D view and the splats | `max-scene` | `dashboard/src/scene/`, the `dashboard/` shell, `splats/`, `pipeline/`, `docs/remote-assist/` | The guide builder calls `dashboard/src/scene/api.ts` |
 | **Laura** `furtunalaura` | Guide builder, models, demo set, pitch | `laura-guide` | `dashboard/src/guide/`, `assets/` (marker and models), the demo set, the README and video | Both apps load `assets/models/`; don't rename or resize a model without flagging |
 | **Salman** `salman-abdulrazaq-ali` | The iPhone app | `salman-ios` | `ios/` | Speaks `contracts/protocol.ts` to the relay; loads the marker and USDZ models from `assets/` |
 
@@ -421,4 +421,60 @@ each builder's brief (`builder-file-<name>.md`, on the `context` branch).
   `AR/Shapes.swift` if it switches over every model), or a guide with an SSD step won't decode.
 - 📨 To @max: `ssd.glb` is next to the others in `assets/models/`; nothing else changes for the scene.
 - ⚠️ Conflicts: @salman — a new `ModelName` case his decoder must accept | @ahmed — his two files, edited as agreed
+- Conflict status: open
+
+### 2026-11-15 01:00 — owner sweep: the ssd model, and Salman's newer branch — @ahmed
+- Shipped: no code. Laura's `ssd` model and contract change (`61a771e`) checked: relay validation matches the
+  contract. `salman-ios-polish` (`820423b`) already fixes items 1–3 of the 00:54 pre-check and has `case ssd`, and
+  it merges cleanly with `main`. Not compiled: read from the code. Still open: the current step doesn't survive an app
+  restart (Salman's item B).
+- Touched: nothing in the repo; on `context`: `builder-file-salman.md`, `builder-file-ahmed.md`
+- 📨 To @salman: for the walking skeleton, merge `salman-ios-polish` (it carries PR #4), not `salman-ios` on its own.
+- ⚠️ Conflicts: none (Laura's edit to `contracts/protocol.ts` and `relay/validate.ts` was agreed and is fine)
+- Conflict status: resolved by @ahmed 2026-11-15
+
+### 2026-11-15 01:45 — a plan to the deadline, after reading every branch — @ahmed
+- Shipped: no code. The phone is nearly complete but not on `main`; the dashboard is a splat viewer that can't talk
+  to the relay, so the 02:00 walking skeleton was missed. The plan is a ladder: rung 0 the real phone plays a
+  prepared guide, rung 1 the dashboard sends it, rung 2 a guide built in the scan lines up, rung 3 the extras. Each
+  brief has an ordered block at the top of its tasks. Max is now a second docs owner.
+- Touched: `team.conf`; on `context`: all four briefs, `PROJECT.md`, `CLAUDE.md`
+- Decision (Ahmed): taps get a receipt from the relay; two scans with a calibration each; Salman's call page is the
+  call screen; cut-outs and 3D dragging stay, after rung 2; the Clock is unchanged.
+- 📨 To @max: merge PR #6 now. Ahmed asks your OK to build `dashboard/src/relay/client.ts` and
+  `dashboard/src/scene/calibration.ts`; reply here or tell him. You can now publish any shared doc.
+- 📨 To @salman: merge `salman-ios-polish` and run the smoke test in your brief before more extras. The tap receipt
+  needs a small change in `RelayClient`, after the relay side lands. Your `chat` message waits for Ahmed's decision.
+- 📨 To @laura: the board first, with corner stops (the laptop is Ahmed's only machine). Post the real SSD-swap
+  steps. No video panel: Salman's page covers it.
+- ⚠️ Conflicts: @max — two new files proposed in `dashboard/` | @salman — the receipt changes when a tap leaves his
+  outbox | @laura — her task 5 is superseded
+- Conflict status: open
+
+### 2026-11-15 01:47 — taps get a receipt from the relay — @ahmed
+- Shipped: the relay sends each `step.done` back to the phone that sent it, once saved; a repeat gets one too and is
+  still forwarded only once. `fixtures/fake-phone.ts` keeps a tap queued until its receipt and resends the queue on
+  reconnect: the reference for the app. 41 relay tests pass. Commit `8756560`.
+- Touched: `relay/relay.ts`, `contracts/protocol.ts` (comment only, no shape change), `fixtures/fake-phone.ts`
+- 📨 To @salman: in `RelayClient`, remove a tap from the outbox when its `step.done` comes back (match `doneId`), not
+  when the send completes, and resend the whole outbox in order on reconnect. Older builds just ignore the echo.
+- ⚠️ Conflicts: @salman — the phone now receives its own `step.done`; harmless until he uses it
+- Conflict status: open
+
+### 2026-11-15 01:47 — the relay keeps one calibration per scan — @ahmed
+- Shipped: `calib.set` is now kept per `splatId` (the scan's file name) and every one is replayed to a dashboard
+  that connects, so the closed scan and the cover-off scan each keep their own. The message shape is unchanged. An
+  older `relay/state.json` still loads. 41 relay tests pass. Commit `b9a5e86`.
+- Touched: `relay/relay.ts`, `contracts/protocol.ts` (comment only)
+- 📨 To @max: send one `calib.set` per scan with its file name as `splatId`; on connect you get them all back.
+- ⚠️ Conflicts: none
+- Conflict status: resolved by @ahmed 2026-11-15
+
+### 2026-11-15 01:51 — no text chat — @ahmed
+- Shipped: nothing. The `chat` message proposed in PR #7 stays out of the contract and the relay.
+- Touched: on `context`: `PROJECT.md` (Parked), `builder-file-salman.md`
+- Decision (Ahmed): the team doesn't want chat; the call carries voice.
+- 📨 To @salman: please remove the chat screen from the app and from `ios/expert-call/` before PR #7 merges. The
+  relay answers `chat` with an error.
+- ⚠️ Conflicts: @salman — his chat UI in PR #7 has no relay behind it
 - Conflict status: open

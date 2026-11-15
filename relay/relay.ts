@@ -32,7 +32,8 @@ export type Relay = { port: number; close: () => Promise<void> };
 type State = {
   guide: Guide | null;
   stepId: string | null;
-  calib: CalibSet | null;
+  // One per scan, by splatId: the demo has a closed scan and a cover-off scan sharing the marker.
+  calibs: Record<string, CalibSet>;
   done: StepDone[];
   verified: StepVerified[];
 };
@@ -65,12 +66,13 @@ const ROUTES: Record<ForwardedType, { from: Role[]; to: (sender: Role) => Role[]
 
 const reaches = (type: ForwardedType, sender: Role, role: Role) => ROUTES[type].to(sender).includes(role);
 
-const emptyState = (): State => ({ guide: null, stepId: null, calib: null, done: [], verified: [] });
+const emptyState = (): State => ({ guide: null, stepId: null, calibs: {}, done: [], verified: [] });
 
 function loadState(path: string | undefined, fresh: boolean): State {
   if (!path || fresh || !existsSync(path)) return emptyState();
   try {
-    return JSON.parse(readFileSync(path, "utf8")) as State;
+    // Over the defaults, so a state file saved before a field existed still loads.
+    return { ...emptyState(), ...(JSON.parse(readFileSync(path, "utf8")) as Partial<State>) };
   } catch (error) {
     throw new Error(`${path} can't be read (${(error as Error).message}). Start with --fresh to discard it.`);
   }
@@ -117,8 +119,8 @@ export async function startRelay(options: RelayOptions): Promise<Relay> {
   };
 
   const replay = (socket: WebSocket, role: Role) => {
-    const { guide, stepId, calib } = state;
-    if (calib && reaches("calib.set", "expert", role)) send(socket, calib);
+    const { guide, stepId } = state;
+    if (reaches("calib.set", "expert", role)) Object.values(state.calibs).forEach((calib) => send(socket, calib));
     if (guide && reaches("guide.set", "expert", role)) send(socket, { type: "guide.set", guide });
     // The phone owns its own position. Its taps made offline arrive only after this replay, so replaying the
     // relay's step would send a phone that worked offline backwards (decided 2026-11-14, PROJECT.md).
@@ -170,18 +172,21 @@ export async function startRelay(options: RelayOptions): Promise<Relay> {
         state.stepId = message.stepId;
         break;
       case "calib.set":
-        state.calib = message;
+        state.calibs[message.splatId] = message;
         break;
       case "step.done": {
         if (guide?.id !== message.guideId) return refuse(socket, `the relay has no guide "${message.guideId}"`, message.type);
-        // The phone resends its offline queue when it reconnects, so a repeat is expected and dropped quietly.
-        if (state.done.some((done) => done.doneId === message.doneId)) return;
+        // The tap sent back is the phone's receipt: it keeps a tap queued until then, so one written to a dead link
+        // isn't lost. A repeat gets a receipt too, because the phone resends exactly when the first one never came.
+        if (state.done.some((done) => done.doneId === message.doneId)) return send(socket, message);
         state.done.push(message);
         if (message.stepId === state.stepId) {
           const index = guide.steps.findIndex((step) => step.id === message.stepId);
           state.stepId = guide.steps[index + 1]?.id ?? state.stepId;
         }
-        break;
+        save();
+        send(socket, message);
+        return forward(message, route.to(sender.role), socket);
       }
       case "step.verified":
         if (guide?.id !== message.guideId) return refuse(socket, `the relay has no guide "${message.guideId}"`, message.type);
