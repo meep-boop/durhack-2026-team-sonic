@@ -13,6 +13,8 @@ final class CallManager: NSObject {
   private(set) var state: State = .idle {
     didSet { updateVideoFlow() }
   }
+  /// When this call first connected, for the call bar's clock. Nil until then, and after the call.
+  private(set) var connectedAt: Date?
   private(set) var isMuted = false
   private(set) var isSpeakerOn = true
   /// Set when the expert sends their webcam, so the phone can show a face bubble.
@@ -234,6 +236,7 @@ final class CallManager: NSObject {
     caption = nil
     pendingOffer = nil
     pendingCandidates = []
+    connectedAt = nil
     state = .idle
     audioSession.endCall()
   }
@@ -255,7 +258,9 @@ extension CallManager: RTCPeerConnectionDelegate {
     onMain { [weak self] in
       guard let self, peerConnection === self.peer else { return }
       switch newState {
-      case .connected, .completed: self.state = .live
+      case .connected, .completed:
+        if self.connectedAt == nil { self.connectedAt = Date() }
+        self.state = .live
       case .disconnected: self.state = .reconnecting
       case .failed, .closed: self.tearDown()
       default: break

@@ -11,29 +11,13 @@ struct StatusCapsule: View {
 
   var body: some View {
     Button(action: onTap) {
-      HStack(spacing: 14) {
-        if let laptopLocked {
-          item("laptopcomputer", laptopLocked ? .green : .orange, laptopLocked ? "Locked" : "Set up")
-        } else {
-          item("viewfinder", markerColor, markerLabel)
-        }
-        Divider().frame(height: 16)
-        item("antenna.radiowaves.left.and.right", relayColor, relayLabel)
-        if relay.state == .connected {
-          Divider().frame(height: 16)
-          item("person.fill", relay.expertOnline ? .green : .secondary, relay.expertOnline ? "Expert" : "No expert")
-        }
-        if call.state == .live {
-          Divider().frame(height: 16)
-          HStack(spacing: 5) {
-            Circle().fill(.red).frame(width: 8, height: 8)
-              .phaseAnimator([1.0, 0.3]) { $0.opacity($1) } animation: { _ in .easeInOut(duration: 0.8) }
-            Text("LIVE").font(.caption.weight(.heavy))
-          }
-        }
+      // Words when they fit, icons alone when they don't: never one syllable per line.
+      ViewThatFits(in: .horizontal) {
+        segments(labelled: true)
+        segments(labelled: false)
       }
       .font(.footnote.weight(.semibold))
-      .padding(.horizontal, 16)
+      .padding(.horizontal, 14)
       .padding(.vertical, 10)
       .glassBackground(in: Capsule())
     }
@@ -41,10 +25,27 @@ struct StatusCapsule: View {
     .accessibilityLabel("Status: \(markerLabel), \(relayLabel). Tap for connection settings.")
   }
 
-  private func item(_ symbol: String, _ color: Color, _ label: String) -> some View {
-    HStack(spacing: 6) {
+  private func segments(labelled: Bool) -> some View {
+    HStack(spacing: labelled ? 12 : 14) {
+      if let laptopLocked {
+        item("laptopcomputer", laptopLocked ? .green : .orange, laptopLocked ? "Locked" : "Set up", labelled)
+      } else {
+        item("viewfinder", markerColor, markerLabel, labelled)
+      }
+      Divider().frame(height: 14)
+      item("antenna.radiowaves.left.and.right", relayColor, relayLabel, labelled)
+      if relay.state == .connected {
+        Divider().frame(height: 14)
+        item("person.fill", relay.expertOnline ? .green : .secondary, relay.expertOnline ? "Expert" : "No expert", labelled)
+      }
+    }
+    .fixedSize()
+  }
+
+  private func item(_ symbol: String, _ color: Color, _ label: String, _ labelled: Bool) -> some View {
+    HStack(spacing: 5) {
       Image(systemName: symbol).foregroundStyle(color)
-      Text(label)
+      if labelled { Text(label).lineLimit(1) }
     }
   }
 

@@ -96,12 +96,13 @@ struct ContentView: View {
 
       // Out of the view tree entirely when the app isn't on screen, so its Metal layer can't ask for drawables.
       if let face = call.remoteVideoTrack, call.state == .live, scenePhase == .active {
+        // A small picture-in-picture under the call bar (48 pt plus the screen's top padding), never over a button.
         RemoteVideoView(track: face)
-          .frame(width: 96, height: 128)
-          .clipShape(RoundedRectangle(cornerRadius: 18, style: .continuous))
-          .overlay(RoundedRectangle(cornerRadius: 18, style: .continuous).stroke(.white.opacity(0.4), lineWidth: 1))
+          .frame(width: 76, height: 100)
+          .clipShape(RoundedRectangle(cornerRadius: 16, style: .continuous))
+          .overlay(RoundedRectangle(cornerRadius: 16, style: .continuous).stroke(.white.opacity(0.35), lineWidth: 1))
           .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topTrailing)
-          .padding(.top, 70)
+          .padding(.top, 64)
           .padding(.trailing)
       }
     }
@@ -114,9 +115,19 @@ struct ContentView: View {
     ZStack {
       SpotlightOverlay(tracker: spotlight)
       VStack(spacing: 10) {
-        InCallBar(call: call) { showingTranscript = true }
-        CaptionStrip(call: call)
+        HStack(spacing: 10) {
+          CallBar(call: call)
+          Button { showingTranscript = true } label: {
+            Image(systemName: "captions.bubble")
+              .font(.headline)
+              .frame(width: 44, height: 44)
+              .glassBackground(in: Circle())
+          }
+          .buttonStyle(.plain)
+          .accessibilityLabel("Call transcript")
+        }
         Spacer()
+        CaptionStrip(call: call)
         // The steps are one tap away: the guide screen keeps the call bar, so the call carries on.
         Button(action: enterGuide) {
           Label("Open the guide", systemImage: "list.number")
@@ -145,21 +156,21 @@ struct ContentView: View {
     ZStack {
       SpotlightOverlay(tracker: spotlight)
 
-      if !ar.markerSeen && !isLaptopGuide && player.currentStep != nil {
+      // Not during a call: the expert is pointing at things, and the step card still says to find the marker.
+      if !ar.markerSeen && !isLaptopGuide && player.currentStep != nil && !inCall {
         FindMarkerHint().transition(.opacity)
       }
 
       VStack(spacing: 10) {
+        // In a call the call bar takes the status pill's place: one row, never wrapped.
         HStack(spacing: 10) {
-          StatusCapsule(ar: ar, relay: relay, call: call, laptopLocked: isLaptopGuide ? laptopFrame != nil : nil) { showingConnection = true }
-          Spacer(minLength: 0)
+          if inCall {
+            CallBar(call: call).transition(.opacity)
+          } else {
+            StatusCapsule(ar: ar, relay: relay, call: call, laptopLocked: isLaptopGuide ? laptopFrame != nil : nil) { showingConnection = true }
+            Spacer(minLength: 0)
+          }
           guideMenu
-        }
-
-        if call.state != .idle && call.state != .ringing {
-          InCallBar(call: call) { showingTranscript = true }
-            .transition(.move(edge: .top).combined(with: .opacity))
-          CaptionStrip(call: call)
         }
 
         if ar.cameraStalled {
@@ -181,6 +192,8 @@ struct ContentView: View {
         }
 
         Spacer()
+
+        if inCall { CaptionStrip(call: call) }
 
         if let setup {
           LaptopSetupCoach(stage: setup, problem: setupProblem, onCancel: cancelSetup)
@@ -385,14 +398,14 @@ struct ContentView: View {
       guard ar.placeExpertPin(at: CGPoint(x: tap.x, y: tap.y), label: tap.label, secondsAgo: tap.secondsAgo) else { return false }
       spotlight.enabled = true
       pinTicks += 1
-      pinMessage = "The expert marked: \(tap.label)"
+      flashPinMessage("The expert marked: \(tap.label)")
       return true
     }
     call.onExpertArea = { area in
       guard ar.placeExpertArea(corners: area.corners, label: area.label, secondsAgo: area.secondsAgo) else { return false }
       spotlight.enabled = true
       pinTicks += 1
-      pinMessage = "The expert marked: \(area.label)"
+      flashPinMessage("The expert marked: \(area.label)")
       return true
     }
     call.onExpertClear = {
@@ -464,6 +477,16 @@ struct ContentView: View {
   /// The mic listens for commands only when nothing else is using the audio: not while the app talks, not in a call.
   private func updateListening() {
     commands.setSuspended(appSpeaking || call.state != .idle || scenePhase == .background)
+  }
+
+  /// A note about the expert's mark that clears itself, so the step's own note (find the marker, pins left) comes
+  /// back instead of staying hidden for the rest of the step.
+  private func flashPinMessage(_ text: String) {
+    pinMessage = text
+    Task {
+      try? await Task.sleep(for: .seconds(4))
+      if pinMessage == text { pinMessage = nil }
+    }
   }
 
   /// The expert's finished lines drive the screen when they're a clear command (`ExpertSpeech`), so the user can

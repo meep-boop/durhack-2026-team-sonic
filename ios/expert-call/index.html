@@ -19,7 +19,7 @@
   .spacer { flex: 1; }
   main { display: grid; grid-template-columns: 1fr 340px; gap: 20px; padding: 20px; height: calc(100vh - 60px); }
   .stage { position: relative; background: #000; border-radius: 18px; overflow: hidden; border: 1px solid var(--line); display: grid; place-items: center; }
-  .stage video { width: 100%; height: 100%; object-fit: contain; background: #000; }
+  .stage video#remote { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: contain; background: #000; }
   .stage .empty { position: absolute; text-align: center; color: var(--muted); padding: 24px; }
   .stage .empty strong { display: block; color: var(--text); font-size: 18px; margin-bottom: 6px; }
   .badge { position: absolute; top: 14px; left: 14px; display: none; align-items: center; gap: 8px; background: rgba(0,0,0,.55); backdrop-filter: blur(10px); padding: 6px 12px; border-radius: 999px; font-size: 13px; }
@@ -40,7 +40,7 @@
   .tools button.on { background: var(--accent); }
   details summary { cursor: pointer; font-size: 12px; text-transform: uppercase; letter-spacing: .08em; color: var(--muted); font-weight: 600; }
   details[open] summary { margin-bottom: 10px; }
-  #selfView { position: absolute; right: 14px; bottom: 14px; width: 180px; border-radius: 12px; border: 1px solid var(--line); display: none; }
+  #selfView { position: absolute; right: 16px; bottom: 16px; width: 200px; height: auto; aspect-ratio: 4 / 3; object-fit: cover; border-radius: 14px; border: 1px solid rgba(255,255,255,.18); box-shadow: 0 8px 24px rgba(0,0,0,.45); display: none; z-index: 2; }
   aside { display: flex; flex-direction: column; gap: 14px; overflow: auto; }
   .card { background: var(--panel); border: 1px solid var(--line); border-radius: 16px; padding: 16px; }
   .card h2 { font-size: 12px; text-transform: uppercase; letter-spacing: .08em; color: var(--muted); margin: 0 0 10px; font-weight: 600; }
@@ -337,7 +337,8 @@ function startScribe(which, token) {
   const tracks = stream?.getAudioTracks() ?? [];
   if (!tracks.length) return log(`No ${which === "expert" ? "microphone" : "phone"} audio to transcribe yet`);
   const speaker = which === "expert" ? "expert" : "user";
-  const url = "wss://api.elevenlabs.io/v1/speech-to-text/realtime?model_id=scribe_v2_realtime&audio_format=pcm_16000&commit_strategy=vad&token=" + encodeURIComponent(token);
+  // English only: auto-detect turned room chatter into Russian captions on the phone (ISO 639-1, per the API docs).
+  const url = "wss://api.elevenlabs.io/v1/speech-to-text/realtime?model_id=scribe_v2_realtime&audio_format=pcm_16000&commit_strategy=vad&language_code=en&token=" + encodeURIComponent(token);
   const ws = new WebSocket(url);
   const ctx = new AudioContext({ sampleRate: 16000 });
   let node, pending = [], pendingSamples = 0, stopped = false;
