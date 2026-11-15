@@ -64,32 +64,35 @@ and the walking skeleton is the next one. Anything new for you is in the block a
 ## 3. ▶ Current tasks (2026-11-14), in order
 *Status: ⬜ not started · 🟡 in progress · ⏸ blocked · ✅ done*
 
-**▶ The last stretch (from @ahmed, 2026-11-15 07:37), ahead of everything below.** Why boxes hover on the phone: no guide has real
-positions yet (the only scan has no marker; the prepared guide has placeholders). Decided by Ahmed: rescan and place
-in the scan, with a ruler photo as the fallback; bigger animations; the demo is "expert builds, user follows".
-1. ⬜ P0 **Rescan now, with Laura:** laptop face down in its tape corners, marker fully in view. Closed scan,
-   then the cover off without moving the laptop, then the open scan. New file names in `dashboard/public/scans/`.
-2. ⬜ P0 **Calibrate both** (under 5 mm) and **build the demo guide in the scan**: the 8 cover screws (screw,
-   unscrew) in the closed scan; the SSD screw and the SSD (ssd, pull / push, rig check `ssd-bay`) in the open one.
-   Save it to a file as well as sending it.
-3. ⬜ P0 **Bigger animation preview**, same numbers as the phone: see the spec below (corrected 2026-11-15 07:38 after reading the code on `main`).
-   **What's actually there, and why it looks flat:** `unscrew` only spins the screw in place (`Shapes.spin`, quarter
-   turns, no rise), and a round 1.6 cm screw spinning on its own axis looks still. `pull` / `push` slide 2 cm and
-   come back (`autoReverse`), so they read as a wobble with no direction. The box is 1.2 mm lines with an 18% fill;
-   the label is 12 mm text; every object in a step moves in step with the others. The dashboard preview is different
-   again (3 cm slide, two turns rising 5 mm, `scene/preview.ts`).
-   **Spec, same on both sides, no message change:**
-   - `unscrew`: two turns anticlockwise while rising 15 mm along the axis over 1.6 s, hold 0.4 s, restart from the
-     hole (repeat, not reverse).
-   - `pull` / `push`: 4 cm one way over 1.0 s, hold 0.4 s, restart (repeat, not reverse), so the direction is clear.
-   - Each object's loop starts 0.15 s after the one before it, so 8 screws ripple instead of moving as one.
-   - Phone only: a pulsing ring on the surface under each object (`Shapes.pulse` already does this for pins), box
-     lines 2.5 mm, label 18 mm. Optional: the ghost screwdriver (`Shapes.ghostTool`) over the current screw. `dashboard/src/scene/preview.ts` and its test.
-4. ⬜ P0 **First real run with the phone:** look at each box on the real laptop; measure three screws with a ruler
-   and post the error in mm. If boxes are mirrored, the marker axes are the other way: `scene/calibration.ts`.
-5. ⬜ P1 Extras for the last 30 s of the demo, only if they work: AI labels (one live Claude call, Ahmed OKs it),
-   the Pixal3D prop labelled "AI-generated from a photo".
-- Ahmed's laptop is the prop from the scan on, so his agent is offline: you're the docs owner on duty.
+**▶ YOUR CHECKLIST (from @ahmed, 2026-11-15 07:47). Do these top to bottom; tick each with ✅ and a time. Everything below is
+background.** Why: boxes float on the phone because no guide has real positions yet. The fix is a scan with the
+marker in it, then clicking each part in that scan.
+1. ⬜ **Scan, closed.** Laptop face down in its tape corners, the whole marker visible beside it. Scan in Scaniverse,
+   export, and save it as `dashboard/public/scans/closed-<time>.usdz` (a new name, never overwrite).
+2. ⬜ **Scan, open.** Take the cover off without moving the laptop. Scan again, save as `open-<time>.usdz`.
+3. ⬜ **Load both:** open the dashboard with `?closed=closed-<time>.usdz&open=open-<time>.usdz`.
+4. ⬜ **Calibrate each scan:** click the marker's four corners in order (top-left, top-right, bottom-right,
+   bottom-left). The chip must show under 5 mm. If it's refused, click again more carefully.
+5. ⬜ **Build the guide** in Laura's panel, using her 12 steps (her 02:11 board entry). Closed scan: "Place on scan"
+   on each of the 8 cover screws, model `screw`, action `unscrew`. Open scan: the SSD screw (`screw`, `unscrew`), the
+   SSD (`ssd`, `pull`, rig check "out"), then again (`ssd`, `push`, rig check "in").
+6. ⬜ **Send it**, and check the phone shows the same title.
+7. ⬜ **Look at the phone over the real laptop.** Is each box on its screw? If everything is mirrored or turned,
+   tell Ahmed: the marker's axes are the other way round (a few lines in `dashboard/src/scene/calibration.ts`).
+8. ⬜ **Measure** three screws with a ruler: how far is the box from the real screw? Post the three numbers.
+9. ⬜ **Commit both scans** and post a board entry.
+10. ⬜ **Make the preview match the phone** (`dashboard/src/scene/preview.ts`): unscrew = two turns rising 15 mm,
+    then restart; pull / push = 4 cm one way, then restart.
+11. ⬜ Only if 1–9 work: one live AI-labels call (ask Ahmed first, it's paid), and the AI-made prop.
+- You're the docs owner while Ahmed's laptop is the prop.
+
+**How to start everything (for the run-through and the demo), in this order:**
+1. Max's laptop, terminal 1: `cd relay && npm install && npm start`. Note the `ws://…:8080` line it prints.
+2. Max's laptop, terminal 2: `cd dashboard && npm install && npm run dev`. Open the link it prints.
+3. Max's laptop, terminal 3: `cd ios/expert-call && python3 -m http.server 8000` (the Call button opens this).
+4. Phone: open the app, tap the status pill, enter or scan the relay's `ws://` address.
+5. UNO Q: press Run in App Lab. The console must say `connected to ws://…` and `nicla sees the part in: …`.
+6. Dashboard header: the Relay, Phone and Rig lights are all green. If one is grey, fix that one before going on.
 
 **▶ What's left (from @ahmed, 2026-11-15 04:12), ahead of the 01:45 block below.** 
 1. ⬜ P0 **Rescan both (closed, cover off) with the marker in view**, at Laura's taped table, then calibrate each.

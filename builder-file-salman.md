@@ -63,30 +63,30 @@ splats until that's settled. Training splats in the app (the scan is taken in Sc
 ## 3. ▶ Current tasks (2026-11-14), in order
 *Status: ⬜ not started · 🟡 in progress · ⏸ blocked · ✅ done*
 
-**▶ The last stretch (from @ahmed, 2026-11-15 07:37), ahead of everything below.** Why boxes hover on the phone: no guide has real
-positions yet (the only scan has no marker; the prepared guide has placeholders). Decided by Ahmed: rescan and place
-in the scan, with a ruler photo as the fallback; bigger animations; the demo is "expert builds, user follows".
-1. ⬜ P0 **Bigger animations on the phone** (Ahmed allows this one change after the freeze; no message change):
-   see the spec below (corrected 2026-11-15 07:38 after reading the code on `main`).
-   **What's actually there, and why it looks flat:** `unscrew` only spins the screw in place (`Shapes.spin`, quarter
-   turns, no rise), and a round 1.6 cm screw spinning on its own axis looks still. `pull` / `push` slide 2 cm and
-   come back (`autoReverse`), so they read as a wobble with no direction. The box is 1.2 mm lines with an 18% fill;
-   the label is 12 mm text; every object in a step moves in step with the others. The dashboard preview is different
-   again (3 cm slide, two turns rising 5 mm, `scene/preview.ts`).
-   **Spec, same on both sides, no message change:**
-   - `unscrew`: two turns anticlockwise while rising 15 mm along the axis over 1.6 s, hold 0.4 s, restart from the
-     hole (repeat, not reverse).
-   - `pull` / `push`: 4 cm one way over 1.0 s, hold 0.4 s, restart (repeat, not reverse), so the direction is clear.
-   - Each object's loop starts 0.15 s after the one before it, so 8 screws ripple instead of moving as one.
-   - Phone only: a pulsing ring on the surface under each object (`Shapes.pulse` already does this for pins), box
-     lines 2.5 mm, label 18 mm. Optional: the ghost screwdriver (`Shapes.ghostTool`) over the current screw. `Shapes.animate` in `ios/RemoteAssist/AR/Shapes.swift`. Max matches the dashboard preview.
-2. ⬜ P0 **PR #12**: run its phone check (45 s camera, Done → receipt) and merge it.
-3. ⬜ P0 **Be at the table for the first real run** once Max's guide is built in the scan: the expert's guide, not
-   the laptop guide, is the demo's spine. Post which printed edges red +X and blue +Z point to.
-4. ⬜ P0 **The call beat:** `ios/expert-call/` served on port 8000 on Max's laptop, tap-to-point tried against Max's
-   relay (your § 20 says that's untested).
-5. ⏸ Done in the laptop guide reaching the relay needs a contract change: not before the demo (Ahmed).
-- Accepted by Ahmed: #11 on `main` as the demo build. Thanks for measuring the freeze (§ 20).
+**▶ YOUR CHECKLIST (from @ahmed, 2026-11-15 07:47). Do these top to bottom; tick each with ✅ and a time. Everything below is
+background.** Why: boxes float on the phone because no guide has real positions yet. The fix is a scan with the
+marker in it, then clicking each part in that scan.
+1. ⬜ **Check PR #12 on the phone** (45 s of camera with no freeze; tap Done and see it synced), then merge it.
+2. ⬜ **Make the animations readable** in `ios/RemoteAssist/AR/Shapes.swift`:
+   - unscrew: two turns anticlockwise while rising 15 mm over 1.6 s, hold 0.4 s, restart from the hole;
+   - pull / push: 4 cm one way over 1.0 s, hold 0.4 s, restart (not back and forth);
+   - start each object 0.15 s after the one before, so 8 screws ripple;
+   - a pulsing ring under each part (`Shapes.pulse`), box lines 2.5 mm, label 18 mm.
+   Build, look at it on the phone, merge.
+3. ⬜ **Look at the axis marker on the printed marker** and post: red points to which printed edge, blue to which.
+4. ⬜ **Be at the table** when Max sends the guide built in the scan. Connect to Max's relay, point at the marker,
+   and say whether each box sits on its screw.
+5. ⬜ **Try the call from Max's laptop:** press Call on the dashboard, accept on the phone, tap the video, see the pin.
+6. ⬜ **Tell Laura** whether ElevenLabs is in the demo build.
+- For the demo, use "the expert's guide" on the start screen, not the laptop guide: only that one reaches the dashboard.
+
+**How to start everything (for the run-through and the demo), in this order:**
+1. Max's laptop, terminal 1: `cd relay && npm install && npm start`. Note the `ws://…:8080` line it prints.
+2. Max's laptop, terminal 2: `cd dashboard && npm install && npm run dev`. Open the link it prints.
+3. Max's laptop, terminal 3: `cd ios/expert-call && python3 -m http.server 8000` (the Call button opens this).
+4. Phone: open the app, tap the status pill, enter or scan the relay's `ws://` address.
+5. UNO Q: press Run in App Lab. The console must say `connected to ws://…` and `nicla sees the part in: …`.
+6. Dashboard header: the Relay, Phone and Rig lights are all green. If one is grey, fix that one before going on.
 
 **▶ What's left (from @ahmed, 2026-11-15 04:12), ahead of the 01:45 block below.** The phone is the one piece not on `main`, and the
 camera freeze on `salman-ios-ar` has no confirmed cause after five fixes. Ahmed's decision: **the plain build first.**

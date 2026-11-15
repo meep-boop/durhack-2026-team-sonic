@@ -65,18 +65,30 @@ them, so a renamed or resized model breaks two apps).
 ## 3. ▶ Current tasks (2026-11-14), in order
 *Status: ⬜ not started · 🟡 in progress · ⏸ blocked · ✅ done*
 
-**▶ The last stretch (from @ahmed, 2026-11-15 07:37), ahead of everything below.** Why boxes hover on the phone: no guide has real
-positions yet (the only scan has no marker; the prepared guide has placeholders). Decided by Ahmed: rescan and place
-in the scan, with a ruler photo as the fallback; bigger animations; the demo is "expert builds, user follows".
-1. ⬜ P0 **Rescan with Max now** (his item 1). While the laptop is on the table, take **a top-down photo with a
-   ruler in view**, closed and again with the cover off: the fallback for `fixtures/ssd-swap-guide.json`.
-2. ⬜ P0 **Own the 5-minute beat sheet.** A draft is in the 07:45 board entry: expert clicks a screw and picks
-   "unscrew" → it lands on the real screw → taps and ticks → phone Wi-Fi off, keeps going, syncs → SSD out, the rig's
-   ✓ → the call with tap-to-point → extras → what's real. Put it in `PROJECT.md` §9 with who speaks.
-3. ⬜ P0 **Two timed run-throughs** before the video. For the offline beat turn off only the phone's Wi-Fi: the
-   hotspot also carries the rig and the dashboard.
-4. ⬜ P0 **Video, README, Devpost** (times in the Clock). Say "prepared guide" if the scan route didn't make it;
-   "mesh" or "splat" as Max says; every AI part labelled.
+**▶ YOUR CHECKLIST (from @ahmed, 2026-11-15 07:47). Do these top to bottom; tick each with ✅ and a time. Everything below is
+background.** Why: boxes float on the phone because no guide has real positions yet. The fix is a scan with the
+marker in it, then clicking each part in that scan.
+1. ⬜ **Set the table:** laptop face down in its tape corners, the whole marker visible. Tell Max it's ready.
+2. ⬜ **Take two photos from straight above** with a ruler lying on the table in view: one closed, one with the
+   cover off. Keep them; they're the fallback if the scan fails.
+3. ⬜ **Help Max place the parts** (his steps 4–6) using your 12 steps.
+4. ⬜ **Write the 5-minute script** in `PROJECT.md` §9, one line per beat, with who speaks:
+   problem (0:30) → expert clicks a screw, picks unscrew, sends (0:45) → it appears on the real screw (0:30) → taps
+   and ticks (0:30) → phone Wi-Fi off, it keeps going, back on, it syncs (0:45) → SSD out, the rig's ✓ (0:30) → call,
+   expert taps the video (0:30) → extras if they work (0:30) → what's real (0:30).
+5. ⬜ **Two run-throughs with a timer.** Stop at 5:00 whatever happens and cut what didn't fit.
+6. ⬜ **Record the video** (time in the Clock).
+7. ⬜ **Swap the README:** copy `docs/README.judges.draft.md` over the root `README.md`, list every framework,
+   credit Claude Code, Claude, and ElevenLabs only if it's in the demo. Don't mention Gemini or Hunyuan.
+8. ⬜ **Submit on Devpost** (time in the Clock): repo link, video, challenges ticked, AI tools credited.
+
+**How to start everything (for the run-through and the demo), in this order:**
+1. Max's laptop, terminal 1: `cd relay && npm install && npm start`. Note the `ws://…:8080` line it prints.
+2. Max's laptop, terminal 2: `cd dashboard && npm install && npm run dev`. Open the link it prints.
+3. Max's laptop, terminal 3: `cd ios/expert-call && python3 -m http.server 8000` (the Call button opens this).
+4. Phone: open the app, tap the status pill, enter or scan the relay's `ws://` address.
+5. UNO Q: press Run in App Lab. The console must say `connected to ws://…` and `nicla sees the part in: …`.
+6. Dashboard header: the Relay, Phone and Rig lights are all green. If one is grey, fix that one before going on.
 
 **▶ What's left (from @ahmed, 2026-11-15 04:12), ahead of the 01:45 block below.** 
 1. ⬜ P0 **Scan with Max now:** the laptop in its tape corners, marker fully in view, closed then cover off.

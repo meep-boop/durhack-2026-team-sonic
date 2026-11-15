@@ -65,13 +65,24 @@ but all three teammates build on them, so every change after the first version i
 ## 3. ▶ Current tasks (2026-11-14), in order
 *Status: ⬜ not started · 🟡 in progress · ⏸ blocked · ✅ done*
 
-**▶ The last stretch (from @ahmed, 2026-11-15 07:37), ahead of everything below.** Why boxes hover on the phone: no guide has real
-positions yet (the only scan has no marker; the prepared guide has placeholders). Decided by Ahmed: rescan and place
-in the scan, with a ruler photo as the fallback; bigger animations; the demo is "expert builds, user follows".
-1. ⬜ **Back up the laptop** (the BitLocker key is done), push, then hand it over for the scans.
-2. ⬜ **At the table:** be the user's hands in the first real run and the run-throughs; keep the Nicla, the tape
-   corners and the lamp where they are.
-3. ⬜ If the scan route fails: positions from Laura's ruler photos into `fixtures/ssd-swap-guide.json`.
+**▶ YOUR CHECKLIST (from @ahmed, 2026-11-15 07:47). Do these top to bottom; tick each with ✅ and a time. Everything below is
+background.** Why: boxes float on the phone because no guide has real positions yet. The fix is a scan with the
+marker in it, then clicking each part in that scan.
+1. ✅ Laptop backed up, BitLocker key on the phone, everything pushed (07:45).
+2. ⬜ **Hand the laptop to Max and Laura** for the scans. Don't move the Nicla, the tape corners or the lamp.
+3. ⬜ **Be the user in the run-through:** hold the phone, tap through the steps.
+4. ⬜ **For the offline beat:** turn off the phone's Wi-Fi only, never the hotspot.
+5. ⬜ **For the rig beat:** keep hands away from the SSD until it's really out; a hand over the sticker ticks early.
+6. ⬜ **If the SSD stops being recognised:** Nicla on a laptop, OpenMV IDE, Tools → Machine Vision → Threshold
+   Editor, new numbers into `STICKER_LAB`, Save to the board, back on the hub.
+
+**How to start everything (for the run-through and the demo), in this order:**
+1. Max's laptop, terminal 1: `cd relay && npm install && npm start`. Note the `ws://…:8080` line it prints.
+2. Max's laptop, terminal 2: `cd dashboard && npm install && npm run dev`. Open the link it prints.
+3. Max's laptop, terminal 3: `cd ios/expert-call && python3 -m http.server 8000` (the Call button opens this).
+4. Phone: open the app, tap the status pill, enter or scan the relay's `ws://` address.
+5. UNO Q: press Run in App Lab. The console must say `connected to ws://…` and `nicla sees the part in: …`.
+6. Dashboard header: the Relay, Phone and Rig lights are all green. If one is grey, fix that one before going on.
 
 **▶ What's left (from @ahmed, 2026-11-15 04:12), ahead of the 01:45 block below.** 
 1. ✅ (04:50, reported by Ahmed at the board: the SSD shows as `ssd-bay` and the checks work end to end; the Nicla script's example colour and region fitted the green sticker unchanged) P0 **Tune the rig on the real SSD** (task 9): sticker colour, the `ssd-bay` region, a tick on the LED matrix,
