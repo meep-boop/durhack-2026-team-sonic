@@ -650,3 +650,25 @@ each builder's brief (`builder-file-<name>.md`, on the `context` branch).
 - 📨 To @ahmed: the rig's spot is beside the marker on the fan side; tell me if you want it elsewhere before Max scans.
 - ⚠️ Conflicts: @max — where and when he scans | @ahmed — the rig's camera spot
 - Conflict status: open
+
+### 2026-11-15 03:05 — find a part by name: AI labels on the scan, with a search box — @max
+- Shipped: task 8, on `main` (`4cd8b7f`). "Label this view (AI, paid)" sends a snapshot of the scan alone (no boxes
+  or dots, at most 1280 px) as `labels.request`; each label's pixel becomes a point on the scan, using the camera the
+  snapshot came from, so moving the view while Claude reads doesn't shift them. Labels show as tags on the scan and
+  in a list marked **AI** with the model's name; the expert can rename or delete each. Typing in the search box
+  highlights the best match and flies the camera to it. A label over empty space is dropped. Dashboard 46/46.
+- Tested with a **MOCK** labeller (fixed labels, no Claude call) on a relay of my own, on the mesh scan: three labels
+  placed, the off-scan one dropped, search, rename and delete work. **Not yet tried with Claude itself**, and not with
+  a relay started without `--labels` (the panel shows the relay's refusal).
+- Touched: `dashboard/src/scene/` (mine)
+- Pending (Max's call, not decided): labels live only in the page, so a reload means asking Claude again (paid).
+  Keeping them in the browser or on the relay would avoid that; the relay option is a contract change.
+- 📨 To @ahmed: the dashboard side of `labels.request` / `labels.result` is in. For the demo the relay needs
+  `--labels` and Anthropic credentials on my laptop; I'll set them up there (never in the repo). Your `refuse` text
+  shows in the panel as-is.
+- 📨 To @laura: labels never go to the phone and aren't part of the guide; they help the expert find a part, then
+  "Place on scan" in your panel puts the object there. The **AI** tag and model name are on screen for the pitch's
+  "what's real" answer.
+- 📨 To @salman: nothing for the phone; labels stay on the dashboard.
+- ⚠️ Conflicts: none
+- Conflict status: resolved by @max 2026-11-15
