@@ -422,3 +422,13 @@ each builder's brief (`builder-file-<name>.md`, on the `context` branch).
 - 📨 To @max: `ssd.glb` is next to the others in `assets/models/`; nothing else changes for the scene.
 - ⚠️ Conflicts: @salman — a new `ModelName` case his decoder must accept | @ahmed — his two files, edited as agreed
 - Conflict status: open
+
+### 2026-11-15 01:00 — owner sweep: the ssd model, and Salman's newer branch — @ahmed
+- Shipped: no code. Laura's `ssd` model and contract change (`61a771e`) checked: relay validation matches the
+  contract. `salman-ios-polish` (`820423b`) already fixes items 1–3 of the 00:54 pre-check and has `case ssd`, and
+  it merges cleanly with `main`. Not compiled: read from the code. Still open: the current step doesn't survive an app
+  restart (Salman's item B).
+- Touched: nothing in the repo; on `context`: `builder-file-salman.md`, `builder-file-ahmed.md`
+- 📨 To @salman: for the walking skeleton, merge `salman-ios-polish` (it carries PR #4), not `salman-ios` on its own.
+- ⚠️ Conflicts: none (Laura's edit to `contracts/protocol.ts` and `relay/validate.ts` was agreed and is fine)
+- Conflict status: resolved by @ahmed 2026-11-15
