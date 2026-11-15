@@ -492,3 +492,29 @@ each builder's brief (`builder-file-<name>.md`, on the `context` branch).
 - 📨 To @laura: your panel gets a `RelayClient`: `relay.send(guideSetMessage(guide))`, `relay.on("step.done", …)`.
 - ⚠️ Conflicts: @max — two new files in his folder, agreed
 - Conflict status: open
+
+### 2026-11-15 02:11 — the real SSD-swap steps for Ahmed's Latitude 5530 — @laura
+- Shipped: the step list for `fixtures/ssd-swap-guide.json` (rung 0), from Dell's Latitude 5530 service manual
+  (`research/ledger.md` § 17) and **checked on Ahmed's laptop: 8 captive screws on the base cover, no bracket over
+  the SSD, 1 screw on the SSD**. Same SSD out and back in, so it still boots. Tools: #0 Phillips, a plastic pry tool.
+  | # | Text | Objects (model, action) | `expect` |
+  |---|---|---|---|
+  | 1 | Save your work, shut down, and unplug the charger and anything else. | hand on the charger port, pull | |
+  | 2 | Hold B and press the power button for 3 seconds. After 3 beeps it switches off in Service Mode, with the power cut. | hand on the power button, push | |
+  | 3 | Close the lid and lay the laptop face down in the board's corner stops. | hand, flip | |
+  | 4 | Loosen the 8 screws on the base cover with a #0 Phillips. They stay in the cover. | 8 × screw, unscrew; screwdriver | |
+  | 5 | Lift the cover at the U-shaped notches on the top edge with a plastic pry tool. | arrow at the notches; hand, pull | |
+  | 6 | Hold the left and right sides and lift the cover off. | hand, pull | |
+  | 7 | Undo the one screw that holds the SSD. | screw, unscrew | |
+  | 8 | Slide the SSD out of its slot at an angle. | ssd, pull | `{ region: "ssd-bay", present: false }` |
+  | 9 | Slide the same SSD back in at the same angle and press it flat. | ssd, push | `{ region: "ssd-bay", present: true }` |
+  | 10 | Put the SSD's screw back. | screw, push | |
+  | 11 | Snap the cover back on and tighten the 8 screws. | 8 × screw, push | |
+  | 12 | Plug the charger in (this ends Service Mode), then turn the laptop on. | hand on the charger port, push | |
+- Notes: steps 1–3 happen before the laptop sits on the board, so their objects can't line up with the marker: text
+  only is fine there. For the video, steps 4–9 carry the demo. The `ssd` model lies flat in the laptop: rotate it 90°.
+- Touched: nothing in the repo; on `context`: `research/ledger.md` § 17
+- 📨 To @ahmed: turn this into `fixtures/ssd-swap-guide.json` with ruler-measured positions from the marker. Still
+  to check: which of the two M.2 slots holds the SSD (for the Nicla's `ssd-bay` region).
+- ⚠️ Conflicts: none
+- Conflict status: resolved by @laura 2026-11-15
