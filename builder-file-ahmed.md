@@ -68,8 +68,8 @@ but all three teammates build on them, so every change after the first version i
 **▶ What's left (from @ahmed, 2026-11-15 04:12), ahead of the 01:45 block below.** 
 1. 🟡 P0 **Tune the rig on the real SSD** (task 9): sticker colour, the `ssd-bay` region, a tick on the LED matrix,
    and a `step.verified` seen on the dashboard's live strip.
-2. ⬜ P0 **`fixtures/ssd-swap-guide.json`** from Laura's 12 steps (her 02:11 entry), positions by ruler at the table.
-3. ⬜ P0 **Relay `--state <file>`** (Max's ask), so a test relay can't empty the live one's save file.
+2. 🟡 (04:21, on `main`: all 12 steps written, positions still placeholders; left: ruler measurements) P0 **`fixtures/ssd-swap-guide.json`** from Laura's 12 steps (her 02:11 entry), positions by ruler at the table.
+3. ✅ (04:21, on `main`) P0 **Relay `--state <file>`** (Max's ask), so a test relay can't empty the live one's save file.
 4. ⬜ P0 **Fold the organisers' rules into `EVENT.md`** (Laura's 03:30 entry) and check Max's vault notes
    (`relay.md`, `messages.md`, `rig.md`).
 5. ⬜ **Back up the laptop; BitLocker key on your phone** before the SSD comes out.
