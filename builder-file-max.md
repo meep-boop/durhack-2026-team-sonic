@@ -75,8 +75,9 @@ rung 2 a guide built in the scan lines up on the phone; rung 3 the extras. Decis
 3. 🟡 P0 **Two scans** (decided by Ahmed): closed, then cover off, both with the marker in view and the laptop in
    Laura's corner stops. Load by URL (`?splat=`) from a git-ignored folder, with a Closed / Open switch. A scan's
    id is its file name; the relay will keep one calibration per scan.
-   *Status (02:16):* the loading and the switch are built (`?closed=<file>&open=<file>` from
-   `dashboard/public/scans/`). Left: take the two scans in Scaniverse and calibrate each.
+   *Status (02:32):* the loading and the switch are built (`?closed=<file>&open=<file>` from
+   `dashboard/public/scans/`), for splats and meshes. A first cover-off mesh scan loads well but has **no marker in
+   it**, so it can't be calibrated. Left: rescan both with the marker fully in view, then calibrate each.
 4. ✅ P0 **`pickPoint()`** (task 2) with three's `Raycaster` on the `SplatMesh`. Show the hit as a dot: Spark can
    hit hidden splats (its issues #497, #498).
 5. ✅ P0 **Calibration screen** (task 3): four clicks → `solveCalibration` → one `markerGroup` holding the
@@ -95,7 +96,11 @@ rung 2 a guide built in the scan lines up on the phone; rung 3 the extras. Decis
   video and the demo. You can publish any shared doc.
 - The call screen is Salman's `ios/expert-call/` page beside the dashboard; no React video panel.
 
-> 🟡 **START HERE (2026-11-15 02:16, @max's session):** rung-1 dashboard code is on `main` (`0fddd63`): shell,
+> 🟡 **START HERE (2026-11-15 02:32, @max's session):** the dashboard takes mesh scans too (`009153c`). The first
+> cover-off scan has no marker in it: **rescan closed and open with the marker in view**, drop them in
+> `dashboard/public/scans/`, open `?closed=<file>&open=<file>`, calibrate each.
+>
+> *Earlier (02:16):* rung-1 dashboard code is on `main` (`0fddd63`): shell,
 > scan switch, picking, calibration (blocks placing until done), `showStep`. Next: take the two real scans (item 3),
 > calibrate them, then P1 items 7–9. Free port 8080 on this laptop before the demo: a node process already holds it.
 > Still open: PR #1 (merge or close).
@@ -110,10 +115,12 @@ rung 2 a guide built in the scan lines up on the phone; rung 3 the extras. Decis
 > #1 (research answers and decisions, with sources, on `max-docs`). Research: `research/ledger.md` § 7–15.
 
 **New from @ahmed (2026-11-14 23:40 sweep):**
-- A. ⬜ **Run the relay on the dashboard laptop for the demo** (decided 23:20: Ahmed's laptop is opened up in the
+- A. 🟡 **Run the relay on the dashboard laptop for the demo** (decided 23:20: Ahmed's laptop is opened up in the
   demo, so it can't host it). Node 24, then `cd relay && npm install && npm start`; add `--labels` only for Claude
   labelling, which also needs Anthropic credentials on that laptop. *Done when:* the phone, the dashboard and the rig
-  all connect to it on the hotspot. `[with @ahmed]`
+  all connect to it on the hotspot. `[with @ahmed]` *Status (02:32):* runs on this laptop on 8080 with the dashboard
+  (port 8080 freed from an unrelated background task that may return after a reboot). Left: the phone and the rig on
+  the hotspot.
 - B. 🟡 **Merge PR #6 with the `ship` skill before the walking skeleton** (`PROJECT.md` → Clock), and merge or close
   PR #1. Pre-check by @ahmed (2026-11-15 00:54, read-only): `max-scene` at `6a6753b` with today's `main` merged in has no
   conflicts; 8 tests, the type-check and `npm run build` all pass. *Status (02:16):* PR #6 merged. PR #1 still open.
@@ -175,6 +182,8 @@ rung 2 a guide built in the scan lines up on the phone; rung 3 the extras. Decis
    - *Done when:* either a DGX-Spark-trained splat of the set is in the dashboard, or a board entry says why not.
 
 ## 4. Done log (newest first)
+- 2026-11-15 02:32 — mesh scans (`.usdz`, `.glb`) load beside splats; pick dots a fixed size on screen; first real
+  scan loaded (no marker: rescan needed). `main` `009153c`; 42 tests.
 - 2026-11-15 02:16 — PR #6 merged; `ahmed-dashboard` merged; app shell with the GuidePanel slot, `isCalibrated` /
   `onCalibrated`; scan switch; `pickPoint` in marker metres; calibration screen (5 mm limit, `calib.set`, restored on
   reload); `showStep` with select, focus, click-to-select and action previews. `main` `0fddd63`; 22 tests.

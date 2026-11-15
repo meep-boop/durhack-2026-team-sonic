@@ -48,6 +48,7 @@ Source: `EVENT.md` §1 (one notes file, not yet checked against Devpost). The 02
 
 | Date | Decision |
 |---|---|
+| 2026-11-15 | The dashboard loads both splat and mesh scans from Scaniverse; we demo whichever scan of the set comes out better, and the pitch names the kind honestly (Max, 02:32) |
 | 2026-11-15 | No placing before calibration: the dashboard's `pickPoint()` resolves to null and objects aren't drawn until the scan on screen is calibrated (Max, 02:16; Ahmed recommended it) |
 | 2026-11-15 | No text chat: Salman's `chat` message stays out of the contract and the relay (Ahmed, 01:55) |
 | 2026-11-15 | A plan to the deadline as a four-rung ladder: prepared guide on the phone, dashboard sends it, a guide built in the scan lines up, then extras (Ahmed, 01:45; `.omc/plans/remote-assist-to-deadline.md` on his machine, tasks in the briefs) |
