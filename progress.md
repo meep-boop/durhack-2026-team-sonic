@@ -786,5 +786,5 @@ each builder's brief (`builder-file-<name>.md`, on the `context` branch).
   `presence` drops the phone, so it lags a real drop by up to your 5 s heartbeat.
 - ⚠️ Conflicts: @laura — her panel's container (`.guide` in `styles.css`) changed background and padding; her
   panel itself is untouched | none for @salman, @ahmed
-- Fix 03:58 (`76b2de0`-ish, see `git log`): the controls hint wraps instead of running under the labels panel on a narrow window.
+- Fix 03:58 (`7053035`): the controls hint wraps instead of running under the labels panel on a narrow window.
 - Conflict status: open (Laura's restyle answer)
