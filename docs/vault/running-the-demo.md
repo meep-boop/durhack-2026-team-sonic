@@ -43,14 +43,15 @@ npm run dev
 ```
 
 Open `http://localhost:5173/?closed=<closed scan>&open=<open scan>` (file names from
-`dashboard/public/scans/README.md`). Check the top-left panel: the scan loads, and it says **Calibrated** (the
-relay remembers calibrations; if not, [calibrate](calibration.md) again).
+`dashboard/public/scans/README.md`). Check the header: the scan loads, it says **✓ Calibrated** (the relay
+remembers calibrations; if not, [calibrate](calibration.md) again), and the **Relay** light is green.
 
 ## 4. Connect the phone
 
-On Salman's call page, type the relay's `ws://` address and press Connect: it shows a QR code. On the phone, tap
-the status capsule, then **Scan QR**. On the dashboard, the phone's camera shape should appear in the 3D view, green
-when it sees the marker. See [Phone app](phone-app.md) and Salman's README.
+Serve Salman's call page (step 6), then press **Call the phone** in the dashboard's header: it opens the page with
+the relay's address filled in. Press Connect: it shows a QR code. On the phone, tap
+the status capsule, then **Scan QR**. On the dashboard, the **Phone** light goes green and the phone's camera shape
+appears in the 3D view, green when it sees the marker. See [Phone app](phone-app.md) and Salman's README.
 
 ## 5. Connect the rig
 

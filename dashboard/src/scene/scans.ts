@@ -1,6 +1,6 @@
 // Which scans the dashboard offers. The demo has two of the same set, laptop closed and cover off, each with the
-// marker in view, so the expert can switch between them. Scans are multi-MB and per-machine, so they sit in the
-// git-ignored public/scans/ and are named in the URL rather than committed.
+// marker in view, so the expert can switch between them. They sit in public/scans/ (in git, so the team and the
+// judges see the same files) and are named in the URL.
 import type { ScanSource } from "./scanSource.ts";
 
 export type Scan = { label: string; source: ScanSource };
