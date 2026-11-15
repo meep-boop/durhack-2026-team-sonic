@@ -143,7 +143,10 @@ struct ContentView: View {
       LaptopAssistantSheet(
         assistant: assistant,
         snapshot: { ar.snapshotJPEG() },
-        onStart: { guide in player.replace(with: guide) },
+        onStart: { guide in
+          screwMemory.reset()
+          player.replace(with: guide)
+        },
         onAskExpert: { showingAssistant = false; showingConnection = true }
       )
       .presentationDetents([.medium, .large])

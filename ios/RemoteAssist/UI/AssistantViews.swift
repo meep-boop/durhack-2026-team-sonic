@@ -7,6 +7,8 @@ struct LaptopAssistantSheet: View {
   let onStart: (Guide) -> Void
   let onAskExpert: () -> Void
   @Environment(\.dismiss) private var dismiss
+  @State private var gateShown = false
+  @State private var gateChecking = false
 
   var body: some View {
     NavigationStack {
@@ -25,7 +27,11 @@ struct LaptopAssistantSheet: View {
             Label(message, systemImage: "exclamationmark.triangle.fill").foregroundStyle(.orange)
             scanButton("Try again")
           case .identified:
-            if let id = assistant.identification { result(id) }
+            if gateShown {
+              SafetyGateView(assistant: assistant, checking: gateChecking, onCheckAgain: runGate, onStart: start)
+            } else if let id = assistant.identification {
+              result(id)
+            }
           }
         }
         .padding(24)
@@ -90,10 +96,8 @@ struct LaptopAssistantSheet: View {
         section("Before you start", id.warnings, symbol: "exclamationmark.shield")
       }
       Button {
-        if let guide = assistant.guide() {
-          onStart(guide)
-          dismiss()
-        }
+        gateShown = true
+        runGate()
       } label: {
         Label("Start the \(assistant.plan.count)-step guide", systemImage: "play.fill")
           .font(.headline)
@@ -103,9 +107,25 @@ struct LaptopAssistantSheet: View {
       .buttonBorderShape(.capsule)
     }
 
-    Button("Not my laptop? Scan again") { assistant.reset() }
+    Button("Not my laptop? Scan again") { assistant.reset(); gateShown = false }
       .font(.subheadline)
       .frame(maxWidth: .infinity)
+  }
+
+  private func runGate() {
+    guard let jpeg = snapshot() else { return }
+    gateChecking = true
+    Task {
+      await assistant.checkSafety(jpeg: jpeg)
+      gateChecking = false
+    }
+  }
+
+  private func start() {
+    guard let guide = assistant.guide() else { return }
+    gateShown = false
+    onStart(guide)
+    dismiss()
   }
 
   private func section(_ title: String, _ items: [String], symbol: String) -> some View {
