@@ -14,6 +14,7 @@ import json
 import os
 import sys
 import threading
+import time
 from collections.abc import Iterator
 
 import serial
@@ -54,9 +55,14 @@ def nicla_lines(path: str) -> Iterator[str]:
 
 
 def find_nicla() -> str:
-    ports = sorted(glob.glob("/dev/ttyACM*"))
-    if not ports:
-        sys.exit("No Nicla found on /dev/ttyACM*. Check the micro-USB data cable and the hub's power, or pass --nicla.")
+    # Waits instead of stopping: in App Lab a stopped app shows nothing, and the Nicla is often plugged in after Run.
+    waited = False
+    while not (ports := sorted(glob.glob("/dev/ttyACM*"))):
+        if not waited:
+            print("No Nicla on /dev/ttyACM* yet: check the micro-USB data cable and the hub's power. Waiting.", flush=True)
+            waited = True
+        time.sleep(2)
+    print(f"reading the Nicla on {ports[0]}", flush=True)
     return ports[0]
 
 
@@ -68,6 +74,7 @@ def main() -> None:
     if not args.relay:
         sys.exit("Say where the relay is: --relay ws://<laptop address>:8080, or set RELAY_URL (in App Lab, in this file).")
 
+    print(f"rig starting; relay {args.relay}", flush=True)
     rig = Rig()
     # The relay's thread and the Nicla's thread both change the rig.
     lock = threading.Lock()
