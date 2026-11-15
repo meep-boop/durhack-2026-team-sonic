@@ -28,6 +28,7 @@ const MODELS = {
   screwdriver: true,
   hand: true,
   "cable-plug": true,
+  ssd: true,
 } satisfies Record<ModelName, true>;
 const ACTIONS = { unscrew: true, pull: true, push: true, flip: true, rotate90: true } satisfies Record<Action, true>;
 const IMAGE_TYPES = { "image/jpeg": true, "image/png": true } satisfies Record<LabelsRequest["image"]["mediaType"], true>;
