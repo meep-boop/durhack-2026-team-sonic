@@ -85,9 +85,9 @@ rung 2 a guide built in the scan lines up on the phone; rung 3 the extras. Decis
    above 5 mm. Ahmed recommends no placing until calibrated (your open question; yours and his to settle).
 6. ✅ P0 **`showStep()`** (task 4): the yellow box plus the `.glb` under `markerGroup`. `GLTFLoader` is a three
    add-on; Vite needs `server.fs.allow: [".."]` to serve `../assets/models`.
-7. ⬜ P1 **The user's position** (task 6): a cone under `markerGroup` from `pose`, which is already in the marker frame.
-8. ⬜ P1 **Labels** (task 7): snapshot → `labels.request` → labels on screen → search box → `focus()`.
-9. ⬜ P1 **Dragging** with three's `TransformControls` → `onObjectMoved`; then **cut-outs** (task 5). Both stay in
+7. ✅ P1 **The user's position** (task 6): a cone under `markerGroup` from `pose`, which is already in the marker frame.
+8. ✅ P1 **Labels** (task 7): snapshot → `labels.request` → labels on screen → search box → `focus()`.
+9. 🟡 P1 **Dragging** *(dragging ✅ `5412078`; cut-outs not started)* with three's `TransformControls` → `onObjectMoved`; then **cut-outs** (task 5). Both stay in
    scope (Ahmed), after rung 2.
 - ✅ (OK given; merged 02:16) 📨 **Ahmed asks your OK** for his agent to build two pieces in `dashboard/`: `src/relay/client.ts` (the relay
   connection: hello as `expert`, reconnect, typed `send` and `on`) and `src/scene/calibration.ts`
@@ -96,7 +96,11 @@ rung 2 a guide built in the scan lines up on the phone; rung 3 the extras. Decis
   video and the demo. You can publish any shared doc.
 - The call screen is Salman's `ios/expert-call/` page beside the dashboard; no React video panel.
 
-> 🟡 **START HERE (2026-11-15 02:32, @max's session):** the dashboard takes mesh scans too (`009153c`). The first
+> 🟡 **START HERE (2026-11-15 03:15, @max's session):** tasks 7, 8 and dragging are on `main`. Waiting on Laura's
+> board for the rescans. Open for Max: whether labels persist across a reload (now page-only); PR #1; Anthropic
+> credentials on this laptop for `--labels`. Next code: cut-outs (task 5).
+>
+> *Earlier (02:32):* the dashboard takes mesh scans too (`009153c`). The first
 > cover-off scan has no marker in it: **rescan closed and open with the marker in view**, drop them in
 > `dashboard/public/scans/`, open `?closed=<file>&open=<file>`, calibrate each.
 >
@@ -182,6 +186,9 @@ rung 2 a guide built in the scan lines up on the phone; rung 3 the extras. Decis
    - *Done when:* either a DGX-Spark-trained splat of the set is in the dashboard, or a board entry says why not.
 
 ## 4. Done log (newest first)
+- 2026-11-15 03:15 — task 9 dragging: handles on the selected object, R turns about +Y, `onObjectMoved` once per
+  drag (`5412078`). Task 8: AI labels on the scan, search, rename, delete (`4cd8b7f`; tried with a MOCK labeller
+  only). Task 7: the phone's camera in the scan, green / amber / gone (`d91f7ba`). Dashboard 46 tests.
 - 2026-11-15 02:39 — PR #9 merged (`d44dd01`): `dashboard/public/scans/` is in git, with the first scan (mesh, cover
   off, no marker: reference only). Notes to Laura, Ahmed and Salman on the board and in their briefs.
 - 2026-11-15 02:32 — mesh scans (`.usdz`, `.glb`) load beside splats; pick dots a fixed size on screen; first real

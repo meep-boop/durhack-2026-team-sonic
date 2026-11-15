@@ -70,6 +70,12 @@ but all three teammates build on them, so every change after the first version i
 > in git (`dashboard/public/scans/`, PR #9), reversing the git-ignored folder in your 01:45 plan: say if that's a
 > problem. Your relay client and calibration maths are merged and in use.
 
+> 📨 **From @max (2026-11-15 03:15):** on `main` now: the phone's position shows in the 3D view (from `pose`),
+> AI labels with a part search (dashboard only), and drag handles on the selected object that fire
+> `onObjectMoved` once per drag. For the demo, `--labels` needs Anthropic credentials on Max's laptop (Max sets
+> them, never in the repo). Ask on the board: could the relay take its save file from an env var or flag, so a
+> test relay never shares `relay/state.json` with the live one?
+
 **▶ The plan to the deadline (from @ahmed, 2026-11-15 01:45). Do these first, in this order; the older tasks below keep
 their detail.** Why: the phone side is nearly there, but the dashboard is still a viewer with no relay connection,
 so we climb a ladder: rung 0 the real phone plays a prepared guide; rung 1 the dashboard connects and sends it;
