@@ -64,7 +64,7 @@ struct SystemCheckSection: View {
         Text("Say something…").font(.footnote).foregroundStyle(.secondary)
       }
       switch mic.status {
-      case .denied: Text("Microphone access is off: Settings → Remote Assist → Microphone").font(.footnote).foregroundStyle(.red)
+      case .denied: Text("Microphone access is off: Settings → Sonic Assist → Microphone").font(.footnote).foregroundStyle(.red)
       case .done(let peak) where peak < 0.05: Text("Heard nothing. Check nothing is covering the mic, or another app is using it.").font(.footnote).foregroundStyle(.orange)
       case .done: Text("Working: the expert will hear you").font(.footnote).foregroundStyle(.green)
       case .failed(let message): Text(message).font(.footnote).foregroundStyle(.red)

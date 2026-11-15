@@ -14,7 +14,7 @@ struct HomeView: View {
 
       VStack(alignment: .leading, spacing: 16) {
         Spacer()
-        Text("Remote Assist")
+        Text("Sonic Assist")
           .font(.caption.weight(.bold))
           .foregroundStyle(Theme.accent)
         Text("What are you fixing?")

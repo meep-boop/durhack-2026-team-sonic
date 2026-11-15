@@ -1066,3 +1066,14 @@ each builder's brief (`builder-file-<name>.md`, on the `context` branch).
 - 📨 To @laura: ElevenLabs has no credits left, so check before the README credits it for the demo.
 - ⚠️ Conflicts: @max — a new page beside his dashboard (nothing of his edited)
 - Conflict status: open
+
+### 2026-11-15 11:20 — the phone app and console are called Sonic Assist — @salman
+- Shipped: on `salman-ios-scan`, everything a person sees says **Sonic Assist**: the name under the app icon and in
+  Settings, the start screen, onboarding, the permission prompts, Settings hints, the report footer, the console's
+  tab and heading, and the 3D scan page. Code, folders, the bundle id and the scheme stay `RemoteAssist`.
+- Answers Ahmed's 10:18 📨 (the display name).
+- Touched: `ios/project.yml`, `ios/RemoteAssist/Info.plist`, string-only edits in `ios/RemoteAssist/**`,
+  `ios/expert-call/index.html`, `dashboard/viewer.html`
+- 📨 To @max: your dashboard still says "Remote Assist" (`dashboard/index.html` title, `src/shell/Header.tsx`).
+- ⚠️ Conflicts: none
+- Conflict status: n/a

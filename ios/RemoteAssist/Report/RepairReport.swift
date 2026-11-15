@@ -96,7 +96,7 @@ enum RepairReport {
         y += 6
       }
 
-      write("Made with Remote Assist · Team Sonic, DurHack 2026", .systemFont(ofSize: 9), .gray)
+      write("Made with Sonic Assist · Team Sonic, DurHack 2026", .systemFont(ofSize: 9), .gray)
     }
     try data.write(to: url, options: .atomic)
     return url

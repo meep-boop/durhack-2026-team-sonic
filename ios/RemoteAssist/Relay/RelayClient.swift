@@ -104,7 +104,7 @@ final class RelayClient {
     state = .connecting
     socket.resume()
     // Sent frames queue until the handshake completes, so hello can go straight away.
-    send(.hello(Hello(role: .user, client: "\(UIDevice.current.name) (Remote Assist)")), on: socket)
+    send(.hello(Hello(role: .user, client: "\(UIDevice.current.name) (Sonic Assist)")), on: socket)
     receive(on: socket, gen: gen)
     startPinging(socket, gen: gen)
   }

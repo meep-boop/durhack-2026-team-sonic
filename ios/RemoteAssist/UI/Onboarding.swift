@@ -6,7 +6,7 @@ struct Onboarding: View {
 
   private let pages: [(symbol: String, title: String, body: String)] = [
     ("hand.raised.fingers.spread.fill", "Fix it yourself, calmly",
-     "Remote Assist shows you exactly what to do, one step at a time, right on top of the real thing."),
+     "Sonic Assist shows you exactly what to do, one step at a time, right on top of the real thing."),
     ("qrcode", "Find the marker",
      "Place the printed marker (180 mm square) next to the device. Your phone uses it to line every step up with the real parts."),
     ("person.wave.2.fill", "An expert is one tap away",
