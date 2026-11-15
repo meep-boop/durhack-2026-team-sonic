@@ -66,6 +66,27 @@ final class VoiceGuide: NSObject {
     queue.async { self.stopOnQueue(endSession: true) }
   }
 
+  /// For the system check: says "Voice check" in the ElevenLabs voice. `done` gets nil when ElevenLabs answered and
+  /// played, or why it didn't (on main).
+  func checkVoice(_ done: @escaping (String?) -> Void) {
+    let finish = { (problem: String?) in DispatchQueue.main.async { done(problem) } }
+    guard let request = elevenLabsRequest(for: "Voice check. ElevenLabs is working.") else {
+      return finish("No ELEVENLABS_API_KEY in ios/Secrets.xcconfig: steps use the iOS voice")
+    }
+    URLSession.shared.dataTask(with: request) { data, response, error in
+      let status = (response as? HTTPURLResponse)?.statusCode ?? 0
+      guard status == 200, let data else {
+        let body = data.map { String(decoding: $0.prefix(160), as: UTF8.self) } ?? error?.localizedDescription ?? ""
+        return finish("ElevenLabs returned \(status): \(body)")
+      }
+      self.queue.async {
+        self.stopOnQueue(endSession: false)
+        self.play(data, orSay: "Voice check", gen: self.generation)
+        finish(nil)
+      }
+    }.resume()
+  }
+
   // MARK: On the audio queue
 
   private func stopOnQueue(endSession: Bool) {

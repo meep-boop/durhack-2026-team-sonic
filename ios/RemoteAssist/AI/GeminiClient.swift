@@ -5,6 +5,10 @@ struct GeminiClient {
   let apiKey: String
   let model: String
 
+  /// Gemini 3 models think at "medium" by default, which adds seconds to every call. "low" is plenty for finding
+  /// parts and checking a photo. Turned off for the rest of the run if the model rejects the field.
+  private static var sendsThinkingLevel = true
+
   static func fromBundle() -> GeminiClient? {
     guard let key = Secrets.value("GeminiAPIKey") else { return nil }
     return GeminiClient(apiKey: key, model: Secrets.value("GeminiModel") ?? "gemini-3.8-flash")
@@ -23,17 +27,28 @@ struct GeminiClient {
   }
 
   func generate<T: Decodable>(_ type: T.Type, prompt: String, jpeg: Data?, schema: [String: Any]) async throws -> T {
+    do {
+      return try await request(type, prompt: prompt, jpeg: jpeg, schema: schema, thinkingLevel: Self.sendsThinkingLevel)
+    } catch Failure.http(400, let body) where Self.sendsThinkingLevel && body.localizedCaseInsensitiveContains("thinking") {
+      Self.sendsThinkingLevel = false
+      return try await request(type, prompt: prompt, jpeg: jpeg, schema: schema, thinkingLevel: false)
+    }
+  }
+
+  private func request<T: Decodable>(_ type: T.Type, prompt: String, jpeg: Data?, schema: [String: Any], thinkingLevel: Bool) async throws -> T {
     var parts: [[String: Any]] = [["text": prompt]]
     if let jpeg {
       parts.append(["inlineData": ["mimeType": "image/jpeg", "data": jpeg.base64EncodedString()]])
     }
+    var config: [String: Any] = [
+      "responseMimeType": "application/json",
+      "responseJsonSchema": schema,
+      "temperature": 0.2,
+    ]
+    if thinkingLevel { config["thinkingConfig"] = ["thinkingLevel": "low"] }
     let body: [String: Any] = [
       "contents": [["role": "user", "parts": parts]],
-      "generationConfig": [
-        "responseMimeType": "application/json",
-        "responseJsonSchema": schema,
-        "temperature": 0.2,
-      ],
+      "generationConfig": config,
     ]
 
     var request = URLRequest(url: URL(string: "https://generativelanguage.googleapis.com/v1beta/models/\(model):generateContent")!)

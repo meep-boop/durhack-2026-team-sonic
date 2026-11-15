@@ -3,6 +3,8 @@ import VisionKit
 
 struct ConnectionSheet: View {
   let relay: RelayClient
+  let assistant: LaptopAssistant
+  let voice: VoiceGuide
   /// The AR session and the QR scanner can't share the camera, so AR pauses while scanning.
   let pauseAR: () -> Void
   let resumeAR: () -> Void
@@ -56,6 +58,8 @@ struct ConnectionSheet: View {
             Button("Disconnect", role: .destructive) { relay.disconnect() }
           }
         }
+
+        SystemCheckSection(assistant: assistant, voice: voice)
       }
       .navigationTitle("Connection")
       .navigationBarTitleDisplayMode(.inline)
