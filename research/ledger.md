@@ -24,6 +24,7 @@ The one research file for this project (`research-ledger` skill). Every source g
 | 14 | Video to a textured mesh on the DGX Spark (2026-11-14) | Mesh routes ranked for tonight; open3d and COLMAP on ARM |
 | 15 | Phone → DGX Spark → mesh back on the phone (2026-11-14) | ARKit camera positions, upload, USDZ/GLB conversion |
 | 16 | App Lab app layout and the UNO Q's LED matrix over the Bridge (2026-11-15) | Packaging the rig; drawing ✓ / ✗ |
+| 17 | Swapping the SSD on a Dell Latitude 5530 (2026-11-15) | The demo guide's real steps, screw counts and tools |
 
 ---
 
@@ -1148,3 +1149,51 @@ The rig ships as `hardware/unoq/python/` plus `hardware/unoq/sketch/sketch.ino`,
 ### DO NOT USE
 - _(none)_
 
+
+# § 17 Swapping the SSD on a Dell Latitude 5530 (2026-11-15)
+**Question:** the demo guide walks the user through taking the SSD out of Ahmed's laptop (a Dell Latitude 5530) and
+putting the same one back. What are the real steps, screw counts and tools, so the guide doesn't teach anything wrong?
+
+## Findings
+### Before opening it
+- Save work, shut down, unplug the charger and everything else (source: [1]).
+- **Service Mode** cuts power without unplugging the battery: hold **B** and press the power button for 3 s or until
+  the Dell logo; it beeps three times and shuts down. If the laptop can't enter it, disconnect the battery cable
+  instead ([1]). Connecting the charger again leaves Service Mode ([2]).
+### Base cover
+- **Eight captive screws** (they stay in the cover), a **#0 Phillips** screwdriver, then a **plastic scribe** in the
+  U-shaped indents at the top edge; lift the cover off by its left and right sides ([3], [4]).
+- Refit: align the holes, snap it into place, tighten the eight captive screws ([3]).
+### The M.2 2280 SSD
+- Prerequisites listed: SIM card, microSD card, base cover. The battery is **not** listed ([5]).
+- **Without a bracket:** one **M2x4** screw, then slide the SSD out of its slot at an angle ([5]).
+- **With a bracket:** two **M2x3** screws hold the bracket; lift it off (re-stick the thermal pad to it if it comes
+  loose), then slide the SSD out at an angle ([5]).
+- Which one Ahmed's laptop has, and which of the two M.2 slots the SSD sits in, has to be checked on the laptop.
+
+## Community consensus
+Not searched: the vendor's own service manual is the authority on its own hardware, and the step list only has to be
+true for this one laptop. A check on the real laptop (screw count, bracket or not) replaces it.
+
+## Final call (professional + community)
+Use Dell's steps as written: Service Mode first, eight captive screws, pry from the top-edge indents, then one M2x4
+screw (or the two-screw bracket) and slide the SSD out at an angle. Count the screws on Ahmed's laptop before the
+guide is final.
+
+## Source ledger
+### KEEP
+- [1] Dell, "Latitude 5530 Service Manual: Before working inside your computer", dell.com, read 2026-11-15,
+  https://www.dell.com/support/manuals/en-us/latitude-15-5530-laptop/latitude_5530_sm/before-working-inside-your-computer?guid=guid-2ae8811c-4aa6-4751-9134-1af4bb41f0f1&lang=en-us : shutdown, Service Mode.
+- [2] Dell, "Latitude 5530 Service Manual: After working inside your computer", dell.com,
+  https://www.dell.com/support/manuals/en-us/latitude-15-5530-laptop/latitude_5530_sm/after-working-inside-your-computer?guid=guid-0844719b-51d7-4082-827f-162cbfb365d0&lang=en-us : leaving Service Mode.
+- [3] Dell, "Latitude 5530 Service Manual: Removing the base cover", dell.com,
+  https://www.dell.com/support/manuals/en-us/latitude-15-5530-laptop/latitude_5530_sm/removing-the-base-cover?guid=guid-52bff0d1-4382-421b-8d35-e3e5905f29e4&lang=en-us : eight captive screws, scribe, refit.
+- [4] Dell, "Latitude 5530 Service Manual: Screw list", dell.com,
+  https://www.dell.com/support/manuals/en-us/latitude-15-5530-laptop/latitude_5530_sm/screw-list?guid=guid-cc648b28-fbf9-4a6f-bb11-4c6c2fa3d08a&lang=en-us : screw counts, #0 Phillips.
+- [5] Dell, "Latitude 5530 Service Manual: Removing the M.2 2280 solid-state drive", dell.com, read 2026-11-15,
+  https://www.dell.com/support/manuals/en-us/latitude-15-5530-laptop/latitude_5530_sm/removing-the-m2-2280-solid-state-drive?guid=guid-be0c8101-86eb-492e-beef-7a326dd7e2df&lang=en-us : prerequisites, both screw variants, slide out at an angle.
+### WEAK
+- ManualsLib's copy of the same manual, https://www.manualslib.com/manual/3123970/Dell-Latitude-5530.html : agrees,
+  but it is a mirror of [3]–[5], not an independent source.
+### DO NOT USE
+- _(none)_
