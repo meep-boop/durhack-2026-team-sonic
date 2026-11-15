@@ -37,6 +37,14 @@ enum PinMath {
     return (origin, simd_normalize(SIMD3(world.x, world.y, world.z)))
   }
 
+  /// `point`, or the point `limit` metres from `centre` towards it if it's farther. An area's far corners meet the
+  /// table a long way off when the box is drawn from an angle; pulled in, the box stays a sane frame round the laptop.
+  static func pulledIn(_ point: SIMD3<Float>, toward centre: SIMD3<Float>, limit: Float) -> SIMD3<Float> {
+    let offset = point - centre
+    let length = simd_length(offset)
+    return length > limit ? centre + offset / length * limit : point
+  }
+
   /// Where a ray meets an infinite plane, if it does in front of the camera.
   static func intersect(
     origin: SIMD3<Float>, direction: SIMD3<Float>, planePoint: SIMD3<Float>, planeNormal: SIMD3<Float>
