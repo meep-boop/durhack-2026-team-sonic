@@ -25,6 +25,15 @@ final class ARSessionController: NSObject, ARSessionDelegate {
   private(set) var errorMessage: String?
   /// True while the marker was found once but isn't visible right now, for long enough to be worth saying.
   private(set) var markerLostForAWhile = false
+  /// One line for the AR debug strip: the marker's distance, seen size and pose, and how far this step's parts are
+  /// from it. Updated at most twice a second.
+  private(set) var debugLine = ""
+  /// The marker is seen but not lying flat, so the guide's parts would hang in the air: the screen says to lay it down.
+  private(set) var markerNotFlat = false
+  @ObservationIgnored private var lastDebugUpdate: TimeInterval = 0
+  @ObservationIgnored private var lastDebugLog: TimeInterval = 0
+  @ObservationIgnored private var stepRangeText = ""
+  @ObservationIgnored private var markerOutline: Entity?
 
   /// A pin on the real surface: from the expert tapping the video, or a screw going back in.
   struct PinInfo: Identifiable, Equatable {
@@ -903,15 +912,21 @@ final class ARSessionController: NSObject, ARSessionDelegate {
 
     let anchor = AnchorEntity(world: sample.transform)
     markerRoot.children.removeAll()
-    markerRoot.addChild(Shapes.markerOutline(width: Float(sample.size.width), height: Float(sample.size.height)))
+    // Only the outline follows ARKit's size estimate, so it matches the print. The parts don't: their positions are
+    // real metres from the marker's centre, and the anchor ARKit gives is already metric. Scaling them by the estimate
+    // pushed every part proportionally too far (or too near) whenever the print wasn't exactly 18 cm.
+    let outline = Shapes.markerOutline(width: Float(sample.size.width), height: Float(sample.size.height))
+    outline.scale = [sample.scale, 1, sample.scale]
+    markerOutline = outline
+    markerRoot.addChild(outline)
     markerRoot.addChild(Shapes.axisGizmo())
     markerRoot.addChild(stepRoot)
-    markerRoot.scale = SIMD3(repeating: sample.scale)
     anchor.addChild(markerRoot)
     arView.scene.addAnchor(anchor)
 
     markerAnchor = anchor
     markerSeen = true
+    report(sample, force: true)
   }
 
   private func follow(_ sample: MarkerSample, reacquired: Bool) {
@@ -926,7 +941,27 @@ final class ARSessionController: NSObject, ARSessionDelegate {
       // Never restart or fight a glide that's already running; once it lands, follow every update exactly.
       markerAnchor.transform = target
     }
-    markerRoot.scale = SIMD3(repeating: sample.scale)
+    markerOutline?.scale = [sample.scale, 1, sample.scale]
+    report(sample, force: false)
+  }
+
+  /// The debug line (twice a second), the log (every 2 s, or now when forced) and the "lay it flat" warning.
+  private func report(_ sample: MarkerSample, force: Bool) {
+    let now = ProcessInfo.processInfo.systemUptime
+    guard force || now - lastDebugUpdate >= 0.5 else { return }
+    lastDebugUpdate = now
+    guard let camera = arView.session.currentFrame?.camera.transform else { return }
+    let reading = MarkerReading.describe(
+      transform: sample.transform, scale: sample.scale, physicalWidth: Float(sample.size.width),
+      cameraPosition: SIMD3(camera.columns.3.x, camera.columns.3.y, camera.columns.3.z)
+    )
+    let line = stepRangeText.isEmpty ? reading.line : reading.line + " · " + stepRangeText
+    if debugLine != line { debugLine = line }
+    if markerNotFlat != !reading.isFlat { markerNotFlat = !reading.isFlat }
+    if force || now - lastDebugLog >= 2 {
+      lastDebugLog = now
+      Self.log.notice("\(line, privacy: .public) · normal·up \(reading.flatness, format: .fixed(precision: 2), privacy: .public) · tracked \(sample.isTracked, privacy: .public)")
+    }
   }
 
   /// After 3 s of not seeing the marker, the UI says the guide is holding where it was.
@@ -945,7 +980,22 @@ final class ARSessionController: NSObject, ARSessionDelegate {
 
   private func renderStep() {
     stepRoot.children.removeAll()
-    guard let step else { return }
+    guard let step else {
+      stepRangeText = ""
+      return
+    }
+    let distances = step.objects.map { simd_length($0.pos.simd) }
+    if let near = distances.min(), let far = distances.max() {
+      stepRangeText = String(format: "%d part%@ %.2f–%.2f m from it", distances.count, distances.count == 1 ? "" : "s", near, far)
+    } else {
+      stepRangeText = "no parts"
+    }
+    Self.log.notice("Step \(step.id, privacy: .public): \(self.stepRangeText, privacy: .public)")
+    for object in step.objects {
+      let p = object.pos.simd
+      let world = markerAnchor.map { $0.transformMatrix(relativeTo: nil) * SIMD4(p.x, p.y, p.z, 1) }
+      Self.log.notice("  \(object.label ?? "part", privacy: .public): marker (\(p.x, format: .fixed(precision: 3), privacy: .public), \(p.y, format: .fixed(precision: 3), privacy: .public), \(p.z, format: .fixed(precision: 3), privacy: .public)) → world \(world.map { String(format: "(%.2f, %.2f, %.2f)", $0.x, $0.y, $0.z) } ?? "(marker not found yet)", privacy: .public)")
+    }
 
     for (index, object) in step.objects.enumerated() {
       // Positions are already in the marker frame (contracts/protocol.ts), so they go straight onto the anchor.

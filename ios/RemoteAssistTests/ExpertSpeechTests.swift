@@ -1,4 +1,5 @@
 import XCTest
+import simd
 @testable import RemoteAssist
 
 /// The expert's voice moves the phone only on clear commands: a wrong jump mid-repair is worse than a missed one.
@@ -53,5 +54,22 @@ final class ExpertSpeechTests: XCTestCase {
     XCTAssertEqual(steps.map(\.duration).reduce(0, +), 1.6, accuracy: 1e-9)
     XCTAssertEqual(steps.map(\.rise).reduce(0, +), 0.015, accuracy: 1e-6)
     XCTAssertEqual(steps.map(\.angle).reduce(0, +), 4 * .pi, accuracy: 1e-5)
+  }
+
+  func testAMarkerLyingFlatIsReadAsFlatAndSizedFromTheEstimate() {
+    var flat = matrix_identity_float4x4
+    flat.columns.3 = SIMD4(0, 0, -0.5, 1)
+    let reading = MarkerReading.describe(transform: flat, scale: 1.1, physicalWidth: 0.18, cameraPosition: .zero)
+    XCTAssertTrue(reading.isFlat)
+    XCTAssertEqual(reading.distance, 0.5, accuracy: 1e-5)
+    XCTAssertEqual(reading.seenWidth, 0.198, accuracy: 1e-5)
+  }
+
+  func testAMarkerStandingUpOnAScreenIsNotFlat() {
+    // Rotated 90° about X: its face (+Y) now points along the floor, towards the viewer.
+    let upright = simd_float4x4(simd_quatf(angle: .pi / 2, axis: [1, 0, 0]))
+    let reading = MarkerReading.describe(transform: upright, scale: 1, physicalWidth: 0.18, cameraPosition: [0, 0, 1])
+    XCTAssertFalse(reading.isFlat)
+    XCTAssertTrue(reading.line.contains("standing up"))
   }
 }

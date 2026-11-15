@@ -41,6 +41,8 @@ struct ContentView: View {
   /// Why the relay just refused a finished step, for a few seconds on the step card.
   @State private var refusalNote: String?
   @AppStorage("ghostToolOn") private var ghostToolOn = true
+  /// On while we line the guide up with the real laptop: the marker's distance, seen size and pose on screen.
+  @AppStorage("arDebug") private var arDebug = true
   @AppStorage("onboarded") private var onboarded = false
   @AppStorage("voiceOn") private var voiceOn = true
   @Environment(\.scenePhase) private var scenePhase
@@ -173,6 +175,16 @@ struct ContentView: View {
           guideMenu
         }
 
+        if arDebug, !ar.debugLine.isEmpty {
+          Text(ar.debugLine)
+            .font(.caption2.monospacedDigit())
+            .lineLimit(2)
+            .padding(.horizontal, 10)
+            .padding(.vertical, 6)
+            .glassBackground(in: RoundedRectangle(cornerRadius: 10))
+            .frame(maxWidth: .infinity, alignment: .leading)
+        }
+
         if ar.cameraStalled {
           HStack(spacing: 10) {
             Label("The camera stopped updating.", systemImage: "camera.badge.exclamationmark")
@@ -221,6 +233,7 @@ struct ContentView: View {
       layoutFile: layoutFile,
       voiceOn: $voiceOn,
       ghostToolOn: $ghostToolOn,
+      arDebug: $arDebug,
       handsFreeOn: commands.isOn,
       onConnect: { showingConnection = true },
       onTranscript: { showingTranscript = true },
@@ -239,6 +252,9 @@ struct ContentView: View {
       return .init(text: "Teaching: tap each part on the laptop · \(count) marked", symbol: "hand.point.up.left.fill")
     }
     if let problem = commands.problem { return .init(text: problem, symbol: "mic.badge.xmark", tint: .orange) }
+    if ar.markerNotFlat, ar.markerSeen, !isLaptopGuide {
+      return .init(text: "Lay the printed marker flat on the table, beside the laptop: the guide assumes it's lying down", symbol: "exclamationmark.triangle.fill", tint: .orange)
+    }
     if let refusalNote { return .init(text: "The relay refused that step: \(refusalNote)", symbol: "exclamationmark.triangle.fill", tint: .orange) }
     if let expertHeard { return .init(text: "Expert: “\(expertHeard)”", symbol: "ear.fill") }
     if let heard = commands.heard { return .init(text: "Heard “\(heard)”", symbol: "mic.fill") }

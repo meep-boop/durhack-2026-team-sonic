@@ -9,6 +9,7 @@ struct GuideMenu: View {
   let layoutFile: URL?
   @Binding var voiceOn: Bool
   @Binding var ghostToolOn: Bool
+  @Binding var arDebug: Bool
   let handsFreeOn: Bool
   let onConnect: () -> Void
   let onTranscript: () -> Void
@@ -47,6 +48,7 @@ struct GuideMenu: View {
 
       Section("Voice") {
         Toggle(isOn: $voiceOn) { Label("Read steps aloud", systemImage: "speaker.wave.2") }
+        Toggle(isOn: $arDebug) { Label("Show AR debug", systemImage: "ruler") }
         Button(action: onHandsFree) {
           Label(handsFreeOn ? "Turn hands-free off" : "Hands-free (say “next”)", systemImage: handsFreeOn ? "mic.fill" : "mic")
         }
