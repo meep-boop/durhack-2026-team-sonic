@@ -21,7 +21,8 @@ final class VoiceCommands {
   @ObservationIgnored var onCommand: ((Command) -> Void)?
 
   @ObservationIgnored private let recognizer = SFSpeechRecognizer(locale: Locale(identifier: "en-GB")) ?? SFSpeechRecognizer()
-  @ObservationIgnored private let engine = AVAudioEngine()
+  /// Replaced after a media-services reset, when the old engine can't start again.
+  @ObservationIgnored private var engine = AVAudioEngine()
   @ObservationIgnored private let audio = AudioSessionCoordinator.shared
   /// The mic tap runs on an audio thread and appends to whichever request is current.
   @ObservationIgnored private let request = OSAllocatedUnfairLock<SFSpeechAudioBufferRecognitionRequest?>(initialState: nil)
@@ -41,6 +42,16 @@ final class VoiceCommands {
     ("back", .back), ("previous", .back), ("where", .showMe),
     ("repeat", .repeatStep), ("help", .callExpert),
   ]
+
+  init() {
+    NotificationCenter.default.addObserver(forName: AVAudioSession.mediaServicesWereResetNotification, object: nil, queue: .main) { [weak self] _ in
+      guard let self else { return }
+      self.endTask()
+      self.engineRunning = false
+      self.engine = AVAudioEngine()
+      self.resumeIfPossible()
+    }
+  }
 
   func toggle() {
     isOn ? stop() : start()

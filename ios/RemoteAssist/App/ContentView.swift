@@ -111,8 +111,9 @@ struct ContentView: View {
       .padding(.top, 4)
       .padding(.bottom, 8)
 
-      if let face = call.remoteVideoTrack, call.state == .live {
-        RemoteVideoView(track: face, isActive: scenePhase == .active)
+      // Out of the view tree entirely when the app isn't on screen, so its Metal layer can't ask for drawables.
+      if let face = call.remoteVideoTrack, call.state == .live, scenePhase == .active {
+        RemoteVideoView(track: face)
           .frame(width: 96, height: 128)
           .clipShape(RoundedRectangle(cornerRadius: 18, style: .continuous))
           .overlay(RoundedRectangle(cornerRadius: 18, style: .continuous).stroke(.white.opacity(0.4), lineWidth: 1))
@@ -236,6 +237,7 @@ struct ContentView: View {
   /// Background: no AR (iOS takes the camera anyway), no GPU drawing, no reading aloud. A live call keeps its voice
   /// (UIBackgroundModes audio) and stops its video until the user is back.
   private func handle(_ phase: ScenePhase) {
+    ARSessionController.log.notice("Scene phase: \(String(describing: phase), privacy: .public)")
     switch phase {
     case .background:
       commands.setSuspended(true)

@@ -20,6 +20,32 @@ final class AudioSessionCoordinator {
 
   private var session: AVAudioSession { .sharedInstance() }
 
+  /// iOS sometimes restarts its whole audio server (the log shows "AudioSession was invalidated", then haptics
+  /// errors). Every session setting is lost: put back whatever is active now. VoiceGuide and VoiceCommands rebuild
+  /// their own players and engines on the same notification.
+  private var resetObserver: NSObjectProtocol?
+
+  init() {
+    resetObserver = NotificationCenter.default.addObserver(
+      forName: AVAudioSession.mediaServicesWereResetNotification, object: nil, queue: nil
+    ) { [weak self] _ in
+      self?.queue.async { self?.restoreAfterReset() }
+    }
+  }
+
+  private func restoreAfterReset() {
+    ARSessionController.log.notice("Media services were reset: restoring the audio session")
+    if callActive {
+      try? session.setCategory(.playAndRecord, mode: .voiceChat, options: [.defaultToSpeaker, .allowBluetoothHFP])
+      try? session.setActive(true)
+      try? session.overrideOutputAudioPort(speakerOn ? .speaker : .none)
+    } else if listening || playbackActive {
+      try? session.setCategory(listening ? .playAndRecord : .playback, mode: listening ? .default : .spokenAudio,
+                               options: listening ? [.defaultToSpeaker, .allowBluetoothHFP, .duckOthers] : [.duckOthers])
+      try? session.setActive(true)
+    }
+  }
+
   func beginCall(speakerOn: Bool) {
     queue.async {
       self.callActive = true

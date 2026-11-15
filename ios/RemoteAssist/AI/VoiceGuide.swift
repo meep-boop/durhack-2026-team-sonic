@@ -16,7 +16,7 @@ final class VoiceGuide: NSObject {
 
   private var cache: [String: Data] = [:]
   private var player: AVAudioPlayer?
-  private let fallback = AVSpeechSynthesizer()
+  private var fallback = AVSpeechSynthesizer()
   private var fetch: URLSessionDataTask?
   /// Bumped by every speak and stop, so a late network answer for an old step is dropped.
   private var generation = 0
@@ -35,6 +35,16 @@ final class VoiceGuide: NSObject {
   override init() {
     super.init()
     fallback.delegate = self
+    // After iOS restarts its audio server, the old player and synthesizer are dead objects: make new ones.
+    NotificationCenter.default.addObserver(forName: AVAudioSession.mediaServicesWereResetNotification, object: nil, queue: nil) { [weak self] _ in
+      guard let self else { return }
+      self.queue.async {
+        self.player = nil
+        self.fallback = AVSpeechSynthesizer()
+        self.fallback.delegate = self
+        self.speaking = false
+      }
+    }
   }
 
   func speak(_ text: String) {

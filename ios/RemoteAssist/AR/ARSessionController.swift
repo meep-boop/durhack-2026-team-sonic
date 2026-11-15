@@ -14,6 +14,9 @@ import os
 /// Observable state and every RealityKit entity are touched on main only.
 @Observable
 final class ARSessionController: NSObject, ARSessionDelegate {
+  /// One line per lifecycle event (phase, memory, interruption), so a device log shows what came before any trouble.
+  static let log = Logger(subsystem: "com.teamsonic.remoteassist", category: "ar")
+
   private(set) var markerTracked = false
   private(set) var markerSeen = false
   private(set) var errorMessage: String?
@@ -74,6 +77,9 @@ final class ARSessionController: NSObject, ARSessionDelegate {
   @ObservationIgnored private var glideEndsAt: Date = .distantPast
   @ObservationIgnored private var lostTimer: Task<Void, Never>?
   @ObservationIgnored private var thermalObserver: NSObjectProtocol?
+  @ObservationIgnored private var memoryObserver: NSObjectProtocol?
+  /// Set on the first memory warning: people occlusion stays off for the rest of the run.
+  @ObservationIgnored private var lowMemory = false
 
   @ObservationIgnored private let sessionQueue = DispatchQueue(label: "ar-session", qos: .userInteractive)
   @ObservationIgnored private let shared = OSAllocatedUnfairLock(initialState: Shared())
@@ -103,6 +109,7 @@ final class ARSessionController: NSObject, ARSessionDelegate {
 
   deinit {
     thermalObserver.map(NotificationCenter.default.removeObserver)
+    memoryObserver.map(NotificationCenter.default.removeObserver)
   }
 
   // MARK: Lifecycle (main)
@@ -138,6 +145,9 @@ final class ARSessionController: NSObject, ARSessionDelegate {
     configuration = config
     applyThermalLimits(to: config)
 
+    // RealityKit's camera effects allocate several full-screen textures every frame and add nothing to a repair
+    // guide; with people occlusion on top they're what runs the GPU out of drawables.
+    arView.renderOptions.formUnion([.disableMotionBlur, .disableDepthOfField, .disableCameraGrain, .disableHDR, .disableGroundingShadows])
     arView.session.delegateQueue = sessionQueue
     arView.session.delegate = self
     arView.session.run(config, options: [.resetTracking, .removeExistingAnchors])
@@ -161,12 +171,25 @@ final class ARSessionController: NSObject, ARSessionDelegate {
       self.applyThermalLimits(to: configuration)
       if self.isRunning, configuration.frameSemantics != before { self.arView.session.run(configuration) }
     }
+    memoryObserver = NotificationCenter.default.addObserver(
+      forName: UIApplication.didReceiveMemoryWarningNotification, object: nil, queue: .main
+    ) { [weak self] _ in
+      guard let self, !self.lowMemory, let configuration = self.configuration else { return }
+      self.lowMemory = true
+      Self.log.notice("Memory warning: people occlusion off for the rest of the run")
+      self.applyThermalLimits(to: configuration)
+      if self.isRunning { self.arView.session.run(configuration) }
+    }
   }
 
+  /// Also hides the view: a paused session doesn't stop ARView's render loop, and a hidden view asks the GPU for
+  /// nothing (a backgrounded app asking for drawables is what floods "nextDrawable returning nil").
   func pause() {
     guard isRunning else { return }
     isRunning = false
     arView.session.pause()
+    arView.isHidden = true
+    Self.log.notice("AR paused and hidden")
   }
 
   /// Picks up where it left off (no reset), so the guide is still on the marker after the QR scanner closes or the
@@ -174,13 +197,15 @@ final class ARSessionController: NSObject, ARSessionDelegate {
   func resume() {
     guard let configuration, !isRunning else { return }
     isRunning = true
+    arView.isHidden = false
     arView.session.run(configuration)
+    Self.log.notice("AR resumed")
   }
 
   /// Hands and arms in front of the boxes hide them, as a real object would, unless the phone is running hot.
   private func applyThermalLimits(to config: ARWorldTrackingConfiguration) {
     let hot = ProcessInfo.processInfo.thermalState.rawValue >= ProcessInfo.ThermalState.serious.rawValue
-    if !hot, ARWorldTrackingConfiguration.supportsFrameSemantics(.personSegmentationWithDepth) {
+    if !hot, !lowMemory, ARWorldTrackingConfiguration.supportsFrameSemantics(.personSegmentationWithDepth) {
       config.frameSemantics.insert(.personSegmentationWithDepth)
     } else {
       config.frameSemantics.remove(.personSegmentationWithDepth)
@@ -405,7 +430,16 @@ final class ARSessionController: NSObject, ARSessionDelegate {
     receive(anchors, isNew: false)
   }
 
+  func sessionWasInterrupted(_ session: ARSession) {
+    Self.log.notice("AR session interrupted (camera taken by another task)")
+  }
+
+  func sessionInterruptionEnded(_ session: ARSession) {
+    Self.log.notice("AR session interruption ended")
+  }
+
   func session(_ session: ARSession, didFailWithError error: Error) {
+    Self.log.error("AR session failed: \(error.localizedDescription, privacy: .public)")
     DispatchQueue.main.async { [weak self] in self?.errorMessage = error.localizedDescription }
   }
 

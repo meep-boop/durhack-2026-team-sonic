@@ -46,7 +46,8 @@ struct LaptopGuideSheet: View {
       .navigationTitle("Laptop guide")
       .navigationBarTitleDisplayMode(.inline)
       .toolbar { ToolbarItem(placement: .cancellationAction) { Button("Close") { dismiss() } } }
-      .confirmationDialog("Not everything is ticked", isPresented: $confirmingOverride, titleVisibility: .visible) {
+      // An alert, not a confirmation dialog: the dialog inside a sheet trips UIKit's width constraints.
+      .alert("Not everything is ticked", isPresented: $confirmingOverride) {
         Button("I've checked it myself, start") {
           laptop.overrideSafety()
           start()
