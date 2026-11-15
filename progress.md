@@ -950,3 +950,9 @@ each builder's brief (`builder-file-<name>.md`, on the `context` branch).
 - 📨 To @max @laura @salman: start at step 1 of your checklist. The scan with the marker in it comes first.
 - ⚠️ Conflicts: none
 - Conflict status: n/a
+### 2026-11-14 20:13 — mobile Expo starter (SDK 58, Expo Go) — @salman
+- Shipped: an Expo Router app in `mobile/` with Home / Explore / Profile tabs and light/dark colours. It's a PLACEHOLDER
+  shell until the idea is picked. `npm run share` gives a tunnel QR that anyone can open in Expo Go; tested on Salman's iPhone.
+- Touched: `mobile/` (new), `progress.md`
+- ⚠️ Conflicts: none
+- Conflict status: resolved by @salman 2026-11-14
