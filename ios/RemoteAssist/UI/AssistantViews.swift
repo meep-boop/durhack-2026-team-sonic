@@ -1,77 +1,79 @@
 import SwiftUI
 
-/// The laptop button: what this guide is, where its steps come from, and a safety checklist the user ticks before
-/// the first step.
-struct LaptopGuideSheet: View {
+/// The laptop guide's safety checklist, as a card over the live camera rather than a sheet: a sheet sliding away from
+/// in front of the AR view is the moment the camera used to freeze.
+struct LaptopChecklistCard: View {
   let laptop: LaptopGuide
-  /// The laptop guide is already the one playing.
-  var isRunning = false
-  var onBackToMarker: () -> Void = {}
   let onStart: (Guide) -> Void
-  @Environment(\.dismiss) private var dismiss
+  let onCancel: () -> Void
+  /// Set after a first tap on "Start anyway", so skipping the checklist takes a deliberate second tap.
   @State private var confirmingOverride = false
 
   var body: some View {
-    NavigationStack {
-      ScrollView {
-        VStack(alignment: .leading, spacing: 20) {
-          VStack(alignment: .leading, spacing: 8) {
-            Image(systemName: "laptopcomputer.and.arrow.down").font(.system(size: 44)).foregroundStyle(Theme.accent)
-            Text("Swap the SSD").font(.title2.weight(.bold))
-            Text(laptop.device).font(.headline).foregroundStyle(.secondary)
-            Label(laptop.stepSource, systemImage: "checkmark.seal.fill")
-              .font(.subheadline.weight(.semibold))
-              .foregroundStyle(.green)
-            Text("\(laptop.steps.count) steps. No marker needed: the expert can point at each part on your camera, and the pins land on the real laptop.")
-              .foregroundStyle(.secondary)
+    ZStack {
+      if !CameraLab.overlaysOff { Color.black.opacity(0.55).ignoresSafeArea() }
+
+      VStack(alignment: .leading, spacing: 16) {
+        Spacer(minLength: 0)
+        VStack(alignment: .leading, spacing: 16) {
+          HStack(alignment: .top) {
+            VStack(alignment: .leading, spacing: 4) {
+              Text("Swap the SSD").font(.title2.weight(.bold))
+              Text(laptop.device).font(.subheadline.weight(.semibold)).foregroundStyle(.secondary)
+              Label(laptop.stepSource, systemImage: "checkmark.seal.fill")
+                .font(.footnote.weight(.semibold))
+                .foregroundStyle(.green)
+            }
+            Spacer(minLength: 8)
+            Button("Cancel", action: onCancel).font(.subheadline.weight(.semibold))
           }
 
           VStack(alignment: .leading, spacing: 12) {
-            Label("Before you start", systemImage: "checkmark.shield").font(.headline)
+            Text("BEFORE YOU START · \(laptop.steps.count) STEPS")
+              .font(.caption.weight(.bold))
+              .foregroundStyle(.secondary)
             ForEach(LaptopGuide.safetyItems, id: \.id) { item in
               Toggle(isOn: binding(item.id)) { Text(item.text) }
                 .toggleStyle(CheckToggleStyle())
             }
           }
 
-          Button {
-            laptop.allSafe ? start() : (confirmingOverride = true)
-          } label: {
-            Label(laptop.allSafe ? "Start the guide" : "Start anyway", systemImage: "play.fill")
+          if confirmingOverride && !laptop.allSafe {
+            Label("Opening a laptop that's on or charging can damage it or hurt you.", systemImage: "exclamationmark.triangle.fill")
+              .font(.footnote.weight(.semibold))
+              .foregroundStyle(.orange)
+              .fixedSize(horizontal: false, vertical: true)
+          }
+
+          Button(action: startTapped) {
+            Label(startTitle, systemImage: "play.fill")
               .font(.headline)
-              .frame(maxWidth: .infinity, minHeight: 50)
+              .frame(maxWidth: .infinity, minHeight: 52)
           }
           .buttonStyle(.borderedProminent)
           .buttonBorderShape(.capsule)
-
-          if isRunning {
-            Button {
-              onBackToMarker()
-              dismiss()
-            } label: {
-              Label("Back to the marker guide", systemImage: "qrcode.viewfinder")
-                .frame(maxWidth: .infinity, minHeight: 44)
-            }
-            .buttonStyle(.bordered)
-            .buttonBorderShape(.capsule)
-          }
         }
-        .padding(24)
+        .padding(20)
+        .glassBackground(in: RoundedRectangle(cornerRadius: 28, style: .continuous))
       }
-      .navigationTitle("Laptop guide")
-      .navigationBarTitleDisplayMode(.inline)
-      .toolbar { ToolbarItem(placement: .cancellationAction) { Button("Close") { dismiss() } } }
-      // An alert, not a confirmation dialog: the dialog inside a sheet trips UIKit's width constraints.
-      .alert("Not everything is ticked", isPresented: $confirmingOverride) {
-        Button("I've checked it myself, start") {
-          laptop.overrideSafety()
-          start()
-        }
-        Button("Go back", role: .cancel) {}
-      } message: {
-        Text("Opening a laptop that's on or charging can damage it or hurt you.")
-      }
+      .padding(.horizontal)
+      .padding(.bottom, 8)
     }
+    .animation(.snappy, value: confirmingOverride)
+    .animation(.snappy, value: laptop.allSafe)
+  }
+
+  private var startTitle: String {
+    if laptop.allSafe { return "Start the guide" }
+    return confirmingOverride ? "I've checked it myself, start" : "Start anyway"
+  }
+
+  private func startTapped() {
+    if !laptop.allSafe {
+      guard confirmingOverride else { confirmingOverride = true; return }
+      laptop.overrideSafety()
+    }
+    onStart(laptop.guide())
   }
 
   private func binding(_ id: String) -> Binding<Bool> {
@@ -79,11 +81,6 @@ struct LaptopGuideSheet: View {
       get: { laptop.safetyChecked.contains(id) },
       set: { on in if on { laptop.safetyChecked.insert(id) } else { laptop.safetyChecked.remove(id) } }
     )
-  }
-
-  private func start() {
-    onStart(laptop.guide())
-    dismiss()
   }
 }
 

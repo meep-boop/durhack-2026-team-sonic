@@ -1,16 +1,17 @@
-import RealityKit
 import SwiftUI
 
 struct ARViewContainer: UIViewRepresentable {
   let controller: ARSessionController
 
-  /// The session is started by ContentView once onboarding is closed, so the camera prompt isn't hidden under it.
-  func makeUIView(context: Context) -> ARView {
-    controller.ensureRunning()
-    return controller.arView
+  /// SwiftUI owns the host; the controller owns the AR view inside it and may replace it at any time.
+  func makeUIView(context: Context) -> CameraHost {
+    let host = CameraHost()
+    host.backgroundColor = .black
+    controller.attach(to: host)
+    return host
   }
 
-  func updateUIView(_ uiView: ARView, context: Context) {}
+  func updateUIView(_ uiView: CameraHost, context: Context) {}
 
   // No dismantleUIView: pausing the session here, behind the controller's back, left it thinking it was running, so
   // nothing ever restarted the camera. The controller alone starts, pauses and resumes it.

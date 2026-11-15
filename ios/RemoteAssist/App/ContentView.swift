@@ -50,7 +50,10 @@ struct ContentView: View {
       ARViewContainer(controller: ar)
         .ignoresSafeArea()
 
-      if showingHome {
+      if showingHome && showingLaptop {
+        LaptopChecklistCard(laptop: laptop, onStart: startLaptopGuide, onCancel: { showingLaptop = false })
+          .transition(.opacity)
+      } else if showingHome {
         HomeView(
           relayConnected: relay.state == .connected,
           onLaptop: { showingLaptop = true },
@@ -191,16 +194,6 @@ struct ContentView: View {
     .sheet(isPresented: $showingConnection) {
       ConnectionSheet(relay: relay, voice: voice, onHandsInFront: ar.setHandsInFront, pauseAR: ar.pause, resumeAR: ar.resume)
         .presentationDetents([.medium, .large])
-    }
-    .sheet(isPresented: $showingLaptop) {
-      LaptopGuideSheet(laptop: laptop, isRunning: isLaptopGuide && !showingHome, onBackToMarker: leaveGuide) { guide in
-        screwMemory.reset()
-        player.replace(with: guide)
-        player.restart()
-        enterGuide()
-        if laptopFrame == nil { startSetup() }
-      }
-      .presentationDetents([.large])
     }
     .alert("Leave this guide?", isPresented: $confirmingLeave) {
       Button("Leave", role: .destructive, action: leaveGuide)
@@ -449,6 +442,15 @@ struct ContentView: View {
     if layout.isTaught(part) { return currentPhase == "remove" ? "Work on each lit pin and tap it when done" : nil }
     guard currentPhase == "remove" || currentPhase == "refit" else { return nil }
     return "Not measured yet: tap Teach and tap \(part) once, or ask the expert to tap them"
+  }
+
+  private func startLaptopGuide(_ guide: Guide) {
+    showingLaptop = false
+    screwMemory.reset()
+    player.replace(with: guide)
+    player.restart()
+    enterGuide()
+    if laptopFrame == nil { startSetup() }
   }
 
   private func enterGuide() {

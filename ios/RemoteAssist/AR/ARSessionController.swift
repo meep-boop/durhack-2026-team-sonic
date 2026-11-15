@@ -67,7 +67,11 @@ final class ARSessionController: NSObject, ARSessionDelegate {
     set { shared.withLock { $0.onCameraFrame = newValue } }
   }
 
-  @ObservationIgnored let arView = ARView(frame: .zero, cameraMode: .ar, automaticallyConfigureSession: false)
+  /// Replaced by a fresh one (same session, same anchors) if it ever stops getting drawables: see `replaceView`.
+  @ObservationIgnored private(set) var arView: ARView = CameraView(frame: .zero, cameraMode: .ar, automaticallyConfigureSession: false)
+  @ObservationIgnored private weak var host: CameraHost?
+  /// When the view was last replaced, to cap automatic replacements.
+  @ObservationIgnored private var replacements: [TimeInterval] = []
   /// A world anchor, not an image anchor: RealityKit hides image-anchored content the moment the image is covered
   /// (a hand reaching in, the marker leaving the frame). This one stays put and only follows the marker while ARKit
   /// can actually see it.
@@ -120,6 +124,9 @@ final class ARSessionController: NSObject, ARSessionDelegate {
     /// When the last camera frame arrived (system uptime), for the watchdog.
     var lastFrameAt: TimeInterval = 0
     var framesSinceLog = 0
+    /// When a rendered frame last reached a drawable (RealityKit's post-process callback only runs when it does).
+    var lastPresentAt: TimeInterval = 0
+    var presentsSinceLog = 0
     /// The last ~2.5 s of camera poses, so an expert's tap on a video frame that left the phone a moment ago is
     /// projected through the camera that filmed it.
     var cameraHistory: [CameraContext] = []
@@ -174,16 +181,9 @@ final class ARSessionController: NSObject, ARSessionDelegate {
     configuration = config
     applyThermalLimits(to: config)
 
-    // Motion blur smears the camera when the phone moves. Everything else stays at RealityKit's defaults, the
-    // configuration the camera last rendered reliably with. Never override contentScaleFactor or the layer's scale:
-    // RealityKit sizes its own drawables, and forcing 2x made every allocation fail.
-    arView.renderOptions.insert(.disableMotionBlur)
-    if !Self.handsInFront { arView.renderOptions.insert(.disablePersonOcclusion) }
+    configure(arView)
     if CameraLab.delegateOffMain { arView.session.delegateQueue = sessionQueue }
     arView.session.delegate = self
-    renderSubscription = arView.scene.subscribe(to: SceneEvents.Update.self) { [weak self] _ in
-      self?.rendersSinceLog += 1
-    }
     arView.session.run(config, options: [.resetTracking, .removeExistingAnchors])
     isRunning = true
     markRestarted()
@@ -201,7 +201,6 @@ final class ARSessionController: NSObject, ARSessionDelegate {
     coaching.autoresizingMask = [.flexibleWidth, .flexibleHeight]
     coaching.frame = arView.bounds
     if coaching.superview == nil { arView.addSubview(coaching) }
-    arView.addGestureRecognizer(UITapGestureRecognizer(target: self, action: #selector(tapped(_:))))
 
     // A hot phone drops the people-occlusion model first: it's the most expensive thing the session runs.
     thermalObserver = NotificationCenter.default.addObserver(
@@ -224,13 +223,81 @@ final class ARSessionController: NSObject, ARSessionDelegate {
     }
   }
 
-  /// Silence is measured from here after any (re)start, so a fresh run isn't mistaken for a stall.
-  private func markRestarted() {
-    runStartedAt = ProcessInfo.processInfo.systemUptime
+  /// Everything a fresh AR view needs, for the first one and any replacement. Motion blur smears the camera when the
+  /// phone moves; everything else stays at RealityKit's defaults. Never override contentScaleFactor or the layer's
+  /// scale: RealityKit sizes its own drawables, and forcing 2x made every allocation fail.
+  private func configure(_ view: ARView) {
+    view.renderOptions.insert(.disableMotionBlur)
+    if !Self.handsInFront { view.renderOptions.insert(.disablePersonOcclusion) }
+    // The one place that proves a frame reached the screen: RealityKit only calls this with a drawable to draw into.
+    // The copy is the whole post-process (none), one GPU blit per frame.
+    view.renderCallbacks.postProcess = { [shared] context in
+      if let blit = context.commandBuffer.makeBlitCommandEncoder() {
+        blit.copy(from: context.sourceColorTexture, to: context.targetColorTexture)
+        blit.endEncoding()
+      }
+      let now = ProcessInfo.processInfo.systemUptime
+      shared.withLock { state in
+        state.lastPresentAt = now
+        state.presentsSinceLog += 1
+      }
+    }
+    renderSubscription = view.scene.subscribe(to: SceneEvents.Update.self) { [weak self] _ in
+      self?.rendersSinceLog += 1
+    }
+    view.addGestureRecognizer(UITapGestureRecognizer(target: self, action: #selector(tapped(_:))))
   }
 
-  /// Once a second, while running and active: no camera frames for 2 s re-runs the session once (the camera really
-  /// stopped, so a re-run has nothing to lose); if that doesn't help, `cameraStalled` shows a Restart camera button.
+  /// Puts the current AR view in SwiftUI's host (once, when SwiftUI makes it).
+  func attach(to host: CameraHost) {
+    self.host = host
+    arView.removeFromSuperview()
+    arView.frame = host.bounds
+    host.addSubview(arView)
+    if isRunning { arView.isHidden = false }
+  }
+
+  /// A fresh AR view on the same running session, with every anchor moved across, in place of one that can't get
+  /// drawables any more (the "camera visible but frozen" failure). Tracking, pins and the laptop outline survive.
+  func replaceView(reason: String) {
+    let old = arView
+    Self.log.error("Camera view replaced: \(reason, privacy: .public)")
+    let fresh = CameraView(frame: old.frame, cameraMode: .ar, automaticallyConfigureSession: false)
+    fresh.session = old.session
+    fresh.session.delegate = self
+    configure(fresh)
+    for anchor in Array(old.scene.anchors) {
+      old.scene.removeAnchor(anchor)
+      fresh.scene.addAnchor(anchor)
+    }
+    coaching.removeFromSuperview()
+    coaching.frame = fresh.bounds
+    fresh.addSubview(coaching)
+    fresh.isHidden = old.isHidden
+
+    old.renderCallbacks.postProcess = nil
+    old.removeFromSuperview()
+    // The old view lets go of the real session, so only the new one renders it.
+    old.session = ARSession()
+    arView = fresh
+    if let host {
+      fresh.frame = host.bounds
+      host.addSubview(fresh)
+    }
+    markRestarted()
+  }
+
+  /// Silence is measured from here after any (re)start, so a fresh run isn't mistaken for a stall.
+  private func markRestarted() {
+    let now = ProcessInfo.processInfo.systemUptime
+    runStartedAt = now
+    shared.withLock { $0.lastPresentAt = now }
+  }
+
+  /// Once a second, while running and active:
+  /// - no camera frames for 2 s: re-run the session once (the camera really stopped, so there's nothing to lose);
+  /// - camera frames arriving but none reaching the screen for 1 s: replace the AR view (up to 3 times a minute);
+  /// - neither helped: `cameraStalled`, which the screen shows with a Restart camera button.
   private func startWatchdog() {
     watchdog?.invalidate()
     watchdog = Timer.scheduledTimer(withTimeInterval: 1, repeats: true) { [weak self] _ in
@@ -241,11 +308,15 @@ final class ARSessionController: NSObject, ARSessionDelegate {
   private func checkHealth() {
     guard isRunning, UIApplication.shared.applicationState == .active, let configuration else { return }
     let now = ProcessInfo.processInfo.systemUptime
-    let (lastFrame, frames) = shared.withLock { state in
-      defer { state.framesSinceLog = 0 }
-      return (state.lastFrameAt, state.framesSinceLog)
+    let (lastFrame, frames, lastPresent, presents) = shared.withLock { state in
+      defer {
+        state.framesSinceLog = 0
+        state.presentsSinceLog = 0
+      }
+      return (state.lastFrameAt, state.framesSinceLog, state.lastPresentAt, state.presentsSinceLog)
     }
     framesInWindow += frames
+    presentsInWindow += presents
     logHealthIfDue(now: now)
 
     let silent = now - max(lastFrame, runStartedAt)
@@ -262,11 +333,26 @@ final class ARSessionController: NSObject, ARSessionDelegate {
       return
     }
 
+    // Only a view that's on screen can be expected to draw, and a fresh one gets 3 s to compile its shaders.
+    let notPresenting = now - max(lastPresent, runStartedAt)
+    if notPresenting > 1, now - runStartedAt > 3, arView.window != nil, !arView.isHidden {
+      replacements = replacements.filter { now - $0 < 60 }
+      if replacements.count < 3 {
+        replacements.append(now)
+        replaceView(reason: String(format: "nothing reached the screen for %.1f s while the camera ran", notPresenting))
+      } else if !cameraStalled {
+        Self.log.error("Camera view still not drawing after 3 replacements this minute")
+        cameraStalled = true
+      }
+      return
+    }
+
     if cameraStalled { cameraStalled = false }
     watchdogRestarts = 0
   }
 
   @ObservationIgnored private var framesInWindow = 0
+  @ObservationIgnored private var presentsInWindow = 0
 
   /// One line every 10 s: camera frames and renders per second, and how much memory the app has left. A device log
   /// then shows whether anything degrades before a stall.
@@ -276,28 +362,22 @@ final class ARSessionController: NSObject, ARSessionDelegate {
     guard span >= 10 else { return }
     let fps = Double(framesInWindow) / span
     let rps = Double(rendersSinceLog) / span
+    let shown = Double(presentsInWindow) / span
     let freeMB = os_proc_available_memory() / 1_048_576
-    Self.log.notice("AR health: camera \(Int(fps.rounded()), privacy: .public) fps · scene updates \(Int(rps.rounded()), privacy: .public)/s · \(freeMB, privacy: .public) MB free")
+    Self.log.notice("AR health: camera \(Int(fps.rounded()), privacy: .public) fps · on screen \(Int(shown.rounded()), privacy: .public) fps · scene updates \(Int(rps.rounded()), privacy: .public)/s · \(freeMB, privacy: .public) MB free")
     framesInWindow = 0
+    presentsInWindow = 0
     rendersSinceLog = 0
     lastHealthLog = now
   }
 
-  /// The user's way out: the same pause and resume as leaving the app and coming back, which never rebuilds the
-  /// configuration.
+  /// The user's way out: a fresh AR view on the same session, and the session resumed if it had stopped.
   func restartCamera() {
-    Self.log.notice("Restart camera (user)")
     watchdogRestarts = 0
+    replacements = []
     cameraStalled = false
-    pause()
-    DispatchQueue.main.async { [weak self] in self?.resume() }
-  }
-
-  /// Makes sure the view is visible when SwiftUI (re)creates it. Never re-runs a running session: a second `run`
-  /// on top of `start()`'s was one more reconfiguration in the first second, for nothing.
-  func ensureRunning() {
-    guard isRunning else { return }
-    arView.isHidden = false
+    replaceView(reason: "Restart camera (user)")
+    if !isRunning { resume() }
   }
 
   /// Also hides the view: a paused session doesn't stop ARView's render loop, and a hidden view asks the GPU for
@@ -319,6 +399,7 @@ final class ARSessionController: NSObject, ARSessionDelegate {
     markRestarted()
     lastHealthLog = 0
     framesInWindow = 0
+    presentsInWindow = 0
     rendersSinceLog = 0
     arView.session.run(configuration)
     Self.log.notice("AR resumed")
