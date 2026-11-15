@@ -200,7 +200,6 @@ struct ContentView: View {
       if finished { makeReport() }
     }
     .sensoryFeedback(.success, trigger: pinTicks)
-    .sensoryFeedback(.selection, trigger: spotlight.arrivals)
     .onChange(of: voiceOn) { voiceOn ? speakCurrentStep() : voice.stop() }
     .onChange(of: call.state) { updateListening() }
     .onChange(of: call.state) { old, new in

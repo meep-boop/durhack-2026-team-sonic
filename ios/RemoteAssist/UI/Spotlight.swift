@@ -2,8 +2,48 @@ import Observation
 import QuartzCore
 import SwiftUI
 
+/// The spotlight's decisions, kept pure so they can be tested: how the beam eases, when it's worth redrawing, and when
+/// the target counts as on screen. Redrawing only on real movement is the whole point: a beam that re-rendered every
+/// tick kept the GPU and main thread so busy that taps timed out and ARKit's frames piled up.
+enum SpotlightPolicy {
+  /// One easing step towards `target`, snapping once every edge is within 1.5 pt so a still target settles exactly.
+  static func ease(from previous: CGRect?, to target: CGRect) -> CGRect {
+    guard let previous else { return target }
+    let close = abs(previous.minX - target.minX) < 1.5 && abs(previous.minY - target.minY) < 1.5
+      && abs(previous.width - target.width) < 1.5 && abs(previous.height - target.height) < 1.5
+    if close { return target }
+    let t: CGFloat = 0.35
+    return CGRect(
+      x: previous.minX + (target.minX - previous.minX) * t, y: previous.minY + (target.minY - previous.minY) * t,
+      width: previous.width + (target.width - previous.width) * t, height: previous.height + (target.height - previous.height) * t
+    )
+  }
+
+  /// Worth publishing: some edge moved by more than a point.
+  static func moved(_ a: CGRect, _ b: CGRect) -> Bool {
+    abs(a.minX - b.minX) > 1 || abs(a.minY - b.minY) > 1 || abs(a.width - b.width) > 1 || abs(a.height - b.height) > 1
+  }
+
+  /// On screen, with hysteresis: a showing beam stays until its centre is 40 pt off screen; a hidden one comes back
+  /// only once the centre is 20 pt inside. No flicker at the border.
+  static func onScreen(centre: CGPoint, bounds: CGRect, wasBeam: Bool) -> Bool {
+    bounds.insetBy(dx: wasBeam ? -40 : 20, dy: wasBeam ? -40 : 20).contains(centre)
+  }
+
+  /// The projected points' bounding box, padded, at least big enough to read as a beam, clipped to the screen.
+  static func beamRect(around points: [CGPoint], in bounds: CGRect) -> CGRect? {
+    guard let first = points.first else { return nil }
+    var rect = points.dropFirst().reduce(CGRect(origin: first, size: .zero)) { $0.union(CGRect(origin: $1, size: .zero)) }
+    rect = rect.insetBy(dx: -44, dy: -44)
+    if rect.width < 150 { rect = rect.insetBy(dx: -(150 - rect.width) / 2, dy: 0) }
+    if rect.height < 150 { rect = rect.insetBy(dx: 0, dy: -(150 - rect.height) / 2) }
+    let clipped = rect.intersection(bounds)
+    return clipped.isNull ? nil : clipped
+  }
+}
+
 /// Follows what the user should look at and says where it is on screen: in a beam, or off one edge.
-/// A display link at 30 Hz projects the target; the beam eases toward it so it never jitters with tracking noise.
+/// A display link at up to 20 Hz projects the target, but `state` only changes when something visibly moved.
 @Observable
 final class SpotlightTracker {
   enum State: Equatable {
@@ -15,7 +55,7 @@ final class SpotlightTracker {
   }
 
   private(set) var state: State = .hidden
-  /// Bumped every time the target swings into view, for a haptic.
+  /// Bumped when the target swings into view, for a haptic. Read only by the overlay.
   private(set) var arrivals = 0
   /// Off after the user taps the dimmed area; back on for the next step or the expert's next pin.
   var enabled = true
@@ -28,7 +68,7 @@ final class SpotlightTracker {
     self.ar = ar
     guard link == nil else { return }
     let link = CADisplayLink(target: self, selector: #selector(tick))
-    link.preferredFrameRateRange = CAFrameRateRange(minimum: 20, maximum: 30, preferred: 30)
+    link.preferredFrameRateRange = CAFrameRateRange(minimum: 10, maximum: 20, preferred: 15)
     link.add(to: .main, forMode: .common)
     self.link = link
   }
@@ -36,58 +76,41 @@ final class SpotlightTracker {
   func stop() {
     link?.invalidate()
     link = nil
-    state = .hidden
+    smoothed = nil
+    setState(.hidden)
   }
 
   @objc private func tick() {
     guard enabled, let ar, let target = ar.spotlightTarget(), !target.points.isEmpty else {
+      smoothed = nil
       setState(.hidden)
       return
     }
     let bounds = ar.arView.bounds
     let projected = target.points.compactMap(ar.project)
-    let centroid = target.points.reduce(.zero, +) / Float(target.points.count)
+    let wasBeam: Bool
+    if case .beam = state { wasBeam = true } else { wasBeam = false }
 
-    if projected.count == target.points.count, let rect = Self.beamRect(around: projected, in: bounds),
-       bounds.insetBy(dx: 20, dy: 20).contains(CGPoint(x: rect.midX, y: rect.midY)) {
-      // A beam that just arrived jumps into place; one already showing glides.
-      let eased: CGRect
-      if let smoothed, case .beam = state {
-        eased = Self.lerp(smoothed, rect, 0.3)
-      } else {
-        eased = rect
-        arrivals += 1
-      }
+    if projected.count == target.points.count, let rect = SpotlightPolicy.beamRect(around: projected, in: bounds),
+       SpotlightPolicy.onScreen(centre: CGPoint(x: rect.midX, y: rect.midY), bounds: bounds, wasBeam: wasBeam) {
+      let eased = SpotlightPolicy.ease(from: wasBeam ? smoothed : nil, to: rect)
       smoothed = eased
+      if !wasBeam { arrivals += 1 }
+      if case .beam(let shown, let label) = state, label == target.label, !SpotlightPolicy.moved(shown, eased) { return }
       setState(.beam(eased, label: target.label))
-    } else if let direction = ar.screenDirection(to: centroid) {
-      smoothed = nil
-      setState(.edge(direction, label: target.label))
     } else {
-      setState(.hidden)
+      smoothed = nil
+      let centroid = target.points.reduce(.zero, +) / Float(target.points.count)
+      guard let direction = ar.screenDirection(to: centroid) else { return setState(.hidden) }
+      // Only a real change of side redraws the edge glow.
+      if case .edge(let shown, let label) = state, label == target.label,
+         abs(shown.dx - direction.dx) < 0.15, abs(shown.dy - direction.dy) < 0.15 { return }
+      setState(.edge(direction, label: target.label))
     }
   }
 
   private func setState(_ new: State) {
     if new != state { state = new }
-  }
-
-  /// The projected points' bounding box, padded, at least big enough to read as a beam, clipped to the screen.
-  private static func beamRect(around points: [CGPoint], in bounds: CGRect) -> CGRect? {
-    guard let first = points.first else { return nil }
-    var rect = points.dropFirst().reduce(CGRect(origin: first, size: .zero)) { $0.union(CGRect(origin: $1, size: .zero)) }
-    rect = rect.insetBy(dx: -44, dy: -44)
-    if rect.width < 150 { rect = rect.insetBy(dx: -(150 - rect.width) / 2, dy: 0) }
-    if rect.height < 150 { rect = rect.insetBy(dx: 0, dy: -(150 - rect.height) / 2) }
-    let clipped = rect.intersection(bounds)
-    return clipped.isNull ? nil : clipped
-  }
-
-  private static func lerp(_ a: CGRect, _ b: CGRect, _ t: CGFloat) -> CGRect {
-    CGRect(
-      x: a.minX + (b.minX - a.minX) * t, y: a.minY + (b.minY - a.minY) * t,
-      width: a.width + (b.width - a.width) * t, height: a.height + (b.height - a.height) * t
-    )
   }
 }
 
@@ -108,6 +131,8 @@ struct SpotlightOverlay: View {
     }
     .ignoresSafeArea()
     .animation(.easeInOut(duration: 0.25), value: stateKind)
+    // Here, not on the main screen: observing the tracker there re-rendered the whole UI with every beam update.
+    .sensoryFeedback(.selection, trigger: tracker.arrivals)
   }
 
   private var stateKind: Int {
@@ -120,13 +145,17 @@ struct SpotlightOverlay: View {
 
   private func beam(_ rect: CGRect, label: String, size: CGSize) -> some View {
     ZStack(alignment: .topLeading) {
+      // One even-odd fill and a few strokes: no blur filter and no offscreen pass, so a redraw costs almost nothing.
       Canvas { context, size in
-        context.fill(Path(CGRect(origin: .zero, size: size)), with: .color(.black.opacity(0.55)))
-        context.blendMode = .destinationOut
-        context.addFilter(.blur(radius: 28))
-        context.fill(Path(roundedRect: rect, cornerRadius: min(rect.width, rect.height) / 3), with: .color(.white))
+        let radius = min(rect.width, rect.height) / 3
+        var dim = Path(CGRect(origin: .zero, size: size))
+        dim.addRoundedRect(in: rect, cornerSize: CGSize(width: radius, height: radius))
+        context.fill(dim, with: .color(.black.opacity(0.5)), style: FillStyle(eoFill: true))
+        let edge = Path(roundedRect: rect, cornerRadius: radius)
+        context.stroke(edge, with: .color(Theme.accent.opacity(0.18)), lineWidth: 14)
+        context.stroke(edge, with: .color(Theme.accent.opacity(0.35)), lineWidth: 6)
+        context.stroke(edge, with: .color(Theme.accent), lineWidth: 2)
       }
-      .compositingGroup()
       // Taps inside the beam reach the AR view (to tick pins); a tap on the dimmed area turns the spotlight off.
       .contentShape(DimmedArea(hole: rect), eoFill: true)
       .onTapGesture { tracker.enabled = false }
@@ -152,7 +181,6 @@ struct SpotlightOverlay: View {
       RadialGradient(colors: [Theme.accent.opacity(0.75), .clear], center: .center, startRadius: 0, endRadius: 170)
         .frame(width: 340, height: 340)
         .position(point)
-        .blendMode(.screen)
       HStack(spacing: 6) {
         Text(label).font(.footnote.weight(.semibold))
         Image(systemName: "chevron.right").rotationEffect(angle)
