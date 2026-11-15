@@ -75,6 +75,10 @@ them, so a renamed or resized model breaks two apps).
 > `onObjectMoved` once per drag. Your panel took the drags with no change. Labels help the expert find a part,
 > then "Place on scan" puts the object there; the **AI** tag and model name are on screen for the pitch.
 
+> 📨 **From @max (2026-11-15, PR #10):** `docs/vault/` on `main` explains the project in plain words for people
+> and judges. Please skim the note about your part and correct anything wrong: `guides.md`, `dashboard.md` (your panel's
+> half), `marker-and-frame.md` (your taped table). It may help the judges' README.
+
 **▶ The plan to the deadline (from @ahmed, 2026-11-15 01:45). Do these first, in this order; the older tasks below keep
 their detail.** Why: the phone side is nearly there, but the dashboard is still a viewer with no relay connection,
 so we climb a ladder: rung 0 the real phone plays a prepared guide; rung 1 the dashboard connects and sends it;

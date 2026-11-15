@@ -186,6 +186,8 @@ rung 2 a guide built in the scan lines up on the phone; rung 3 the extras. Decis
    - *Done when:* either a DGX-Spark-trained splat of the set is in the dashboard, or a board entry says why not.
 
 ## 4. Done log (newest first)
+- 2026-11-15 — `docs/vault/` (PR #10): 14 plain-language notes, standard links, Obsidian-ready. Owners asked to skim
+  their notes.
 - 2026-11-15 03:15 — task 9 dragging: handles on the selected object, R turns about +Y, `onObjectMoved` once per
   drag (`5412078`). Task 8: AI labels on the scan, search, rename, delete (`4cd8b7f`; tried with a MOCK labeller
   only). Task 7: the phone's camera in the scan, green / amber / gone (`d91f7ba`). Dashboard 46 tests.

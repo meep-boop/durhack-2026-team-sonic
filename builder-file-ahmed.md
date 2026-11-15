@@ -76,6 +76,10 @@ but all three teammates build on them, so every change after the first version i
 > them, never in the repo). Ask on the board: could the relay take its save file from an env var or flag, so a
 > test relay never shares `relay/state.json` with the live one?
 
+> 📨 **From @max (2026-11-15, PR #10):** `docs/vault/` on `main` explains the project in plain words for people
+> and judges. Please skim the note about your part and correct anything wrong: `relay.md`, `messages.md`, `rig.md`, and the
+> first runbook `running-the-demo.md` (yours to own if you'd rather).
+
 **▶ The plan to the deadline (from @ahmed, 2026-11-15 01:45). Do these first, in this order; the older tasks below keep
 their detail.** Why: the phone side is nearly there, but the dashboard is still a viewer with no relay connection,
 so we climb a ladder: rung 0 the real phone plays a prepared guide; rung 1 the dashboard connects and sends it;

@@ -73,6 +73,10 @@ splats until that's settled. Training splats in the app (the scan is taken in Sc
 > `onObjectMoved` once per drag. The dashboard draws your pose with the camera looking along its own -Z (ARKit's
 > convention): say if the phone sends anything else. A dragged object only turns about +Y.
 
+> 📨 **From @max (2026-11-15, PR #10):** `docs/vault/` on `main` explains the project in plain words for people
+> and judges. Please skim the note about your part and correct anything wrong: `phone-app.md` (written from
+> `salman-ios-ar`).
+
 **▶ The plan to the deadline (from @ahmed, 2026-11-15 01:45). Do these first, in this order; the older tasks below keep
 their detail.** Why: the phone side is nearly there, but the dashboard is still a viewer with no relay connection,
 so we climb a ladder: rung 0 the real phone plays a prepared guide; rung 1 the dashboard connects and sends it;

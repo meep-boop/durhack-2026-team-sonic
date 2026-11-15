@@ -17,6 +17,7 @@ apply; the step-by-step protocols live in the skills it names (§ Triggers).*
 | Project doc | `PROJECT.md`: NOW (headline, clock, decisions, tasks) at the top, then spec, design, parked, decision log |
 | Event rules | `EVENT.md`: rules, judging, submission checklist, platform |
 | Research | `research/ledger.md` (every source rated KEEP / WEAK / DO NOT USE) |
+| Human docs | `docs/vault/` on `main`: plain-language notes for teammates and judges (Obsidian vault, standard links). Durable explanations only; volatile facts stay in `progress.md` and `PROJECT.md` |
 | Briefs | `builder-file-<name>.md`, one per builder: what their agent builds from |
 | Progress | `progress.md` on `main`: build log + conflict board |
 | Stack | Phone: pure native Swift, ARKit + RealityKit. Dashboard: Vite 8 + React 19 + TypeScript, plain three.js + Spark 2.4 behind `dashboard/src/scene/` (no React Three Fiber), zustand when shared state is needed. Relay: Node 24 + `ws`. Rig: Nicla Vision (OpenMV) + UNO Q (Python, `websocket-client`) (§5) |
