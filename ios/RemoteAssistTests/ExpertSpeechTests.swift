@@ -76,4 +76,23 @@ final class ExpertSpeechTests: XCTestCase {
   func testAMeasuredPointReadsInTheDashboardsCentimetres() {
     XCTAssertEqual(MarkerReading.positionText([0.312, 0.012, -0.098]), "x 31.2 · y 1.2 · z -9.8 cm")
   }
+
+  func testALockedGuideSitsOnTheLaptopCentreAlongItsTopEdge() {
+    // A Dell-sized laptop at (1, 0, 2), its top edge running along world +Z, lying flat.
+    let frame = LaptopFrame(origin: [1, 0, 2], xAxis: [0, 0, 1], yAxis: [1, 0, 0], normal: [0, 1, 0], size: [0.3578, 0.2333])
+    let m = GuideOnLaptop.transform(frame: frame, guideCentre: [0.30, 0])
+    let centre = m * SIMD4<Float>(0.30, 0, 0, 1)
+    XCTAssertEqual(centre.x, 1 + 0.2333 / 2, accuracy: 1e-4)
+    XCTAssertEqual(centre.z, 2 + 0.3578 / 2, accuracy: 1e-4)
+    // The guide's +X follows the laptop's top edge, and the frame is never mirrored.
+    XCTAssertEqual(simd_dot(SIMD3(m.columns.0.x, m.columns.0.y, m.columns.0.z), [0, 0, 1]), 1, accuracy: 1e-5)
+    XCTAssertEqual(simd_determinant(m), 1, accuracy: 1e-4)
+  }
+
+  func testTheGuidesCentreIsTheMiddleOfAllItsParts() {
+    let guide = try! GuidePlayer.loadBundled()
+    let centre = GuideOnLaptop.centre(of: guide)
+    let xs = guide.steps.flatMap(\.objects).map(\.pos.simd.x)
+    XCTAssertEqual(centre.x, (xs.min()! + xs.max()!) / 2, accuracy: 1e-5)
+  }
 }

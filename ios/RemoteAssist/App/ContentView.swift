@@ -168,7 +168,7 @@ struct ContentView: View {
       SpotlightOverlay(tracker: spotlight)
 
       // Not during a call: the expert is pointing at things, and the step card still says to find the marker.
-      if !ar.markerSeen && !isLaptopGuide && player.currentStep != nil && !inCall {
+      if !ar.markerSeen && !isLaptopGuide && !ar.guideOnLaptop && player.currentStep != nil && !inCall {
         FindMarkerHint().transition(.opacity)
       }
 
@@ -178,7 +178,7 @@ struct ContentView: View {
           if inCall {
             CallBar(call: call).transition(.opacity)
           } else {
-            StatusCapsule(ar: ar, relay: relay, call: call, laptopLocked: isLaptopGuide ? laptopFrame != nil : nil) { showingConnection = true }
+            StatusCapsule(ar: ar, relay: relay, call: call, laptopLocked: isLaptopGuide || laptopFrame != nil ? laptopFrame != nil : nil) { showingConnection = true }
             Spacer(minLength: 0)
           }
           guideMenu
@@ -251,6 +251,7 @@ struct ContentView: View {
       onTeach: { setTeaching(!teaching) },
       onUndoTeach: undoTeach,
       onMeasure: { setMeasuring(!measuring) },
+      onLockToLaptop: startSetup,
       onHandsFree: commands.toggle,
       onLeave: { confirmingLeave = true }
     )
@@ -281,7 +282,7 @@ struct ContentView: View {
         ? .init(text: "All \(progress.total) \(progress.verb). Tap Done.", symbol: "checkmark.circle.fill", tint: .green)
         : .init(text: "\(progress.done) of \(progress.total) \(progress.verb) · tap each pin as you go", symbol: "hand.tap.fill")
     }
-    if !isLaptopGuide && !ar.markerSeen { return .init(text: "Point the camera at the printed marker to start", symbol: "qrcode.viewfinder", tint: .secondary) }
+    if !isLaptopGuide && !ar.markerSeen && !ar.guideOnLaptop { return .init(text: "Point the camera at the printed marker to start", symbol: "qrcode.viewfinder", tint: .secondary) }
     if !isLaptopGuide && ar.markerLostForAWhile { return .init(text: "Marker out of view: the guide is holding where it was", symbol: "pin.fill", tint: .secondary) }
     if relay.outboxCount > 0 {
       return .init(text: "\(relay.outboxCount) finished step\(relay.outboxCount == 1 ? "" : "s") will sync when you're back online", symbol: "icloud.slash", tint: .orange)
@@ -391,7 +392,7 @@ struct ContentView: View {
   private var stepCard: some View {
     StepCard(
       player: player,
-      canAdvance: ar.markerSeen || isLaptopGuide,
+      canAdvance: ar.markerSeen || isLaptopGuide || ar.guideOnLaptop,
       note: stepNote,
       reportURL: reportURL,
       verification: player.currentStepId.flatMap { verified[$0] },
@@ -413,6 +414,10 @@ struct ContentView: View {
     }
     relay.onGuide = { [player] guide in
       relayGuide = guide
+      // A new guide from the expert, while the laptop is locked: it goes on the laptop too, around its own centre.
+      if let laptopFrame, player.guide.id != LaptopGuide.guideId {
+        ar.lockGuide(GuideOnLaptop.transform(frame: laptopFrame, guideCentre: GuideOnLaptop.centre(of: guide)))
+      }
       // The relay replays its guide on every reconnect. The laptop guide lives only on this phone, so that must not
       // pull the user out of it; leaving the laptop guide goes back to this one.
       guard player.guide.id != LaptopGuide.guideId else { return }
@@ -651,6 +656,7 @@ struct ContentView: View {
     cancelSetup()
     setTeaching(false)
     laptopFrame = nil
+    ar.lockGuide(nil)
     ar.showLaptopOutline(nil)
     ar.clearPins()
     ar.clearFocus()
@@ -664,6 +670,7 @@ struct ContentView: View {
   private func startSetup() {
     setTeaching(false)
     laptopFrame = nil
+    if ar.guideOnLaptop { ar.lockGuide(nil) }
     ar.showLaptopOutline(nil)
     ar.clearPins(kinds: [.guide])
     ar.clearFocus()
@@ -698,6 +705,9 @@ struct ContentView: View {
     case .cornerB(let a, let firstNormal):
       switch LaptopFrame.make(a: a, c: position, normal: firstNormal, footprint: layout.footprintMetres, screenRight: ar.screenRightInWorld ?? [1, 0, 0]) {
       case .success(let frame):
+        if !isLaptopGuide {
+          ar.lockGuide(GuideOnLaptop.transform(frame: frame, guideCentre: GuideOnLaptop.centre(of: player.guide)))
+        }
         laptopFrame = frame
         ar.showLaptopOutline(frame)
         cancelSetup()

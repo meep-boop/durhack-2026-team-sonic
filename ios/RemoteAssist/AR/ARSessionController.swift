@@ -34,6 +34,9 @@ final class ARSessionController: NSObject, ARSessionDelegate {
   @ObservationIgnored private var lastDebugLog: TimeInterval = 0
   @ObservationIgnored private var stepRangeText = ""
   @ObservationIgnored private var markerOutline: Entity?
+  /// True while the expert's guide is locked to the laptop (two corner taps) instead of placed from the marker.
+  private(set) var guideOnLaptop = false
+  @ObservationIgnored private var laptopGuideAnchor: AnchorEntity?
 
   /// A pin on the real surface: from the expert tapping the video, or a screw going back in.
   struct PinInfo: Identifiable, Equatable {
@@ -560,6 +563,25 @@ final class ARSessionController: NSObject, ARSessionDelegate {
     focusCorners = []
   }
 
+  /// Moves the guide's parts onto the real laptop (`GuideOnLaptop.transform`), or back onto the marker with nil.
+  func lockGuide(_ transform: simd_float4x4?) {
+    laptopGuideAnchor.map { arView.scene.removeAnchor($0) }
+    laptopGuideAnchor = nil
+    guard let transform else {
+      markerRoot.addChild(stepRoot)
+      if guideOnLaptop { guideOnLaptop = false }
+      Self.log.notice("Guide back on the marker")
+      return
+    }
+    let anchor = AnchorEntity(world: transform)
+    anchor.addChild(stepRoot)
+    arView.scene.addAnchor(anchor)
+    laptopGuideAnchor = anchor
+    if !guideOnLaptop { guideOnLaptop = true }
+    if debugLine.isEmpty || !debugLine.hasPrefix("Guide locked") { debugLine = "Guide locked to the laptop · " + stepRangeText }
+    Self.log.notice("Guide locked to the laptop at (\(transform.columns.3.x, format: .fixed(precision: 2), privacy: .public), \(transform.columns.3.y, format: .fixed(precision: 2), privacy: .public), \(transform.columns.3.z, format: .fixed(precision: 2), privacy: .public))")
+  }
+
   /// Where a world point is in the marker's frame, the frame guide positions are written in; nil before the marker
   /// has been found. Measuring with this is what lines a guide up with the real laptop: whatever way the marker's axes
   /// turn out to run, a position measured here is placed back on the same spot.
@@ -793,7 +815,7 @@ final class ARSessionController: NSObject, ARSessionDelegate {
     if !focusCorners.isEmpty {
       return SpotlightTarget(points: focusCorners, label: focusLabel)
     }
-    if markerSeen, !stepRoot.children.isEmpty {
+    if markerSeen || guideOnLaptop, !stepRoot.children.isEmpty {
       let points = stepRoot.children.map { $0.position(relativeTo: nil) }
       return SpotlightTarget(points: points, label: step?.objects.first?.label ?? "Here")
     }
@@ -938,7 +960,8 @@ final class ARSessionController: NSObject, ARSessionDelegate {
     markerOutline = outline
     markerRoot.addChild(outline)
     markerRoot.addChild(Shapes.axisGizmo())
-    markerRoot.addChild(stepRoot)
+    // While the guide is locked to the laptop its parts stay there; the marker only carries its outline.
+    if laptopGuideAnchor == nil { markerRoot.addChild(stepRoot) }
     anchor.addChild(markerRoot)
     arView.scene.addAnchor(anchor)
 

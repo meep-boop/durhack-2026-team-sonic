@@ -18,6 +18,7 @@ struct GuideMenu: View {
   let onTeach: () -> Void
   let onUndoTeach: () -> Void
   let onMeasure: () -> Void
+  let onLockToLaptop: () -> Void
   let onHandsFree: () -> Void
   let onLeave: () -> Void
 
@@ -50,6 +51,9 @@ struct GuideMenu: View {
 
       if !isLaptopGuide {
         Section("Line the guide up") {
+          Button(action: onLockToLaptop) {
+            Label(frameLocked ? "Re-do the laptop corners" : "Lock the guide to the laptop", systemImage: "laptopcomputer")
+          }
           Button(action: onMeasure) {
             Label(measuring ? "Stop measuring" : "Measure positions", systemImage: "ruler")
           }
