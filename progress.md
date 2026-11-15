@@ -64,11 +64,12 @@ each builder's brief (`builder-file-<name>.md`, on the `context` branch).
 ## Latest
 - **The volatile facts live here only:** the current commit, test counts, what's merged vs. local-only, and deploy
   status.
-- **As of 2026-11-14 23:40:** `main` has the contract, fixtures and fakes, the relay (41 tests, type-check clean), the
-  UNO Q rig code (13 tests, not yet run on its hardware), Laura's marker and six models, and `fixtures/video-test.html`.
-  **Not on `main` yet:** the iPhone app (PR #4, draft), the dashboard and scene API (PR #6), the guide builder
-  (`laura-guide`), Max's research answers (PR #1), Salman's board entries (PR #5). Relay deploy: the dashboard laptop
-  from the demo on; Ahmed's until then.
+- **As of 2026-11-15 02:16:** `main` has the contract, fixtures and fakes, the relay (41 tests, type-check clean), the
+  UNO Q rig code (13 tests), Laura's marker and seven models, `fixtures/video-test.html`, and the dashboard
+  (`0fddd63`: PR #6, Ahmed's relay client and calibration maths, and the playable scene; 22 tests, type-check and
+  build clean). **Not on `main` yet:** the iPhone app (`salman-ios-polish`), the guide builder (`laura-guide`),
+  Max's research answers (PR #1), Salman's board entries (PR #5). Relay deploy: the dashboard laptop from the demo
+  on; Ahmed's until then.
 
 ---
 
@@ -518,3 +519,32 @@ each builder's brief (`builder-file-<name>.md`, on the `context` branch).
   to check: which of the two M.2 slots holds the SSD (for the Nicla's `ssd-bay` region).
 - ⚠️ Conflicts: none
 - Conflict status: resolved by @laura 2026-11-15
+
+### 2026-11-15 02:15 — where the SSD sits in Ahmed's laptop — @laura
+- Shipped: no code. Checked on the laptop: the SSD is in the **M.2 slot next to the fan**. That's where the Nicla's
+  `ssd-bay` region goes, and where step 7–10's objects sit in `fixtures/ssd-swap-guide.json`.
+- Touched: on `context`: `research/ledger.md` § 17
+- 📨 To @ahmed: point the Nicla at the slot next to the fan; a photo of the open laptop is coming if you need one.
+- ⚠️ Conflicts: none
+- Conflict status: resolved by @laura 2026-11-15
+### 2026-11-15 02:16 — the dashboard's scene can calibrate a scan and draw a step — @max
+- Shipped: PR #6 merged, then `ahmed-dashboard` (relay client, calibration maths), then the scene work, all on `main`
+  at `0fddd63`. `App.tsx` makes one scene and one relay link (`?relay=ws://…`, default the page's host on 8080) and
+  leaves a slot for `<GuidePanel scene relay />`. Scans load from git-ignored `dashboard/public/scans/` with
+  `?closed=<file>&open=<file>` (the file name is the scan's id, so a rescan needs a new name). Calibration: four
+  corner clicks, refused above 5 mm, sent as `calib.set`, and restored from the relay on reload. `pickPoint()` returns
+  marker metres; `showStep()` draws boxes centred on `pos` and the glTF models (tip at `pos`); `select`, `focus`,
+  click-to-select and `previewAction` work. Checked in the browser against a relay on the SAMPLE splat (a pick at the
+  marker centre came back within 1 mm of the origin); not yet on a real scan of the set.
+- Touched: `dashboard/` (all Max's), `.gitignore` (one line, `dashboard/public/scans/`)
+- Decision (Max): nothing can be placed until the scan on screen is calibrated: `pickPoint()` resolves to null and
+  objects aren't drawn. Answers the open question in `docs/remote-assist/scene-api.md`.
+- 📨 To @laura: ask 1 answered: mount `<GuidePanel scene={scene} relay={relay} />` in the slot in
+  `dashboard/src/App.tsx` (the comment marks it). Ask 3 is in `SceneApi`: `isCalibrated()` and
+  `onCalibrated(listener)`. Asks 2 and 4 aren't needed (objects turn only about Y). `onObjectMoved` doesn't fire
+  until dragging lands.
+- 📨 To @ahmed: your two files are merged and in use. Something on this laptop already listens on port 8080 (a node
+  process); I'll clear it before the demo.
+- ⚠️ Conflicts: @laura — `api.ts` gained two calls, and `App.tsx` is where her panel mounts | @salman — the dashboard
+  assumes +X along the marker's top edge and +Z down the print until his axis check
+- Conflict status: open
