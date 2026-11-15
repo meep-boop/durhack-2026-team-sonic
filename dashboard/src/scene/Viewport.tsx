@@ -1,28 +1,30 @@
-import { useEffect, useRef, useState } from "react";
-import { createScene, type SceneHandle, type SplatInfo } from "./scene.ts";
-import { isSplatFileName, sourceName, type SplatSource } from "./splatSource.ts";
-
-// SAMPLE, not our scan: Spark's demo splat, so the viewport works before anyone has exported a Scaniverse file.
-const SAMPLE_SPLAT = "https://sparkjs.dev/assets/splats/butterfly.spz";
-
-function initialSource(): SplatSource {
-  const url = new URLSearchParams(window.location.search).get("splat");
-  return { kind: "url", url: url ?? SAMPLE_SPLAT };
-}
+import { type RefObject, useEffect, useState } from "react";
+import type { RelayClient } from "../relay/client.ts";
+import { Calibrate } from "./Calibrate.tsx";
+import type { SceneHandle, SplatInfo } from "./scene.ts";
+import { type Scan, SAMPLE_SPLAT, scansFromQuery } from "./scans.ts";
+import { isSplatFileName, type SplatSource, sourceName } from "./splatSource.ts";
 
 type Status =
   | { state: "loading"; name: string }
   | { state: "ready"; info: SplatInfo; sample: boolean }
   | { state: "failed"; name: string; error: string };
 
-export function Viewport() {
-  const containerRef = useRef<HTMLDivElement>(null);
-  const sceneRef = useRef<SceneHandle | null>(null);
+type Props = {
+  containerRef: RefObject<HTMLDivElement | null>;
+  scene: SceneHandle | null;
+  relay: RelayClient | null;
+  marker: { width: number; height: number };
+};
+
+const scans = scansFromQuery(window.location.search);
+
+export function Viewport({ containerRef, scene, relay, marker }: Props) {
   const [status, setStatus] = useState<Status>({ state: "loading", name: "" });
+  const [active, setActive] = useState(scans[0]!.label);
   const [fps, setFps] = useState(0);
 
   const load = async (source: SplatSource) => {
-    const scene = sceneRef.current;
     if (!scene) return;
     const name = sourceName(source);
     setStatus({ state: "loading", name });
@@ -36,22 +38,25 @@ export function Viewport() {
   };
 
   useEffect(() => {
-    const scene = createScene(containerRef.current!);
-    sceneRef.current = scene;
-    load(initialSource());
+    if (!scene) return;
+    load(scans[0]!.source);
     // The meter averages a second of frames; reading it 4× a second keeps React out of the render loop.
     const timer = window.setInterval(() => setFps(scene.fps()), 250);
-    return () => {
-      window.clearInterval(timer);
-      scene.dispose();
-      sceneRef.current = null;
-    };
-  }, []);
+    return () => window.clearInterval(timer);
+  }, [scene]);
+
+  const switchTo = (scan: Scan) => {
+    setActive(scan.label);
+    load(scan.source);
+  };
 
   const onDrop = (event: React.DragEvent) => {
     event.preventDefault();
     const file = [...event.dataTransfer.files].find((f) => isSplatFileName(f.name));
-    if (file) load({ kind: "file", file });
+    if (file) {
+      setActive("");
+      load({ kind: "file", file });
+    }
   };
 
   return (
@@ -70,7 +75,17 @@ export function Viewport() {
             Couldn't load {status.name}: {status.error}
           </div>
         )}
-        <div className="hint">Drop a .spz or .ply here, or add ?splat=&lt;url&gt;</div>
+        {scans.length > 1 && (
+          <div className="switch">
+            {scans.map((scan) => (
+              <button type="button" key={scan.label} aria-pressed={active === scan.label} onClick={() => switchTo(scan)}>
+                {scan.label}
+              </button>
+            ))}
+          </div>
+        )}
+        {scene && relay && status.state === "ready" && <Calibrate scene={scene} relay={relay} marker={marker} />}
+        <div className="hint">Scans go in dashboard/public/scans/: ?closed=&lt;file&gt;&amp;open=&lt;file&gt;, or drop one here</div>
       </div>
     </div>
   );
