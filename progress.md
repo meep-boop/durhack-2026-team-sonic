@@ -547,4 +547,66 @@ each builder's brief (`builder-file-<name>.md`, on the `context` branch).
   process); I'll clear it before the demo.
 - ⚠️ Conflicts: @laura — `api.ts` gained two calls, and `App.tsx` is where her panel mounts | @salman — the dashboard
   assumes +X along the marker's top edge and +Z down the print until his axis check
+- Conflict status: open (Laura's part resolved by @laura's 02:22 mount; Salman's axis check still open)
+
+### 2026-11-15 02:22 — the guide panel is on main — @laura
+- Shipped: `dashboard/src/guide/GuidePanel.tsx` in Max's shell (`App.tsx`, where his placeholder was). Title; steps
+  (add, type, reorder, delete, jump); per step, objects: model, action, position and box in cm, quarter turns about
+  the marker's X/Y/Z (`axis` follows the model's +Y, Ahmed's rule), the rig check (`ssd-bay` gone / back), and an
+  action preview; "Place on scan" (`pickPoint`, off until calibrated) or "Add at marker" with typed positions;
+  Send blocked with reasons until complete; ticks from `step.done` and ✓/✗ from `step.verified`; relay errors shown.
+  **"Open a guide file…" loads a prepared guide JSON**, e.g. Ahmed's `fixtures/ssd-swap-guide.json`, for rung 1.
+  A fresh page adopts the relay's saved guide and ticks; the last sent guide is re-sent when the link returns.
+  Commit `a61405f`. Dashboard 43/43, type-check and build pass; relay 41/41.
+- Tried end to end on this laptop: relay `--fresh`, `npm run dev`, `node fixtures/fake-phone.ts`. A three-step
+  guide built in the panel reached the fake phone ("got guide … 3 steps") and its three taps ticked the steps; a
+  reload restored both. That's my task 3's done-when. Scene objects untested on a calibrated scan (SAMPLE splat only).
+- Also on main with it: `docs/README.judges.draft.md`, the judges' README draft (labelled draft; swaps in at submit).
+- Touched: `dashboard/src/guide/` (mine), `dashboard/src/App.tsx` (Max's: the mount line only), `docs/`
+- Not yet: 3D dragging (`onObjectMoved` is wired but the scene doesn't fire it yet), a custom `axis` other than the
+  model's +Y.
+- ⚠️ Conflicts: @max — one line in `App.tsx` swaps your placeholder for `<GuidePanel scene relay />`
+- Conflict status: resolved by @max 2026-11-15 (agreed; that's the slot it was left for)
+
+### 2026-11-15 02:32 — the dashboard loads mesh scans too; first real scan of the open laptop — @max
+- Shipped: the dashboard takes a Scaniverse textured mesh (`.usdz`, `.glb`) as well as a splat, through three's own
+  `USDLoader` and `GLTFLoader` (no new package), drawn unlit because the scan's lighting is in its texture. Pick dots
+  are now a fixed size on screen. `splatSource.ts` is now `scanSource.ts`, `loadSplat` is `loadScan`. Commit
+  `009153c`; dashboard 42/42, type-check and build pass.
+- First real scan, cover off, as a mesh: 186,092 triangles, loads in 0.2–0.4 s at 60 fps, and the fan, RAM, the M.2
+  slot by the fan and the battery are all sharp. **But the marker isn't in it**, so it can't be calibrated and can't
+  be used. Rescanning both (closed and open) with the marker in view.
+- Port 8080 on the dashboard laptop was held by an unrelated background task of mine; stopped, and the relay now
+  starts on 8080. It may come back after a reboot: check before the demo.
+- Touched: `dashboard/src/scene/` (mine)
+- Decision (Max): the dashboard supports both splat and mesh scans; we keep whichever scan of the set comes out
+  better. Picks on a mesh hit the exact surface, which helps the corner clicks.
+- 📨 To @laura: if the demo ends up on a mesh scan, the README and pitch can't say "Gaussian splat" for it. I'll say
+  which one we use once both rescans are in.
+- 📨 To @ahmed: item A: the relay runs on this laptop on 8080 (tested with the dashboard).
+- ⚠️ Conflicts: @laura — pitch wording depends on which scan kind we demo
+- Conflict status: open
+
+### 2026-11-15 02:39 — the first scan is on GitHub (PR #9); where each of us stands with the dashboard — @max
+- Shipped: PR #9 merged (`d44dd01`). `dashboard/public/scans/` is now in git (it was git-ignored), so every
+  teammate's dashboard loads the same scans: `cd dashboard && npm run dev`, then `?open=open-mesh-0217.usdz`. The
+  first scan is a Scaniverse mesh of the laptop, cover off. **The marker isn't in it, so it can't be calibrated**; the
+  folder's README marks it reference only. A scan's file name is its calibration id: never overwrite one, add a new
+  name.
+- Dashboard state (on `main`): Laura's panel in Max's shell; the relay link; splat and mesh scans; calibration (no
+  placing until done); `showStep`, select, focus, previews. It can send a guide over the relay today; it hasn't yet
+  reached the real phone, because the phone app isn't on `main`.
+- Touched: `.gitignore` (one line removed), `dashboard/public/scans/` (mine)
+- Decision (Max): scans are kept in git, not per machine (reverses the git-ignored folder in Ahmed's 01:45 plan), so
+  the whole team and the judges see the same files. 6.6 MB per scan is fine for GitHub.
+- 📨 To @laura: the rescan waits on your task 1, the board. Please fix the **marker flat beside the laptop**, all four
+  corners clear, with the corner stops, and post on the board when it's ready: I scan straight after. Your
+  `App.tsx` mount is marked resolved. Pitch wording still depends on splat vs mesh; I'll post which.
+- 📨 To @ahmed: your item 2 / task 10: the relay runs on my laptop on port 8080 and the dashboard connects. Left: the
+  phone and the rig on the hotspot, and your run sheet. Port 8080 was taken by an unrelated background task of mine
+  that may come back after a reboot; I check it before the demo. Scans are now in git: shout if that's a problem.
+- 📨 To @salman: the dashboard side of rung 1 is ready (Laura's panel sends `guide.set`). It waits on your item 1,
+  `salman-ios-polish` on `main` (13 commits ahead). The dashboard assumes red +X along the marker's top edge and blue
+  +Z down the print; your item 3 settles it, so please post which edges they really are and I'll adjust if needed.
+- ⚠️ Conflicts: @ahmed — reverses his "git-ignored scans folder" | @laura — pitch wording depends on the scan kind
 - Conflict status: open

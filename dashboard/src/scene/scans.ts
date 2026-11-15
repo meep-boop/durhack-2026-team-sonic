@@ -1,15 +1,15 @@
 // Which scans the dashboard offers. The demo has two of the same set, laptop closed and cover off, each with the
 // marker in view, so the expert can switch between them. Scans are multi-MB and per-machine, so they sit in the
 // git-ignored public/scans/ and are named in the URL rather than committed.
-import type { SplatSource } from "./splatSource.ts";
+import type { ScanSource } from "./scanSource.ts";
 
-export type Scan = { label: string; source: SplatSource };
+export type Scan = { label: string; source: ScanSource };
 
 // SAMPLE, not our scan: Spark's demo splat, so the viewport works before anyone has exported a Scaniverse file.
 export const SAMPLE_SPLAT = "https://sparkjs.dev/assets/splats/butterfly.spz";
 
 // A bare file name means public/scans/<name>; anything with a slash is used as given.
-function resolve(value: string): SplatSource {
+function resolve(value: string): ScanSource {
   return { kind: "url", url: value.includes("/") ? value : `/scans/${value}` };
 }
 

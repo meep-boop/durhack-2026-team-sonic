@@ -1,4 +1,5 @@
 import { useEffect, useRef, useState } from "react";
+import { GuidePanel } from "./guide/GuidePanel.tsx";
 import { connectRelay, type RelayClient, type RelayStatus } from "./relay/client.ts";
 import { createScene, type SceneHandle } from "./scene/scene.ts";
 import { Viewport } from "./scene/Viewport.tsx";
@@ -45,8 +46,7 @@ export function App() {
       <Viewport containerRef={viewportRef} scene={scene} relay={relay} marker={MARKER} />
       <aside className="guide">
         <div className={`relay relay-${relayStatus}`}>Relay: {relayStatus}</div>
-        {/* Laura's guide builder mounts here as <GuidePanel scene={scene} relay={relay} /> once it's on main. */}
-        <p className="placeholder">Guide builder goes here.</p>
+        {scene && relay && <GuidePanel scene={scene} relay={relay} />}
       </aside>
     </div>
   );

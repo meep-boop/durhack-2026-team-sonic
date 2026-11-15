@@ -1,21 +1,22 @@
-import { SparkRenderer, SplatMesh } from "@sparkjsdev/spark";
+import { SparkRenderer } from "@sparkjsdev/spark";
 import * as THREE from "three";
 import { OrbitControls } from "three/addons/controls/OrbitControls.js";
 import type { Marker, Vec3 } from "../../../contracts/protocol.ts";
 import type { SceneApi } from "./api.ts";
 import { type Calibration, solveCalibration } from "./calibration.ts";
 import { createFrameMeter } from "./frameMeter.ts";
+import { type LoadedScan, loadScan } from "./loadScan.ts";
 import { createObjectLayer } from "./objects.ts";
-import { type SplatSource, sourceName } from "./splatSource.ts";
+import { type ScanKind, type ScanSource, sourceName } from "./scanSource.ts";
 
-export type SplatInfo = { name: string; splatCount: number; loadMs: number };
+export type ScanInfo = { name: string; kind: ScanKind; count: number; loadMs: number };
 export type Corners = [Vec3, Vec3, Vec3, Vec3];
 
 // The scene's own controls on top of what the guide builder may call: loading scans and calibrating them.
 export type SceneHandle = SceneApi & {
   // Resolves to null when a newer load, or dispose(), overtook this one: only the latest load reaches the scene.
-  loadSplat(source: SplatSource): Promise<SplatInfo | null>;
-  // The scan on screen, by file name: the id its calibration is kept under.
+  loadScan(source: ScanSource): Promise<ScanInfo | null>;
+  // The scan on screen, by file name: the id its calibration is kept under (`splatId` in calib.set, for meshes too).
   splatId(): string | null;
   // The next click on the scan, in scan coordinates (calibration's own clicks). Esc resolves to null.
   pickScanPoint(): Promise<Vec3 | null>;
@@ -28,7 +29,7 @@ export type SceneHandle = SceneApi & {
 };
 
 export function createScene(container: HTMLElement, marker: Pick<Marker, "width" | "height">): SceneHandle {
-  // Spark draws the splats itself; three's antialiasing only costs fill rate here.
+  // Spark draws splats itself, and a mesh scan's detail is in its texture: antialiasing only costs fill rate here.
   const renderer = new THREE.WebGLRenderer({ antialias: false });
   renderer.setPixelRatio(window.devicePixelRatio);
   container.appendChild(renderer.domElement);
@@ -39,7 +40,7 @@ export function createScene(container: HTMLElement, marker: Pick<Marker, "width"
   camera.position.set(0, 0.5, 2);
 
   scene.add(new SparkRenderer({ renderer }));
-  // Splats carry their own colour; this only lights the guide's glTF models, which are black without it.
+  // Scans carry their own colour; this only lights the guide's glTF models, which are black without it.
   scene.add(new THREE.HemisphereLight(0xffffff, 0x666666, 3));
 
   const controls = new OrbitControls(camera, renderer.domElement);
@@ -57,9 +58,9 @@ export function createScene(container: HTMLElement, marker: Pick<Marker, "width"
   // it actually hit, and the expert can tell a bad pick from a good one.
   const dots = new THREE.Group();
   scene.add(dots);
-  const dotGeometry = new THREE.SphereGeometry(1, 12, 8);
-  const dotMaterial = new THREE.MeshBasicMaterial({ color: 0x22d3ee, depthTest: false, transparent: true });
-  let dotRadius = 0.005;
+  // A fixed size on screen: a dot sized to the scan was under a millimetre on a laptop and couldn't be seen.
+  const dotMaterial = new THREE.SpriteMaterial({ color: 0x22d3ee, depthTest: false, sizeAttenuation: false });
+  let scanRadius = 1;
 
   const meter = createFrameMeter();
   const raycaster = new THREE.Raycaster();
@@ -67,7 +68,7 @@ export function createScene(container: HTMLElement, marker: Pick<Marker, "width"
   const calibratedListeners = new Set<(calibrated: boolean) => void>();
   const movedListeners = new Set<Parameters<SceneApi["onObjectMoved"]>[0]>();
   const clickedListeners = new Set<(objectId: string) => void>();
-  let splat: SplatMesh | null = null;
+  let scan: LoadedScan | null = null;
   let currentId: string | null = null;
   let latestLoad = 0;
   let pendingPick: ((point: Vec3 | null) => void) | null = null;
@@ -100,9 +101,9 @@ export function createScene(container: HTMLElement, marker: Pick<Marker, "width"
   };
 
   const showDot = (point: THREE.Vector3) => {
-    const dot = new THREE.Mesh(dotGeometry, dotMaterial);
+    const dot = new THREE.Sprite(dotMaterial);
     dot.position.copy(point);
-    dot.scale.setScalar(dotRadius);
+    dot.scale.setScalar(0.012);
     dot.renderOrder = 1;
     dots.add(dot);
   };
@@ -124,9 +125,8 @@ export function createScene(container: HTMLElement, marker: Pick<Marker, "width"
     aimRaycaster(event);
 
     if (pendingPick) {
-      if (!splat) return;
-      // Spark sorts its hits nearest first.
-      const hit = raycaster.intersectObject(splat, false)[0];
+      if (!scan) return;
+      const hit = raycaster.intersectObject(scan.object, true)[0];
       if (!hit) return;
       dots.clear();
       showDot(hit.point);
@@ -160,9 +160,7 @@ export function createScene(container: HTMLElement, marker: Pick<Marker, "width"
     });
   };
 
-  function frameOn(mesh: SplatMesh) {
-    // Centres only: a few stray floaters far from the scan would otherwise drag the orbit target into empty space.
-    const box = mesh.getBoundingBox(true);
+  function frameOn(box: THREE.Box3) {
     const centre = box.getCenter(new THREE.Vector3());
     const radius = box.getSize(new THREE.Vector3()).length() / 2 || 1;
     controls.target.copy(centre);
@@ -170,38 +168,33 @@ export function createScene(container: HTMLElement, marker: Pick<Marker, "width"
     camera.near = radius / 1000;
     camera.far = radius * 100;
     camera.updateProjectionMatrix();
-    dotRadius = radius / 400;
+    scanRadius = radius;
   }
 
   return {
-    async loadSplat(source) {
+    async loadScan(source) {
       const load = ++latestLoad;
       const started = performance.now();
-      const mesh =
-        source.kind === "url"
-          ? new SplatMesh({ url: source.url })
-          : new SplatMesh({ fileBytes: await source.file.arrayBuffer(), fileName: source.file.name });
-      await mesh.initialized;
+      const loaded = await loadScan(source);
       if (load !== latestLoad) {
-        mesh.dispose();
+        loaded.dispose();
         return null;
       }
 
       cancelPick();
       dots.clear();
-      if (splat) {
-        scene.remove(splat);
-        splat.dispose();
+      if (scan) {
+        scene.remove(scan.object);
+        scan.dispose();
       }
-      splat = mesh;
-      scene.add(mesh);
-      frameOn(mesh);
+      scan = loaded;
+      scene.add(loaded.object);
+      frameOn(loaded.bounds);
 
       const name = sourceName(source);
       currentId = name;
       applyCalibration();
-      const splatCount = mesh.packedSplats?.numSplats ?? mesh.extSplats?.numSplats ?? 0;
-      return { name, splatCount, loadMs: performance.now() - started };
+      return { name, kind: loaded.kind, count: loaded.count, loadMs: performance.now() - started };
     },
 
     splatId: () => currentId,
@@ -247,7 +240,7 @@ export function createScene(container: HTMLElement, marker: Pick<Marker, "width"
       if (!group || !markerGroup.visible) return;
       const box = new THREE.Box3().setFromObject(group);
       const centre = box.getCenter(new THREE.Vector3());
-      const distance = Math.max(box.getSize(new THREE.Vector3()).length() * 3, dotRadius * 40);
+      const distance = Math.max(box.getSize(new THREE.Vector3()).length() * 3, scanRadius / 10);
       const direction = camera.position.clone().sub(controls.target).normalize();
       controls.target.copy(centre);
       camera.position.copy(centre).addScaledVector(direction, distance);
@@ -273,9 +266,8 @@ export function createScene(container: HTMLElement, marker: Pick<Marker, "width"
       window.removeEventListener("keydown", onKeyDown);
       controls.dispose();
       objects.dispose();
-      dotGeometry.dispose();
       dotMaterial.dispose();
-      splat?.dispose();
+      scan?.dispose();
       renderer.dispose();
       renderer.domElement.remove();
     },

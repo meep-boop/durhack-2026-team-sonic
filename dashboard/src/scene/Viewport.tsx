@@ -1,13 +1,13 @@
 import { type RefObject, useEffect, useState } from "react";
 import type { RelayClient } from "../relay/client.ts";
 import { Calibrate } from "./Calibrate.tsx";
-import type { SceneHandle, SplatInfo } from "./scene.ts";
+import type { ScanInfo, SceneHandle } from "./scene.ts";
 import { type Scan, SAMPLE_SPLAT, scansFromQuery } from "./scans.ts";
-import { isSplatFileName, type SplatSource, sourceName } from "./splatSource.ts";
+import { type ScanSource, scanKind, sourceName } from "./scanSource.ts";
 
 type Status =
   | { state: "loading"; name: string }
-  | { state: "ready"; info: SplatInfo; sample: boolean }
+  | { state: "ready"; info: ScanInfo; sample: boolean }
   | { state: "failed"; name: string; error: string };
 
 type Props = {
@@ -24,12 +24,12 @@ export function Viewport({ containerRef, scene, relay, marker }: Props) {
   const [active, setActive] = useState(scans[0]!.label);
   const [fps, setFps] = useState(0);
 
-  const load = async (source: SplatSource) => {
+  const load = async (source: ScanSource) => {
     if (!scene) return;
     const name = sourceName(source);
     setStatus({ state: "loading", name });
     try {
-      const info = await scene.loadSplat(source);
+      const info = await scene.loadScan(source);
       if (!info) return;
       setStatus({ state: "ready", info, sample: source.kind === "url" && source.url === SAMPLE_SPLAT });
     } catch (err) {
@@ -52,7 +52,7 @@ export function Viewport({ containerRef, scene, relay, marker }: Props) {
 
   const onDrop = (event: React.DragEvent) => {
     event.preventDefault();
-    const file = [...event.dataTransfer.files].find((f) => isSplatFileName(f.name));
+    const file = [...event.dataTransfer.files].find((f) => scanKind(f.name) !== null);
     if (file) {
       setActive("");
       load({ kind: "file", file });
@@ -67,7 +67,7 @@ export function Viewport({ containerRef, scene, relay, marker }: Props) {
         {status.state === "ready" && (
           <div>
             {status.sample && <span className="tag">SAMPLE</span>} {status.info.name} ·{" "}
-            {status.info.splatCount.toLocaleString()} splats · loaded in {(status.info.loadMs / 1000).toFixed(1)} s
+            {status.info.count.toLocaleString()} {status.info.kind === "splat" ? "splats" : "triangles"} · loaded in {(status.info.loadMs / 1000).toFixed(1)} s
           </div>
         )}
         {status.state === "failed" && (
