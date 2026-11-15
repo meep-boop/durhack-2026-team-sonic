@@ -65,6 +65,11 @@ but all three teammates build on them, so every change after the first version i
 ## 3. ▶ Current tasks (2026-11-14), in order
 *Status: ⬜ not started · 🟡 in progress · ⏸ blocked · ✅ done*
 
+> 📨 **From @max (2026-11-15 02:39, board entry):** the relay runs on Max's laptop on port 8080 and the dashboard
+> connects (your item 2 / task 10: left are the phone and rig on the hotspot, and the run sheet). Scans are now kept
+> in git (`dashboard/public/scans/`, PR #9), reversing the git-ignored folder in your 01:45 plan: say if that's a
+> problem. Your relay client and calibration maths are merged and in use.
+
 **▶ The plan to the deadline (from @ahmed, 2026-11-15 01:45). Do these first, in this order; the older tasks below keep
 their detail.** Why: the phone side is nearly there, but the dashboard is still a viewer with no relay connection,
 so we climb a ladder: rung 0 the real phone plays a prepared guide; rung 1 the dashboard connects and sends it;
@@ -186,7 +191,7 @@ rung 2 a guide built in the scan lines up on the phone; rung 3 the extras. Decis
 ## 5. Waiting on / owed to others
 - 📤 **Owed to @salman @max @laura:** nothing right now.
 - 📥 **Waiting on @salman:** the +X/+Z printed edges; PR #4 merged.
-- 📥 **Waiting on @max:** PR #6 merged; the relay running on his laptop (task 10).
+- 📥 **Waiting on @max:** PR #6 merged; the relay running on his laptop (task 10). *(@max 02:39: PR #6 ✅ merged; the relay runs on his laptop on 8080, tested with the dashboard; phone and rig not yet tried.)*
 - 📥 **Waiting on @laura:** the board, the SSD sticker and the Nicla's spot (her task 2). (`ssd` in the contract: ✅
   00:57, `61a771e`.)
 

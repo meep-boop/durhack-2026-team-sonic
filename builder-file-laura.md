@@ -65,6 +65,11 @@ them, so a renamed or resized model breaks two apps).
 ## 3. ▶ Current tasks (2026-11-14), in order
 *Status: ⬜ not started · 🟡 in progress · ⏸ blocked · ✅ done*
 
+> 📨 **From @max (2026-11-15 02:39, board entry):** your task 1 (the board) now blocks Max's rescan. Fix the
+> **printed marker flat beside the laptop**, all four corners clear, with the corner stops, and post on the board when
+> it's ready: Max scans straight after. The first scan (on `main`, `dashboard/public/scans/`) has no marker in it.
+> Pitch wording waits on splat vs mesh; Max posts which. Your `App.tsx` mount: resolved.
+
 **▶ The plan to the deadline (from @ahmed, 2026-11-15 01:45). Do these first, in this order; the older tasks below keep
 their detail.** Why: the phone side is nearly there, but the dashboard is still a viewer with no relay connection,
 so we climb a ladder: rung 0 the real phone plays a prepared guide; rung 1 the dashboard connects and sends it;
@@ -141,7 +146,7 @@ rung 2 a guide built in the scan lines up on the phone; rung 3 the extras. Decis
 - 2026-11-14 21:31 · 🟡 Marker printed on matte paper, measured 180 × 180 mm, image + print sheet in `assets/marker/` on main. Closes when @salman confirms Xcode accepts it.
 
 ## 5. Waiting on / owed to others
-- 📥 **Waiting on @max:** nothing blocking (asks 1 and 3 answered, PR #6 merged 2026-11-15). Still open: 3D dragging (`onObjectMoved`), and the laptop scan so the panel can be tried on a calibrated scan.
+- 📥 **Waiting on @max:** nothing blocking (asks 1 and 3 answered, PR #6 merged 2026-11-15). Still open: 3D dragging (`onObjectMoved`), and the laptop scan so the panel can be tried on a calibrated scan. *(@max 02:39: the scan waits on your board, task 1; which kind we demo, splat or mesh, follows the rescan.)*
 - 📥 **Waiting on @ahmed:** nothing right now. The contract, relay and fake phone are on `main`
   (`node fixtures/fake-phone.ts ws://<relay>:8080`), and the deadlines are in `PROJECT.md` → Clock.
 - 📤 **Owed to @salman and @max:** the marker image and width are on main (task 1, 180 mm); the six models are on main too (`assets/models/`).

@@ -63,6 +63,11 @@ splats until that's settled. Training splats in the app (the scan is taken in Sc
 ## 3. ▶ Current tasks (2026-11-14), in order
 *Status: ⬜ not started · 🟡 in progress · ⏸ blocked · ✅ done*
 
+> 📨 **From @max (2026-11-15 02:39, board entry):** the dashboard side of rung 1 is ready on `main` (Laura's panel
+> sends `guide.set` over the relay). It waits on your item 1, `salman-ios-polish` on `main`. The dashboard's
+> calibration assumes red +X along the marker's top edge and blue +Z down the print: your item 3 settles it, so post
+> which edges they really are.
+
 **▶ The plan to the deadline (from @ahmed, 2026-11-15 01:45). Do these first, in this order; the older tasks below keep
 their detail.** Why: the phone side is nearly there, but the dashboard is still a viewer with no relay connection,
 so we climb a ladder: rung 0 the real phone plays a prepared guide; rung 1 the dashboard connects and sends it;
