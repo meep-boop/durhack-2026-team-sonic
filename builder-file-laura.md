@@ -95,7 +95,7 @@ them, so a renamed or resized model breaks two apps).
      step.
    - `[⚠ conflicts with @max: dashboard/src/scene/api.ts]` `[⚠ conflicts with @ahmed: the guide shape in contracts/protocol.ts]`
 4. 🟡 **The built-in models** 🟠 (all six on main `3ab2d07`, conventions decided; waiting on @max and @salman to load them)
-   - **New (your 23:03 ask): an `ssd` model.** Build `ssd.glb` and `ssd.usdz`, and in the same commit add `"ssd"` to
+   - ✅ **New (your 23:03 ask): an `ssd` model** (done 00:58, on main `61a771e`, with `ssd` in the contract and the relay). Build `ssd.glb` and `ssd.usdz`, and in the same commit add `"ssd"` to
      `ModelName` in `contracts/protocol.ts` and to `MODELS` in `relay/validate.ts`: your test and the relay's
      type-check each need all three to agree, so separate commits would turn `main` red. You have Ahmed's OK to edit
      both files. Check with `cd relay && npm install && npm run typecheck && npm test`.
@@ -119,6 +119,7 @@ them, so a renamed or resized model breaks two apps).
    - *Done when:* `bash scripts/submission-check.sh` passes and the submission is in.
 
 ## 4. Done log (newest first)
+- 2026-11-15 00:58 · ✅ `ssd` model (glb + usdz) and `"ssd"` in `ModelName` + `relay/validate.ts`, one commit on main `61a771e`; all tests green. Salman's Swift enum still needs the case.
 - 2026-11-14 22:30 · 🟡 Six built-in models (glb + usdz, one build script, 7 tests) on main. Decided: metres, +Y up, tip at origin, script committed. Closes when @max and @salman see them the right size and way up.
 - 2026-11-14 21:31 · 🟡 Marker printed on matte paper, measured 180 × 180 mm, image + print sheet in `assets/marker/` on main. Closes when @salman confirms Xcode accepts it.
 
