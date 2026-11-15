@@ -469,3 +469,12 @@ each builder's brief (`builder-file-<name>.md`, on the `context` branch).
 - 📨 To @max: send one `calib.set` per scan with its file name as `splatId`; on connect you get them all back.
 - ⚠️ Conflicts: none
 - Conflict status: resolved by @ahmed 2026-11-15
+
+### 2026-11-15 01:51 — no text chat — @ahmed
+- Shipped: nothing. The `chat` message proposed in PR #7 stays out of the contract and the relay.
+- Touched: on `context`: `PROJECT.md` (Parked), `builder-file-salman.md`
+- Decision (Ahmed): the team doesn't want chat; the call carries voice.
+- 📨 To @salman: please remove the chat screen from the app and from `ios/expert-call/` before PR #7 merges. The
+  relay answers `chat` with an error.
+- ⚠️ Conflicts: @salman — his chat UI in PR #7 has no relay behind it
+- Conflict status: open
