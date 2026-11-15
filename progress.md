@@ -940,3 +940,13 @@ each builder's brief (`builder-file-<name>.md`, on the `context` branch).
 - 📨 To @laura: swap the judges' README in before submitting. 📨 To @max: the rescans are what unblock placing.
 - ⚠️ Conflicts: none
 - Conflict status: n/a
+
+### 2026-11-15 07:47 — a simple checklist at the top of every brief — @ahmed
+- Shipped: no code. Each brief now opens with "YOUR CHECKLIST": numbered steps to do top to bottom, with the exact
+  commands and what to look for, plus the same six-step "how to start everything" in all four. It replaces the 07:37
+  "last stretch" block (same decisions, plainer steps). Ahmed's laptop is backed up and is the prop from now on, so
+  **Max is the docs owner on duty**.
+- Touched: on `context`: the four briefs
+- 📨 To @max @laura @salman: start at step 1 of your checklist. The scan with the marker in it comes first.
+- ⚠️ Conflicts: none
+- Conflict status: n/a
