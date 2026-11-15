@@ -35,7 +35,8 @@ The idea is Max's (`docs/remote-assist/` on `main` has the full plan). It was ta
 |---|---|
 | Sat 14 Nov, 12:00 | Hacking started |
 | **Sun 15 Nov, 02:00** | Walking skeleton: the real phone, the real dashboard and the relay play one guide end to end. **Missed** (01:45: the dashboard can't talk to the relay yet; the order to get there is in each brief) |
-| **Sun 15 Nov, 07:00** | Feature freeze: after it, only fixes, and no message shape changes |
+| **Sun 15 Nov, 07:00** | Feature freeze for the phone, the relay, the rig and every message shape: after it, only fixes |
+| Sun 15 Nov, 10:00 | Dashboard features stop too (Max may add dashboard features until then; Ahmed, 2026-11-15 04:12) |
 | **Sun 15 Nov, 10:00** | Demo video recorded |
 | Sun 15 Nov, 11:30 | Submit on Devpost (half an hour before the deadline) |
 | **Sun 15 Nov, 12:00** | **Submission deadline** on Devpost (use the earliest time any source gives) |
@@ -48,6 +49,8 @@ Source: `EVENT.md` §1 (one notes file, not yet checked against Devpost). The 02
 
 | Date | Decision |
 |---|---|
+| 2026-11-15 | The phone's demo build is the plain one: PR #8 (`salman-ios-polish`) to `main` first; the camera freeze on `salman-ios-ar` is found by halving the commits; extras come across one at a time (Ahmed, 04:10) |
+| 2026-11-15 | Max may build dashboard features until 10:00; the phone, relay, rig and message shapes still freeze at 07:00 (Ahmed, 04:10) |
 | 2026-11-15 | AI-made props: Hunyuan3D 2.1 runs on the team's DGX Spark (Docker fork), building in the background; one photo of a part (the SSD, the screwdriver) becomes a textured 3D model, scaled by hand to its real size, shown on the dashboard first, the phone only if there's time; labelled "AI-generated from a photo" wherever it shows; dropped if it hasn't built by about 06:30 (Max, 04:05; `research/ledger.md` § 18) |
 | 2026-11-15 | The expert's dashboard becomes a finished product screen before cut-outs: a header with relay / phone / rig lights and a Call button that opens Salman's call page in its own window, a live strip that shows the person's step and the offline moment, plain prompts with the debug text behind a key, one calm dark look on both halves (Laura's panel restyled by Max's agent once she agrees, colours and spacing only); cut-outs follow it (Max, 03:40) |
 | 2026-11-15 | Scans are kept in git (`dashboard/public/scans/`), not per machine, so the team and the judges see the same files; a scan's file name is its calibration id, so never overwrite one (Max, 02:39; reverses the git-ignored folder in Ahmed's 01:45 plan) |
@@ -146,7 +149,10 @@ SSD-swap demo (23:03).
   Owner: Ahmed + Max, to settle together. Max's file is his to update.
 - **Does the relay need a public address?** A phone on 4G can't reach a laptop on venue Wi-Fi (open-questions § 3).
   A tunnel is a new dependency. Owner: Ahmed. **Not decided.**
-- **May one project enter four sponsor challenges, plus the MLH Gemini and ElevenLabs prizes?** Owner: Ahmed. The opening slides don't say. **Ask an organiser.**
+- **Settled 03:30 (organisers, via Laura): one project may enter multiple challenges.** The original note: may
+  one project enter four sponsor challenges, plus the MLH Gemini and ElevenLabs prizes?
+- **Is MLH still entered?** Gemini is removed on Salman's branch (`a9a884c`), so the MLH Gemini entry falls unless
+  it comes back; ElevenLabs depends on the demo build. Owner: Salman, then Ahmed. **Not decided.**
 - **Settled 23:30 by Ahmed: the internal deadlines.** See the Clock.
 - **Neptune North wants no central hub; our relay is one.** How the pitch shows the phone acting on its own (`EVENT.md` §4).
   Owner: Ahmed + Laura. **Not decided.**
@@ -237,7 +243,7 @@ Xcode" is answered: yes, per Ahmed.
 | F10 | Cut-outs from the scan | Max | P1 | ⬜ |
 | F11 | Find a part by name, AI labels (Accenture) | Max, Ahmed | P1 | 🟡 relay side on `main`; search box not started; no live call yet |
 | F12 | Hardware check with the UNO Q (RS) | Ahmed | P1 | 🟡 code on `main`, reworked for the SSD; access test in progress |
-| F14 | Gemini laptop assistant and ElevenLabs voice (MLH), optional | Salman | P1 | 🟡 on `salman-ios` |
+| F14 | ElevenLabs voice and transcript (MLH), optional; the Gemini assistant was removed by Salman (`a9a884c`) | Salman | P1 | 🟡 on `salman-ios-ar`, not in the plain demo build |
 | F13 | The user's position shown in the scan | Max | P1 | ⬜ |
 | F15 | The dashboard's relay connection and calibration maths | Ahmed | P0 | ⬜ once Max agrees |
 

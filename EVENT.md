@@ -16,7 +16,8 @@ against the Devpost page yet. Gaps are marked _not stated_.
 - **Team size, and whether everyone must be registered on the platform:** maximum 4. Registration: _not stated_
 - **Tracks / sponsor challenges we're entering:** Neptune North, Accenture, Marshall Wace, RS (decided by Ahmed,
   2026-11-14). Plus MLH: best use of Gemini and of ElevenLabs (Salman's extras, Ahmed 23:30). **The slides don't say how many
-  challenges one project may enter.** Ask an organiser.
+  challenges one project may enter.** Answered 2026-11-15 03:30 by the organisers (via Laura): multiple challenges
+  are allowed; multiple projects aren't recommended.
 - **Prizes:** overall 1st a portable monitor and electronic keyboard; 2nd a £100 Amazon voucher and Polaroid camera;
   a Spirit of the Dino award. Sponsor prizes are in §4.
 
@@ -47,6 +48,10 @@ Other schedule notes: midnight pizza; sleeping area TLC123.
 - **Code written during the event?** Yes: code must be written during the event, and code from before it can't be
   used. Libraries are normal. **Unclear for us:** the team kit (`scripts/`, `kit/`, the skills) was adapted from an
   earlier datathon. It's tooling, not product code, but ask an organiser if it worries anyone.
+- **Organisers' rules (2026-11-15 03:30, via Laura):** teams of up to 4; no crossposting to another hackathon the
+  same weekend; code isn't required but a GitHub link is preferred; public frameworks are fine and **must be
+  listed in the README**; AI / LLM use **must be credited explicitly**; no work before the event; judging is in
+  person; **the whole presentation must be under 5 minutes**.
 - **AI tool policy:** allowed, and **AI tools must be credited on Devpost.** We use Claude Code throughout, so say
   so there and in the README (`pitch` skill). Not in commit trailers (CLAUDE.md §7).
 - **Licences / open source:** _not stated_

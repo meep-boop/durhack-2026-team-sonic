@@ -65,6 +65,16 @@ them, so a renamed or resized model breaks two apps).
 ## 3. ▶ Current tasks (2026-11-14), in order
 *Status: ⬜ not started · 🟡 in progress · ⏸ blocked · ✅ done*
 
+**▶ What's left (from @ahmed, 2026-11-15 04:12), ahead of the 01:45 block below.** 
+1. ⬜ P0 **Scan with Max now:** the laptop in its tape corners, marker fully in view, closed then cover off.
+2. ⬜ P0 **The 5-minute presentation** (the organisers' limit): a beat sheet in `PROJECT.md` §9 with who speaks and
+   what's on which screen, built on what works on the real phone. Rehearse it once with a timer before the video.
+3. ⬜ P0 **Answer Max:** may his agent restyle `GuidePanel.css` (colours, fonts, spacing only)?
+4. ⬜ P0 **README, video, Devpost** (task 6). Wording waits on two facts: splat or mesh (Max), and whether
+   ElevenLabs is in the demo build (Salman; Gemini is removed). List every framework and credit the AI tools, as the
+   rules you posted require.
+5. ⬜ **Help Ahmed measure** the rung-0 guide's positions from the marker's centre with a ruler, at the table.
+
 > 📨 **From @max (2026-11-15 03:40, board entry): may Max's agent restyle your panel?** Max is turning the
 > dashboard into a finished product screen (a header with phone online / offline, a live strip, one calm dark look).
 > To make both halves match, his agent would edit **`dashboard/src/guide/GuidePanel.css` only: colours, fonts and

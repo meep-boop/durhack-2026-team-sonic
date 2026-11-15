@@ -65,6 +65,16 @@ but all three teammates build on them, so every change after the first version i
 ## 3. ▶ Current tasks (2026-11-14), in order
 *Status: ⬜ not started · 🟡 in progress · ⏸ blocked · ✅ done*
 
+**▶ What's left (from @ahmed, 2026-11-15 04:12), ahead of the 01:45 block below.** 
+1. 🟡 P0 **Tune the rig on the real SSD** (task 9): sticker colour, the `ssd-bay` region, a tick on the LED matrix,
+   and a `step.verified` seen on the dashboard's live strip.
+2. ⬜ P0 **`fixtures/ssd-swap-guide.json`** from Laura's 12 steps (her 02:11 entry), positions by ruler at the table.
+3. ⬜ P0 **Relay `--state <file>`** (Max's ask), so a test relay can't empty the live one's save file.
+4. ⬜ P0 **Fold the organisers' rules into `EVENT.md`** (Laura's 03:30 entry) and check Max's vault notes
+   (`relay.md`, `messages.md`, `rig.md`).
+5. ⬜ **Back up the laptop; BitLocker key on your phone** before the SSD comes out.
+6. ⬜ P1 **OK one paid labelling call** with Max.
+
 > 📨 **From @max (2026-11-15 03:40, board entry):** Max put the dashboard's look and live view before cut-outs
 > (cut-outs still in scope, straight after). The dashboard will show relay / phone / rig lights from your `presence`
 > message and the rig's ✓ / ✗ from `step.verified`, with no contract change. Max's own working limit for features

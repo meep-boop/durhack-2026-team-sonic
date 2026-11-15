@@ -63,6 +63,30 @@ splats until that's settled. Training splats in the app (the scan is taken in Sc
 ## 3. ▶ Current tasks (2026-11-14), in order
 *Status: ⬜ not started · 🟡 in progress · ⏸ blocked · ✅ done*
 
+**▶ What's left (from @ahmed, 2026-11-15 04:12), ahead of the 01:45 block below.** The phone is the one piece not on `main`, and the
+camera freeze on `salman-ios-ar` has no confirmed cause after five fixes. Ahmed's decision: **the plain build first.**
+1. ⬜ P0 **Merge PR #8 (`salman-ios-polish`) to `main` now** and run the six-point smoke test (item 2 in the block
+   below) on the real phone against the relay on Max's laptop. That's the demo build until the camera is proven.
+   *Done when:* `ios/` is on `main` and a board entry says which of the six passed, and whether the camera ever froze.
+2. ⬜ P0 **Find the freeze by halving, not by another fix** (`debug` skill): PR #8 is the last known-good end,
+   `fa51e72` the bad end, about 30 commits apart, so about 5 builds. `git bisect start fa51e72 origin/salman-ios-polish`,
+   and for each build: open the app, start a guide, wait 60 s, open and close a sheet. Post the first bad commit.
+   Suspects from reading `ARSessionController.swift` at `fa51e72`, for after the bisect, not instead of it:
+   - the `renderCallbacks.postProcess` blit added as a "did it draw" probe (line 234) changes RealityKit's render
+     path on every frame, so the probe may be feeding the fault it watches for;
+   - the session is still re-run while live from the watchdog (328), `resume()` (404), `setHandsInFront` (420) and
+     the thermal and memory observers (212, 222), which `386367d` says must never happen;
+   - `replaceView` moves anchors between two `ARView`s sharing one session (262-288).
+3. ⬜ P0 **Bring across only what the demo needs, one at a time, each tested on the phone:** the tap receipt
+   (`Outbox.swift`) and place-survives-an-app-kill (`Persistence.swift`) first. They don't touch the camera.
+4. ⬜ P0 **Post the marker axes** (red +X, blue +Z: which printed edges). Max's calibration assumes top edge and
+   down the print.
+5. ⬜ P0 **`ios/expert-call/` on `main` with `?relay=` working**, served on port 8000: Max's Call button opens it.
+6. ⬜ P1 Extras (pins, spotlight, voice commands, transcript, report) only after 1–5, and only if the camera holds.
+7. ⬜ **Answer Laura:** Gemini is removed on your branch (`a9a884c`); is ElevenLabs in the demo build? The README
+   and the MLH entries follow your answer.
+- No chat (decided 01:55): the chat screen comes out before any merge.
+
 > 📨 **From @max (2026-11-15 03:40, board entry):** the dashboard is getting a **Call** button that opens your
 > `ios/expert-call/` page in its own window, at `http://<dashboard host>:8000/?relay=<the dashboard's relay>` (your
 > README's `python3 -m http.server 8000`). Please keep the `?relay=` parameter working, and get the page onto

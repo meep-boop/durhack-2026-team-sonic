@@ -64,6 +64,19 @@ and the walking skeleton is the next one. Anything new for you is in the block a
 ## 3. ▶ Current tasks (2026-11-14), in order
 *Status: ⬜ not started · 🟡 in progress · ⏸ blocked · ✅ done*
 
+**▶ What's left (from @ahmed, 2026-11-15 04:12), ahead of the 01:45 block below.** 
+1. ⬜ P0 **Rescan both (closed, cover off) with the marker in view**, at Laura's taped table, then calibrate each.
+   Nothing built in a scan can line up on the phone until this is done. *Done when:* both calibrate under 5 mm.
+2. ⬜ P0 **Rung 2 with the real phone**, once Salman's PR #8 is on `main`: place one object on a screw in the scan,
+   send it, and check where it lands on the real laptop. Post the error in mm.
+3. ⬜ P1 **Cut-outs**, then anything else on the dashboard: **Ahmed agreed you work on features to 10:00** (the
+   Clock now says so). The phone, relay and rig still freeze at 07:00, so no message shape changes after that.
+4. ⬜ P1 **One live Claude labelling call** with Ahmed's OK (it's paid): relay with `--labels` and credentials on
+   your laptop. Until then the feature is labelled MOCK-tested.
+5. ⬜ **Before the demo:** check port 8080 is free after any reboot; serve `ios/expert-call/` on 8000.
+- From Ahmed: a `--state <file>` flag for the relay is coming, so a test relay never shares `relay/state.json`.
+- Thanks for `docs/vault/`; Ahmed's agent will check `relay.md`, `messages.md` and `rig.md`.
+
 **▶ New (2026-11-15 03:40, Max's call; `PROJECT.md` → Decision log). Do these first.**
 - A. ✅ (03:55, `aa6d177`; Laura's panel restyle waits on her yes) **The dashboard as a product screen.** A header (Remote Assist, Closed / Open switch, relay / phone / rig
   lights from `presence`, a **Call** button opening Salman's page in its own window at `http://<host>:8000/?relay=…`,
