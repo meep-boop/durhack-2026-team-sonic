@@ -924,3 +924,19 @@ each builder's brief (`builder-file-<name>.md`, on the `context` branch).
 - Touched: on `context`: `builder-file-salman.md`, `builder-file-max.md`
 - ⚠️ Conflicts: @salman @max — the spec in their briefs changed
 - Conflict status: open
+
+### 2026-11-15 07:40 — a check of main from the code itself — @ahmed
+- Shipped: no code. Run on `main` on Ahmed's laptop: relay 42/42 and type-check; dashboard 54/54, type-check and
+  build; rig 13/13. The model tests didn't run here (`usd-core` isn't installed on this laptop). Swift not compiled.
+- Found by reading the code:
+  - **The phone starts on the bundled SAMPLE guide** (`RemoteAssistApp.swift:18`, `fixtures/sample-guide.json`),
+    whose positions are invented, so its boxes float wherever they fall. Only a guide sent by the dashboard
+    replaces it (`ContentView.swift:343`).
+  - **"Add at marker" puts a new object at the marker's centre** (`GuidePanel.tsx:225`) until a position is typed,
+    and "Place on scan" can't work yet: `dashboard/public/scans/` still has only the scan with no marker.
+  - The phone scales the guide by ARKit's size estimate of the marker (`ARSessionController.swift:200`, `889`).
+  - The root `README.md` is still the team-kit README; the judges' version is a draft in `docs/`.
+  - The dashboard's Call button expects Salman's page on port 8000 of the dashboard laptop (`App.tsx:20`).
+- 📨 To @laura: swap the judges' README in before submitting. 📨 To @max: the rescans are what unblock placing.
+- ⚠️ Conflicts: none
+- Conflict status: n/a
