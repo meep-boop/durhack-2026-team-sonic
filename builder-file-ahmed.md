@@ -72,9 +72,9 @@ rung 2 a guide built in the scan lines up on the phone; rung 3 the extras. Decis
 1. ✅ (01:47, `8756560` and `b9a5e86`, both on `main`) P0 **Relay: the tap receipt**, then **one calibration per scan**. Each ships alone with tests; contract
    comments updated; `fixtures/fake-phone.ts` waits for receipts, as Salman's reference.
 2. ⬜ P0 **Relay on Max's laptop** and the run sheet (task 10).
-3. ⬜ P0 **`dashboard/src/relay/client.ts`**, once Max agrees: hello as `expert`, reconnect, typed `send` and `on`;
+3. 🟡 (01:58: written and tested on `ahmed-dashboard` `dbb708a`; waits for PR #6 to reach `main`) P0 **`dashboard/src/relay/client.ts`**, once Max agrees: hello as `expert`, reconnect, typed `send` and `on`;
    tested with `node --test` against `startRelay`. On `main` once PR #6 is in, else on a branch cut from `max-scene`.
-4. ⬜ P0 **`dashboard/src/scene/calibration.ts`**, once Max agrees: `solveCalibration(corners, marker)` with tests.
+4. 🟡 (01:58: same branch, same wait) P0 **`dashboard/src/scene/calibration.ts`**, once Max agrees: `solveCalibration(corners, marker)` with tests.
 5. ⬜ P0 **`fixtures/ssd-swap-guide.json`**: Laura's steps, positions by ruler, checked by `checkGuide` (rung 0).
 6. ⬜ **Before the SSD is first pulled:** back up (task 13) and have the BitLocker recovery key on your phone. An
    M.2 slot is rated for only tens of insertions, so keep rehearsals few. Push before every opening.
