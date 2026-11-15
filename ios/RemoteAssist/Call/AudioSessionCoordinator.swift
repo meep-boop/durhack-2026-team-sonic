@@ -36,13 +36,15 @@ final class AudioSessionCoordinator {
   private func restoreAfterReset() {
     ARSessionController.log.notice("Media services were reset: restoring the audio session")
     if callActive {
-      try? session.setCategory(.playAndRecord, mode: .voiceChat, options: [.defaultToSpeaker, .allowBluetoothHFP])
-      try? session.setActive(true)
-      try? session.overrideOutputAudioPort(speakerOn ? .speaker : .none)
+      attempt("setCategory") { try session.setCategory(.playAndRecord, mode: .voiceChat, options: [.defaultToSpeaker, .allowBluetoothHFP]) }
+      attempt("setActive") { try session.setActive(true) }
+      attempt("overrideOutputAudioPort") { try session.overrideOutputAudioPort(speakerOn ? .speaker : .none) }
     } else if listening || playbackActive {
-      try? session.setCategory(listening ? .playAndRecord : .playback, mode: listening ? .default : .spokenAudio,
-                               options: listening ? [.defaultToSpeaker, .allowBluetoothHFP, .duckOthers] : [.duckOthers])
-      try? session.setActive(true)
+      attempt("setCategory") {
+        try session.setCategory(listening ? .playAndRecord : .playback, mode: listening ? .default : .spokenAudio,
+                                options: listening ? [.defaultToSpeaker, .allowBluetoothHFP, .duckOthers] : [.duckOthers])
+      }
+      attempt("setActive") { try session.setActive(true) }
     }
   }
 
@@ -50,9 +52,9 @@ final class AudioSessionCoordinator {
     queue.async {
       self.callActive = true
       self.speakerOn = speakerOn
-      try? self.session.setCategory(.playAndRecord, mode: .voiceChat, options: [.defaultToSpeaker, .allowBluetoothHFP])
-      try? self.session.setActive(true)
-      try? self.session.overrideOutputAudioPort(speakerOn ? .speaker : .none)
+      self.attempt("setCategory") { try self.session.setCategory(.playAndRecord, mode: .voiceChat, options: [.defaultToSpeaker, .allowBluetoothHFP]) }
+      self.attempt("setActive") { try self.session.setActive(true) }
+      self.attempt("overrideOutputAudioPort") { try self.session.overrideOutputAudioPort(speakerOn ? .speaker : .none) }
     }
   }
 
@@ -60,7 +62,7 @@ final class AudioSessionCoordinator {
     queue.async {
       self.speakerOn = on
       guard self.callActive else { return }
-      try? self.session.overrideOutputAudioPort(on ? .speaker : .none)
+      self.attempt("overrideOutputAudioPort") { try self.session.overrideOutputAudioPort(on ? .speaker : .none) }
     }
   }
 
@@ -72,7 +74,7 @@ final class AudioSessionCoordinator {
       if self.listening || self.playbackActive {
         self.applyCategory()
       } else {
-        try? self.session.setActive(false, options: .notifyOthersOnDeactivation)
+        self.attempt("setActive") { try self.session.setActive(false, options: .notifyOthersOnDeactivation) }
       }
     }
   }
@@ -82,7 +84,7 @@ final class AudioSessionCoordinator {
     queue.async {
       self.listening = true
       self.applyCategory()
-      try? self.session.setActive(true)
+      self.attempt("setActive") { try self.session.setActive(true) }
       ready()
     }
   }
@@ -97,7 +99,7 @@ final class AudioSessionCoordinator {
       if self.playbackActive {
         self.applyCategory()
       } else {
-        try? self.session.setActive(false, options: .notifyOthersOnDeactivation)
+        self.attempt("setActive") { try self.session.setActive(false, options: .notifyOthersOnDeactivation) }
       }
     }
   }
@@ -108,9 +110,9 @@ final class AudioSessionCoordinator {
     if listening {
       // Only when it changes: re-setting the category under a running mic engine interrupts it.
       guard session.category != .playAndRecord || session.mode != .default else { return }
-      try? session.setCategory(.playAndRecord, mode: .default, options: [.defaultToSpeaker, .allowBluetoothHFP, .duckOthers])
+      attempt("setCategory") { try session.setCategory(.playAndRecord, mode: .default, options: [.defaultToSpeaker, .allowBluetoothHFP, .duckOthers]) }
     } else if session.category != .playback {
-      try? session.setCategory(.playback, mode: .spokenAudio, options: [.duckOthers])
+      attempt("setCategory") { try session.setCategory(.playback, mode: .spokenAudio, options: [.duckOthers]) }
     }
   }
 
@@ -119,7 +121,7 @@ final class AudioSessionCoordinator {
     dispatchPrecondition(condition: .onQueue(queue))
     applyCategory()
     // During a call or while listening it's already active; between steps it's still active from the last one.
-    if !callActive && !listening && !playbackActive { try? session.setActive(true) }
+    if !callActive && !listening && !playbackActive { attempt("setActive") { try session.setActive(true) } }
     playbackActive = true
   }
 
@@ -128,6 +130,16 @@ final class AudioSessionCoordinator {
     dispatchPrecondition(condition: .onQueue(queue))
     guard playbackActive else { return }
     playbackActive = false
-    if !callActive && !listening { try? session.setActive(false, options: .notifyOthersOnDeactivation) }
+    if !callActive && !listening { attempt("setActive(false)") { try session.setActive(false, options: .notifyOthersOnDeactivation) } }
+  }
+
+  /// Every session call goes through here: a failure used to vanish behind `try?`, which is why "no sound" left no
+  /// trace in the log.
+  private func attempt(_ what: String, _ body: () throws -> Void) {
+    do {
+      try body()
+    } catch {
+      ARSessionController.log.error("Audio session \(what, privacy: .public) failed: \(error.localizedDescription, privacy: .public)")
+    }
   }
 }

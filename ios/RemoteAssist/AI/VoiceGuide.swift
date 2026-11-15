@@ -56,8 +56,12 @@ final class VoiceGuide: NSObject {
       if let cached = self.cache[spoken] {
         self.play(cached, orSay: spoken, gen: gen)
       } else if let request = self.elevenLabsRequest(for: spoken) {
-        let task = URLSession.shared.dataTask(with: request) { data, response, _ in
-          let ok = (response as? HTTPURLResponse)?.statusCode == 200
+        let task = URLSession.shared.dataTask(with: request) { data, response, error in
+          let status = (response as? HTTPURLResponse)?.statusCode ?? 0
+          let ok = status == 200
+          if !ok, (error as? URLError)?.code != .cancelled {
+            ARSessionController.log.error("Voice: ElevenLabs returned \(status) \(error?.localizedDescription ?? "", privacy: .public)")
+          }
           self.queue.async {
             guard gen == self.generation else { return }
             if ok, let data { self.cache[spoken] = data }
@@ -105,7 +109,9 @@ final class VoiceGuide: NSObject {
     fetch = nil
     player?.stop()
     player = nil
-    if fallback.isSpeaking { fallback.stopSpeaking(at: .immediate) }
+    // AVSpeechSynthesizer is driven from the main thread, as Apple documents; it misbehaved from this queue.
+    let synthesizer = fallback
+    DispatchQueue.main.async { if synthesizer.isSpeaking { synthesizer.stopSpeaking(at: .immediate) } }
     if endSession {
       speaking = false
       audio.playbackEndedOnQueue()
@@ -119,9 +125,15 @@ final class VoiceGuide: NSObject {
     if let data, let player = try? AVAudioPlayer(data: data) {
       player.delegate = self
       self.player = player
-      if player.play() { return }
+      if player.play() {
+        ARSessionController.log.notice("Voice: ElevenLabs")
+        return
+      }
+      ARSessionController.log.error("Voice: ElevenLabs audio wouldn't play, using the iOS voice")
     }
-    fallback.speak(AVSpeechUtterance(string: text))
+    ARSessionController.log.notice("Voice: iOS voice")
+    let synthesizer = fallback
+    DispatchQueue.main.async { synthesizer.speak(AVSpeechUtterance(string: text)) }
   }
 
   private func elevenLabsRequest(for text: String) -> URLRequest? {

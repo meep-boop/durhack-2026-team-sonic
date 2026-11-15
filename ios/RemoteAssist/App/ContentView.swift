@@ -137,7 +137,7 @@ struct ContentView: View {
   private func presentations(_ content: some View) -> some View {
     content
     .sheet(isPresented: $showingConnection) {
-      ConnectionSheet(relay: relay, voice: voice, pauseAR: ar.pause, resumeAR: ar.resume)
+      ConnectionSheet(relay: relay, voice: voice, onHandsInFront: ar.setHandsInFront, pauseAR: ar.pause, resumeAR: ar.resume)
         .presentationDetents([.medium, .large])
     }
     .sheet(isPresented: $showingLaptop) {

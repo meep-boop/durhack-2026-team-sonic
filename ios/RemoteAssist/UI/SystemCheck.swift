@@ -4,6 +4,9 @@ import SwiftUI
 /// exact error, so a missing or wrong key shows up here instead of as "nothing happens" on stage.
 struct SystemCheckSection: View {
   let voice: VoiceGuide
+  var onHandsInFront: (Bool) -> Void = { _ in }
+  @State private var mic = MicCheck()
+  @State private var handsInFront = ARSessionController.handsInFront
 
   private enum Status: Equatable {
     case idle, running, ok(String), failed(String)
@@ -24,10 +27,62 @@ struct SystemCheckSection: View {
           eleven = problem.map { .failed($0) } ?? .ok("You should hear it now")
         }
       }
+      micRow
+      Toggle(isOn: $handsInFront) {
+        VStack(alignment: .leading, spacing: 2) {
+          Text("Hands in front of the guide")
+          Text("Your hands hide the 3D parts, like real objects. Uses a lot more battery and GPU.")
+            .font(.footnote).foregroundStyle(.secondary)
+        }
+      }
+      .onChange(of: handsInFront) { onHandsInFront(handsInFront) }
     } header: {
       Text("System check")
     } footer: {
       Text("Keys stay on this phone, in the git-ignored ios/Secrets.xcconfig. Never commit them.")
+    }
+  }
+
+  private var micRow: some View {
+    VStack(alignment: .leading, spacing: 6) {
+      HStack {
+        Image(systemName: micIcon).foregroundStyle(micColor)
+        Text("Microphone").font(.headline)
+        Spacer()
+        if mic.status == .listening {
+          ProgressView()
+        } else {
+          Button("Test", action: mic.run).buttonStyle(.bordered).controlSize(.small)
+        }
+      }
+      if mic.status == .listening {
+        ProgressView(value: Double(mic.level)).tint(Theme.accent)
+        Text("Say something…").font(.footnote).foregroundStyle(.secondary)
+      }
+      switch mic.status {
+      case .denied: Text("Microphone access is off: Settings → Remote Assist → Microphone").font(.footnote).foregroundStyle(.red)
+      case .done(let peak) where peak < 0.05: Text("Heard nothing. Check nothing is covering the mic, or another app is using it.").font(.footnote).foregroundStyle(.orange)
+      case .done: Text("Working: the expert will hear you").font(.footnote).foregroundStyle(.green)
+      case .failed(let message): Text(message).font(.footnote).foregroundStyle(.red)
+      default: EmptyView()
+      }
+    }
+    .padding(.vertical, 2)
+  }
+
+  private var micIcon: String {
+    switch mic.status {
+    case .done(let peak): peak < 0.05 ? "mic.slash.fill" : "checkmark.circle.fill"
+    case .denied, .failed: "xmark.octagon.fill"
+    default: "mic"
+    }
+  }
+
+  private var micColor: Color {
+    switch mic.status {
+    case .done(let peak): peak < 0.05 ? .orange : .green
+    case .denied, .failed: .red
+    default: .secondary
     }
   }
 
