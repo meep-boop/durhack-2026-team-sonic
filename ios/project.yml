@@ -1,0 +1,80 @@
+name: RemoteAssist
+options:
+  bundleIdPrefix: com.teamsonic
+  deploymentTarget:
+    iOS: "18.0"
+  createIntermediateGroups: true
+configFiles:
+  Debug: Config/Signing.xcconfig
+  Release: Config/Signing.xcconfig
+settings:
+  base:
+    SWIFT_VERSION: "5.0"
+    MARKETING_VERSION: "0.1.0"
+    CURRENT_PROJECT_VERSION: "1"
+targets:
+  RemoteAssist:
+    type: application
+    platform: iOS
+    sources:
+      - path: RemoteAssist
+      # Bundled straight from the shared folders, so each has one source of truth: Ahmed's fixture, Laura's marker.
+      - path: ../fixtures/sample-guide.json
+        buildPhase: resources
+      - path: ../assets/marker/marker.png
+        buildPhase: resources
+      - path: ../assets/models
+        buildPhase: resources
+        includes:
+          - "*.usdz"
+    dependencies:
+      # Google's WebRTC (stasel/WebRTC 156.0.0; Salman's pick 2026-11-14): P2P video and audio, signalling over the
+      # relay's rtc.signal. Fetched by scripts/fetch-webrtc.sh: SwiftPM hung on the binary download at the venue.
+      - framework: Vendor/WebRTC.xcframework
+        embed: true
+    info:
+      path: RemoteAssist/Info.plist
+      properties:
+        # The relay is plain ws:// on the team hotspot (Ahmed's call), which ATS blocks unless local networking is allowed.
+        NSAppTransportSecurity:
+          NSAllowsLocalNetworking: true
+        # Keeps the expert's voice going when the phone is locked mid-call; video pauses (Salman's call, 2026-11-14).
+        UIBackgroundModes: [audio]
+        NSLocalNetworkUsageDescription: Remote Assist connects to the team's relay on this network to receive the guide.
+        GeminiAPIKey: $(GEMINI_API_KEY)
+        GeminiModel: $(GEMINI_MODEL)
+        ElevenLabsAPIKey: $(ELEVENLABS_API_KEY)
+        ElevenLabsVoiceID: $(ELEVENLABS_VOICE_ID)
+        ElevenLabsModel: $(ELEVENLABS_MODEL)
+    settings:
+      base:
+        PRODUCT_BUNDLE_IDENTIFIER: com.teamsonic.remoteassist
+        TARGETED_DEVICE_FAMILY: "1"
+        GENERATE_INFOPLIST_FILE: YES
+        INFOPLIST_KEY_CFBundleDisplayName: Remote Assist
+        INFOPLIST_KEY_NSCameraUsageDescription: Remote Assist uses the camera to line the guide up with the printed marker and to show the expert what you see.
+        INFOPLIST_KEY_NSMicrophoneUsageDescription: Remote Assist uses the microphone so you can talk to the expert during a call.
+        INFOPLIST_KEY_UILaunchScreen_Generation: YES
+        INFOPLIST_KEY_UISupportedInterfaceOrientations: UIInterfaceOrientationPortrait
+        INFOPLIST_KEY_UIStatusBarStyle: UIStatusBarStyleLightContent
+  RemoteAssistTests:
+    type: bundle.unit-test
+    platform: iOS
+    sources:
+      - path: RemoteAssistTests
+      - path: ../fixtures/messages.json
+        buildPhase: resources
+    dependencies:
+      - target: RemoteAssist
+    settings:
+      base:
+        GENERATE_INFOPLIST_FILE: YES
+schemes:
+  RemoteAssist:
+    build:
+      targets:
+        RemoteAssist: all
+        RemoteAssistTests: [test]
+    test:
+      targets:
+        - RemoteAssistTests
