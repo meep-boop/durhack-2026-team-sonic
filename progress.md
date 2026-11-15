@@ -64,12 +64,12 @@ each builder's brief (`builder-file-<name>.md`, on the `context` branch).
 ## Latest
 - **The volatile facts live here only:** the current commit, test counts, what's merged vs. local-only, and deploy
   status.
-- **As of 2026-11-15 02:16:** `main` has the contract, fixtures and fakes, the relay (41 tests, type-check clean), the
-  UNO Q rig code (13 tests), Laura's marker and seven models, `fixtures/video-test.html`, and the dashboard
-  (`0fddd63`: PR #6, Ahmed's relay client and calibration maths, and the playable scene; 22 tests, type-check and
-  build clean). **Not on `main` yet:** the iPhone app (`salman-ios-polish`), the guide builder (`laura-guide`),
-  Max's research answers (PR #1), Salman's board entries (PR #5). Relay deploy: the dashboard laptop from the demo
-  on; Ahmed's until then.
+- **As of 2026-11-15 03:15:** `main` has the contract, fixtures and fakes, the relay (41 tests, type-check clean), the
+  UNO Q rig and Nicla code, Laura's marker and seven models, the dashboard (46 tests, type-check and build clean:
+  Max's scene with splat and mesh scans, calibration, steps, the phone's position, AI labels, dragging; Laura's
+  guide panel; Ahmed's relay client), and the first scan (`dashboard/public/scans/`, no marker: reference only).
+  **Not on `main` yet:** the iPhone app (`salman-ios-polish`, `salman-ios-ar`), Max's research answers (PR #1),
+  Salman's board entries (PR #5). Relay deploy: Max's laptop, port 8080.
 
 ---
 
