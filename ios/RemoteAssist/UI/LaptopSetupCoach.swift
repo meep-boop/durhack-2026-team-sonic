@@ -23,6 +23,7 @@ struct LaptopSetupCoach: View {
   let stage: LaptopSetupStage
   let problem: String?
   let onCancel: () -> Void
+  @Environment(\.scenePhase) private var scenePhase
 
   var body: some View {
     VStack(alignment: .leading, spacing: 12) {
@@ -47,7 +48,7 @@ struct LaptopSetupCoach: View {
           .font(.system(size: 30, weight: .semibold))
           .foregroundStyle(Theme.accent)
           .frame(width: 40)
-          .symbolEffect(.pulse, options: .repeating)
+          .symbolEffect(.pulse, options: .repeating, isActive: scenePhase == .active)
         VStack(alignment: .leading, spacing: 4) {
           Text(title).font(.headline)
           Text(detail).font(.subheadline).foregroundStyle(.secondary).fixedSize(horizontal: false, vertical: true)

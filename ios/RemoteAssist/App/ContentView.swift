@@ -86,7 +86,7 @@ struct ContentView: View {
   /// bottom: never both, and at most one line of extra information.
   private var guideScreen: some View {
     ZStack {
-      SpotlightOverlay(tracker: spotlight)
+      if !CameraLab.overlaysOff { SpotlightOverlay(tracker: spotlight) }
 
       if !ar.markerSeen && !isLaptopGuide && player.currentStep != nil {
         FindMarkerHint().transition(.opacity)
@@ -106,10 +106,16 @@ struct ContentView: View {
         }
 
         if ar.cameraStalled {
-          Label("The camera isn't responding. Close the app and open it again.", systemImage: "camera.badge.exclamationmark")
-            .font(.footnote.weight(.semibold))
-            .padding(10)
-            .glassBackground(in: RoundedRectangle(cornerRadius: 14))
+          HStack(spacing: 10) {
+            Label("The camera stopped updating.", systemImage: "camera.badge.exclamationmark")
+              .font(.footnote.weight(.semibold))
+            Spacer(minLength: 0)
+            Button("Restart camera") { ar.restartCamera() }
+              .font(.footnote.weight(.bold))
+              .buttonStyle(.borderedProminent)
+          }
+          .padding(10)
+          .glassBackground(in: RoundedRectangle(cornerRadius: 14))
         } else if let error = ar.errorMessage {
           Label(error, systemImage: "exclamationmark.triangle.fill")
             .font(.footnote)
@@ -284,7 +290,7 @@ struct ContentView: View {
     ar.step = player.currentStep
     ar.onPinToggled = { pin in pinToggled(pin) }
     ar.onSurfaceTap = { position, normal in surfaceTapped(position, normal) }
-    spotlight.start(ar)
+    if !CameraLab.overlaysOff { spotlight.start(ar) }
     ar.onPose = { [relay] pose in relay.sendPose(pose) }
     // Runs on the AR session queue; the source checks its own thread-safe switch, set by CallManager.
     ar.onCameraFrame = { [videoSource = call.videoSource] buffer, time in
@@ -332,7 +338,7 @@ struct ContentView: View {
       call.setBackgrounded(true)
     case .active:
       updateListening()
-      spotlight.start(ar)
+      if !CameraLab.overlaysOff { spotlight.start(ar) }
       call.setBackgrounded(false)
       if onboarded { ar.resume() }
       relay.appBecameActive()
@@ -479,6 +485,7 @@ struct ContentView: View {
     ar.clearFocus()
     ar.showCornerMarker(at: nil)
     setupProblem = nil
+    ar.setSurfaceDetection(true)
     ar.setCoachingGoal(.horizontalPlane)
     ar.tapMode = .surface
     setup = ar.hasHorizontalSurface ? .cornerA : .surface
@@ -490,7 +497,8 @@ struct ContentView: View {
     setupProblem = nil
     ar.showCornerMarker(at: nil)
     ar.setCoachingGoal(.tracking)
-    ar.tapMode = .pins
+    ar.tapMode = teaching ? .surface : .pins
+    ar.setSurfaceDetection(teaching)
     spotlight.enabled = true
   }
 
@@ -550,6 +558,7 @@ struct ContentView: View {
     if on, layoutFile == nil { layoutFile = layout.exportFile() }
     teaching = on
     ar.tapMode = on || setup != nil ? .surface : .pins
+    ar.setSurfaceDetection(on || setup != nil)
   }
 
   private func undoTeach() {
