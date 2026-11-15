@@ -894,3 +894,22 @@ each builder's brief (`builder-file-<name>.md`, on the `context` branch).
 - 📨 To @ahmed: nothing for you.
 - ⚠️ Conflicts: @laura — a possible future change to how the `screwdriver` model looks; nothing changed yet
 - Conflict status: open
+
+### 2026-11-15 07:37 — the last stretch: why boxes hover, and the demo's shape — @ahmed
+- Shipped: no code. Ahmed reports the phone works and a guide sent from the dashboard reaches it. **Boxes hover
+  above the laptop because no guide has real positions:** the only scan on `main` has no marker, so nothing can be
+  calibrated or placed in it, and `fixtures/ssd-swap-guide.json` has placeholders. Each brief has a "last stretch"
+  block on top.
+- Touched: on `context`: the four briefs, `PROJECT.md` (Decisions in force)
+- Decision (Ahmed): rescan twice with the marker in view and place parts by clicking in the scan, with a top-down
+  ruler photo as the fallback; bigger animations (pull / push 4 cm, unscrew two turns rising 15 mm), no message
+  change; the demo is "expert builds, user follows"; #11 on `main` is the demo build.
+- Beat sheet draft (under 5 min): problem 0:30 · expert clicks a screw, picks unscrew, sends 0:45 · it lands on the
+  real screw 0:30 · taps and ticks 0:30 · phone Wi-Fi off, keeps going, syncs 0:45 · SSD out, the rig's ✓ 0:30 · call
+  with tap-to-point 0:30 · extras 0:30 · what's real 0:30.
+- 📨 To @max @laura: rescan now, closed then cover off, marker fully in view; ruler photos at the same time. Then
+  build the guide in the scan. Ahmed's laptop is the prop from then on, so Max is the docs owner on duty.
+- 📨 To @salman: bigger animations in `Shapes.animate`, check and merge PR #12, and be at the table for the first
+  real run with the expert's guide.
+- ⚠️ Conflicts: @salman — one post-freeze change asked of the phone | @max — the preview must match it
+- Conflict status: open
