@@ -913,3 +913,14 @@ each builder's brief (`builder-file-<name>.md`, on the `context` branch).
   real run with the expert's guide.
 - ⚠️ Conflicts: @salman — one post-freeze change asked of the phone | @max — the preview must match it
 - Conflict status: open
+
+### 2026-11-15 07:38 — correction: what the animations really do on main — @ahmed
+- Shipped: no code. My 07:37 entry gave the phone's current animation sizes from an old branch. Read from `main`
+  (`ios/RemoteAssist/AR/Shapes.swift`, `dashboard/src/scene/preview.ts`): `unscrew` on the phone only spins the
+  screw in place, which a round screw barely shows; `pull` / `push` slide 2 cm and come back, so they read as a
+  wobble; the dashboard preview moves differently (3 cm, two turns rising 5 mm). The corrected spec is in Salman's
+  and Max's briefs: unscrew rises 15 mm over two turns, pull / push go 4 cm one way, loops restart, objects start
+  0.15 s apart, and on the phone a pulsing ring, thicker box lines and a bigger label.
+- Touched: on `context`: `builder-file-salman.md`, `builder-file-max.md`
+- ⚠️ Conflicts: @salman @max — the spec in their briefs changed
+- Conflict status: open
