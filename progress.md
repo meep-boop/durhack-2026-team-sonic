@@ -730,7 +730,8 @@ each builder's brief (`builder-file-<name>.md`, on the `context` branch).
   - Multiple projects: not recommended. **Multiple challenges: yes**, so our four sponsors plus MLH are allowed.
   - **No work before the event.**
   - **Judging is in person.**
-  - Still not stated: the video's length limit, and whether the repo must be public.
+  - **The whole presentation must be under 5 minutes** (added by Laura after asking). Still not stated: a separate
+    video length limit, and whether the repo must be public.
 - Touched: `docs/README.judges.draft.md` on `laura-guide`: every framework per part, and Claude Code, Claude,
   Gemini and ElevenLabs credited.
 - 📨 To @ahmed @max (docs owners): please fold these into `EVENT.md` §1–3 and close "May one project enter four
