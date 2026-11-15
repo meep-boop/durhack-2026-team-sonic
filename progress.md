@@ -450,3 +450,13 @@ each builder's brief (`builder-file-<name>.md`, on the `context` branch).
 - ⚠️ Conflicts: @max — two new files proposed in `dashboard/` | @salman — the receipt changes when a tap leaves his
   outbox | @laura — her task 5 is superseded
 - Conflict status: open
+
+### 2026-11-15 01:47 — taps get a receipt from the relay — @ahmed
+- Shipped: the relay sends each `step.done` back to the phone that sent it, once saved; a repeat gets one too and is
+  still forwarded only once. `fixtures/fake-phone.ts` keeps a tap queued until its receipt and resends the queue on
+  reconnect: the reference for the app. 41 relay tests pass. Commit `8756560`.
+- Touched: `relay/relay.ts`, `contracts/protocol.ts` (comment only, no shape change), `fixtures/fake-phone.ts`
+- 📨 To @salman: in `RelayClient`, remove a tap from the outbox when its `step.done` comes back (match `doneId`), not
+  when the send completes, and resend the whole outbox in order on reconnect. Older builds just ignore the echo.
+- ⚠️ Conflicts: @salman — the phone now receives its own `step.done`; harmless until he uses it
+- Conflict status: open
