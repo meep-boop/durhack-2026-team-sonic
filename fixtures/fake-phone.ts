@@ -1,7 +1,7 @@
 // Stands in for the iPhone app, so the dashboard can be built and tested without a phone: it plays whatever guide the
 // relay sends, taps Next every few seconds and streams a SIMULATED camera pose circling the marker. With --offline-after
 // it drops the link mid-guide, keeps tapping into a queue and sends the queue when the link returns, like the real app
-// must for Neptune North.
+// must for Neptune North. A tap stays queued until the relay sends it back as a receipt.
 // Run: node fixtures/fake-phone.ts [ws://host:8080] [--every 3000] [--offline-after 2 --offline-for 8000]
 import { parseArgs } from "node:util";
 import type { Guide, Message, StepDone } from "../contracts/protocol.ts";
@@ -45,14 +45,13 @@ export function runFakePhone({ url, tapEveryMs = 3000, poseEveryMs = 100, offlin
       const step = guide?.steps[index];
       if (!guide || !step) return;
       const done: StepDone = { type: "step.done", guideId: guide.id, rev: guide.rev, stepId: step.id, doneId: crypto.randomUUID(), at: Date.now() };
+      queue.push(done);
       if (online) send(done);
-      else queue.push(done);
       log(`tapped Next on ${step.id}${online ? "" : " (offline, queued)"}: ${step.text}`);
       index += 1;
       if (index === guide.steps.length) {
         finished = true;
         log("guide finished");
-        if (online) socket.close();
       } else if (offline && index === offline.afterSteps && online) {
         log(`link down for ${offline.forMs} ms`);
         droppingOnPurpose = true;
@@ -77,6 +76,10 @@ export function runFakePhone({ url, tapEveryMs = 3000, poseEveryMs = 100, offlin
         const target = guide.steps.findIndex((step) => step.id === message.stepId);
         if (target >= 0) index = target;
         log(`expert moved me to ${message.stepId}`);
+      } else if (message.type === "step.done") {
+        const receipted = queue.findIndex((tap) => tap.doneId === message.doneId);
+        if (receipted >= 0) queue.splice(receipted, 1);
+        if (finished && !queue.length) socket.close();
       } else if (message.type === "error") {
         log(`! relay refused ${message.about ?? "a message"}: ${message.message}`);
       }
@@ -90,8 +93,7 @@ export function runFakePhone({ url, tapEveryMs = 3000, poseEveryMs = 100, offlin
         droppingOnPurpose = false;
         send({ type: "hello", protocol: 1, role: "user", client: "fake phone" });
         if (queue.length) log(`link back: sending ${queue.length} queued taps`);
-        queue.splice(0).forEach(send);
-        if (finished) socket.close();
+        queue.forEach(send);
       });
       socket.addEventListener("close", () => {
         online = false;

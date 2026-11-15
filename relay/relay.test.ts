@@ -94,13 +94,15 @@ test("Next on the phone reaches the dashboard and the rig, and moves the current
 
   user.send(done("s1"));
   await until(() => ofType(expert, "step.done").length === 1 && ofType(rig, "step.done").length === 1, "step.done");
+  await until(() => ofType(user, "step.done").length === 1, "the phone's receipt");
+  assert.equal(ofType(user, "step.done")[0]!.doneId, "done-s1");
 
   const reloaded = await connect(port, "expert", "reloaded dashboard");
   await until(() => ofType(reloaded, "step.set").length === 1, "the replayed step");
   assert.equal(ofType(reloaded, "step.set")[0]!.stepId, "s2");
 });
 
-test("a repeated step.done from an offline queue is dropped", async (t) => {
+test("a repeated step.done from an offline queue is forwarded once, and receipted every time", async (t) => {
   const { port } = await relay(t);
   const expert = await connect(port, "expert");
   const user = await connect(port, "user");
@@ -112,6 +114,7 @@ test("a repeated step.done from an offline queue is dropped", async (t) => {
   await until(() => ofType(expert, "pose").length === 1, "the pose sent after the repeat");
   assert.equal(ofType(expert, "step.done").length, 1);
   assert.equal(ofType(user, "error").length, 0);
+  await until(() => ofType(user, "step.done").length === 2, "a receipt for the tap and for its repeat");
 });
 
 test("each role can only send its own messages, and only after hello", async (t) => {

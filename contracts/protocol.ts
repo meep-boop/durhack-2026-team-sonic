@@ -105,7 +105,9 @@ export type CalibSet = {
   residual: number;
 };
 
-// User → expert, when the user taps Next.
+// User → expert, when the user taps Next. The relay also sends each one back to the phone that sent it, once it's
+// saved: that's the receipt. The phone keeps a tap queued until its receipt arrives and resends the queue, in order,
+// when it reconnects.
 export type StepDone = {
   type: "step.done";
   guideId: string;

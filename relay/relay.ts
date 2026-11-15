@@ -174,14 +174,17 @@ export async function startRelay(options: RelayOptions): Promise<Relay> {
         break;
       case "step.done": {
         if (guide?.id !== message.guideId) return refuse(socket, `the relay has no guide "${message.guideId}"`, message.type);
-        // The phone resends its offline queue when it reconnects, so a repeat is expected and dropped quietly.
-        if (state.done.some((done) => done.doneId === message.doneId)) return;
+        // The tap sent back is the phone's receipt: it keeps a tap queued until then, so one written to a dead link
+        // isn't lost. A repeat gets a receipt too, because the phone resends exactly when the first one never came.
+        if (state.done.some((done) => done.doneId === message.doneId)) return send(socket, message);
         state.done.push(message);
         if (message.stepId === state.stepId) {
           const index = guide.steps.findIndex((step) => step.id === message.stepId);
           state.stepId = guide.steps[index + 1]?.id ?? state.stepId;
         }
-        break;
+        save();
+        send(socket, message);
+        return forward(message, route.to(sender.role), socket);
       }
       case "step.verified":
         if (guide?.id !== message.guideId) return refuse(socket, `the relay has no guide "${message.guideId}"`, message.type);
