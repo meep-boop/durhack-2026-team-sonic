@@ -8,6 +8,7 @@ const fixture = (name: string) =>
 
 const examples: { type: string }[] = fixture("messages.json");
 const sampleGuide = fixture("sample-guide.json");
+const ssdSwapGuide = fixture("ssd-swap-guide.json");
 
 const refusal = (message: unknown) => {
   const result = parseMessage(JSON.stringify(message));
@@ -136,4 +137,10 @@ test("calibration needs exactly four corners", () => {
   const calib = examples.find((m) => m.type === "calib.set") as any;
   assert.match(refusal({ ...calib, corners: calib.corners.slice(0, 3) }), /corners/);
   assert.match(refusal({ ...calib, residual: -1 }), /residual/);
+});
+
+test("the prepared SSD-swap guide is one the relay accepts, with the rig's check on both SSD steps", () => {
+  assert.equal(checkGuide(ssdSwapGuide), null);
+  const expects = ssdSwapGuide.steps.flatMap((step: { objects: { expect?: unknown }[] }) => step.objects.flatMap((o) => o.expect ?? []));
+  assert.deepEqual(expects, [{ region: "ssd-bay", present: false }, { region: "ssd-bay", present: true }]);
 });
