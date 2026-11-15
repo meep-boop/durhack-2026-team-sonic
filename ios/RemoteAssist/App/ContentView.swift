@@ -38,6 +38,8 @@ struct ContentView: View {
   @State private var expertHeard: String?
   /// A big "Look left" arrow, from the expert's voice, for a few seconds.
   @State private var lookCue: ExpertSpeech.Direction?
+  /// Why the relay just refused a finished step, for a few seconds on the step card.
+  @State private var refusalNote: String?
   @AppStorage("ghostToolOn") private var ghostToolOn = true
   @AppStorage("onboarded") private var onboarded = false
   @AppStorage("voiceOn") private var voiceOn = true
@@ -47,7 +49,7 @@ struct ContentView: View {
   private var inCall: Bool { call.state == .connecting || call.state == .live || call.state == .reconnecting }
 
   var body: some View {
-    lifecycle(presentations(layers))
+    lifecycle(relayFeedback(presentations(layers)))
   }
 
   private var layers: some View {
@@ -115,6 +117,14 @@ struct ContentView: View {
         InCallBar(call: call) { showingTranscript = true }
         CaptionStrip(call: call)
         Spacer()
+        // The steps are one tap away: the guide screen keeps the call bar, so the call carries on.
+        Button(action: enterGuide) {
+          Label("Open the guide", systemImage: "list.number")
+            .font(.headline)
+            .frame(maxWidth: .infinity)
+            .padding(.vertical, 6)
+        }
+        .buttonStyle(.borderedProminent)
         Label(expertHeard.map { "Heard “\($0)”" } ?? pinMessage ?? "The expert can see your camera and is guiding you",
               systemImage: expertHeard != nil ? "ear.fill" : "hand.point.up.left.fill")
           .font(.subheadline.weight(.semibold))
@@ -216,6 +226,7 @@ struct ContentView: View {
       return .init(text: "Teaching: tap each part on the laptop · \(count) marked", symbol: "hand.point.up.left.fill")
     }
     if let problem = commands.problem { return .init(text: problem, symbol: "mic.badge.xmark", tint: .orange) }
+    if let refusalNote { return .init(text: "The relay refused that step: \(refusalNote)", symbol: "exclamationmark.triangle.fill", tint: .orange) }
     if let expertHeard { return .init(text: "Expert: “\(expertHeard)”", symbol: "ear.fill") }
     if let heard = commands.heard { return .init(text: "Heard “\(heard)”", symbol: "mic.fill") }
     if let pinMessage { return .init(text: pinMessage, symbol: "info.circle.fill") }
@@ -254,6 +265,32 @@ struct ContentView: View {
     }
   }
 
+  /// What the relay and the expert's voice say back: receipts, refusals, heard commands. Apart from `lifecycle` so
+  /// the type checker can cope with the screen.
+  private func relayFeedback(_ content: some View) -> some View {
+    content
+    .animation(.snappy, value: lookCue)
+    .animation(.easeInOut, value: expertHeard)
+    .animation(.easeInOut, value: refusalNote)
+    .onChange(of: relay.receipts) { old, new in
+      // Only real receipts: a tap the relay refused also leaves the queue, and must never read as synced.
+      guard new > old else { return }
+      syncedToast = "\(new - old) step\(new - old == 1 ? "" : "s") synced to the expert"
+      Task {
+        try? await Task.sleep(for: .seconds(2.5))
+        syncedToast = nil
+      }
+    }
+    .onChange(of: relay.refusals) {
+      let reason = relay.lastRefusal
+      refusalNote = reason
+      Task {
+        try? await Task.sleep(for: .seconds(4))
+        if refusalNote == reason { refusalNote = nil }
+      }
+    }
+  }
+
   private func lifecycle(_ content: some View) -> some View {
     content
     .animation(.snappy, value: call.state)
@@ -268,18 +305,7 @@ struct ContentView: View {
     .animation(.easeInOut, value: ar.markerSeen)
     .animation(.easeInOut, value: ar.markerLostForAWhile)
     .animation(.easeInOut, value: pinMessage)
-    .animation(.snappy, value: lookCue)
-    .animation(.easeInOut, value: expertHeard)
     .animation(.snappy, value: syncedToast)
-    .onChange(of: relay.outboxCount) { old, new in
-      // The offline queue just drained into the expert's view: say so, as in the explainer video.
-      guard new < old, relay.state == .connected else { return }
-      syncedToast = "\(old - new) step\(old - new == 1 ? "" : "s") synced to the expert"
-      Task {
-        try? await Task.sleep(for: .seconds(2.5))
-        syncedToast = nil
-      }
-    }
     .onAppear(perform: wire)
     .onChange(of: onboarded) { if onboarded { ar.start() } }
     .onChange(of: scenePhase) { _, phase in handle(phase) }
@@ -342,6 +368,9 @@ struct ContentView: View {
     }
     relay.onGuide = { [player] guide in
       relayGuide = guide
+      // The relay replays its guide on every reconnect. The laptop guide lives only on this phone, so that must not
+      // pull the user out of it; leaving the laptop guide goes back to this one.
+      guard player.guide.id != LaptopGuide.guideId else { return }
       player.replace(with: guide)
     }
     relay.onStepSet = { [player] message in
@@ -444,11 +473,13 @@ struct ContentView: View {
     let note: String
     switch command {
     case .next:
-      guard !showingHome, player.currentStep != nil, ar.markerSeen || isLaptopGuide else { return }
+      guard !showingHome else { note = "Next step: tap Open the guide first"; break }
+      guard player.currentStep != nil else { return }
+      guard ar.markerSeen || isLaptopGuide else { note = "Next step: point the camera at the printed marker first"; break }
       next()
       note = "Next step"
     case .back:
-      guard !showingHome else { return }
+      guard !showingHome else { note = "Go back: tap Open the guide first"; break }
       player.back()
       note = "Go back"
     case .look(let direction):

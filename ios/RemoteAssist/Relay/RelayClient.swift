@@ -14,6 +14,12 @@ final class RelayClient {
   private(set) var expertOnline = false
   private(set) var lastError: String?
   private(set) var outboxCount = 0
+  /// Finished steps the relay has really confirmed. Only this says "synced": a dropped tap also shrinks the outbox.
+  private(set) var receipts = 0
+  /// Bumped on every refusal while connected, with the relay's reason, so the step card can say so at once
+  /// (`lastError` only shows in the connection sheet).
+  private(set) var refusals = 0
+  private(set) var lastRefusal = ""
   private(set) var url: URL?
 
   @ObservationIgnored var onGuide: ((Guide) -> Void)?
@@ -182,7 +188,7 @@ final class RelayClient {
     case .rtcSignal(let m): onSignal?(m.signal)
     case .stepVerified(let m): onStepVerified?(m)
     // The relay sends our own tap back once it's saved: that's the receipt, and only then does it leave the queue.
-    case .stepDone(let m): outbox.receipt(m.doneId)
+    case .stepDone(let m): if outbox.receipt(m.doneId) { receipts += 1 }
     case .presence(let m): expertOnline = m.clients.contains { $0.role == .expert }
     case .error(let m) where m.about == "step.done":
       // `the relay has no guide "<id>"`: those taps will never get a receipt, so stop resending them.
@@ -191,6 +197,8 @@ final class RelayClient {
         if quoted.count >= 2 { outbox.drop(guideId: String(quoted[1])) }
       }
       lastError = "Relay refused a finished step: \(m.message)"
+      lastRefusal = m.message
+      refusals += 1
     case .error(let m): lastError = "Relay refused \(m.about ?? "a message"): \(m.message)"
     default: break
     }
