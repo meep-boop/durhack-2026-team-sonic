@@ -5,11 +5,16 @@ import Observation
 /// (task 6) can't shift which step is current.
 @Observable
 final class GuidePlayer {
-  private(set) var guide: Guide
-  private(set) var currentStepId: String?
+  private(set) var guide: Guide { didSet { save() } }
+  private(set) var currentStepId: String? { didSet { save() } }
   /// Steps the user has tapped Done on, by id. The relay no longer replays step.set to phones, so the phone owns
   /// its own place and progress across reconnects and guide edits.
-  private(set) var doneStepIds: Set<String> = []
+  private(set) var doneStepIds: Set<String> = [] { didSet { save() } }
+  /// Phone clock, ms since the epoch, when each step was tapped done. For the repair report.
+  private(set) var doneAt: [String: Int64] = [:]
+  private(set) var startedAt = Date()
+  /// Set by the app (not tests) to keep the player's state in Application Support across launches.
+  @ObservationIgnored var persistenceName: String? { didSet { save() } }
 
   init(guide: Guide) {
     self.guide = guide
@@ -22,6 +27,7 @@ final class GuidePlayer {
 
   func next() {
     guard let index = currentIndex else { return }
+    doneAt[guide.steps[index].id] = Int64(Date().timeIntervalSince1970 * 1000)
     doneStepIds.insert(guide.steps[index].id)
     let nextIndex = index + 1
     currentStepId = nextIndex < guide.steps.count ? guide.steps[nextIndex].id : nil
@@ -35,6 +41,8 @@ final class GuidePlayer {
   func restart() {
     currentStepId = guide.steps.first?.id
     doneStepIds = []
+    doneAt = [:]
+    startedAt = Date()
   }
 
   /// `guide.set` always carries the whole guide, and the relay replays it on every reconnect.
@@ -46,6 +54,8 @@ final class GuidePlayer {
       guide = newGuide
       currentStepId = newGuide.steps.first?.id
       doneStepIds = []
+      doneAt = [:]
+      startedAt = Date()
       return
     }
     guide = newGuide
@@ -63,6 +73,36 @@ final class GuidePlayer {
   func jump(to stepId: String) {
     guard guide.steps.contains(where: { $0.id == stepId }) else { return }
     currentStepId = stepId
+  }
+
+  // MARK: Persistence
+
+  private struct Saved: Codable {
+    var guide: Guide
+    var currentStepId: String?
+    var doneStepIds: Set<String>
+    var doneAt: [String: Int64]
+    var startedAt: Date
+  }
+
+  /// The player as it was when the app last ran, if it saved one.
+  static func restored(from name: String) -> GuidePlayer? {
+    guard let saved = Persistence.load(Saved.self, from: name) else { return nil }
+    let player = GuidePlayer(guide: saved.guide)
+    player.currentStepId = saved.currentStepId
+    player.doneStepIds = saved.doneStepIds
+    player.doneAt = saved.doneAt
+    player.startedAt = saved.startedAt
+    player.persistenceName = name
+    return player
+  }
+
+  private func save() {
+    guard let persistenceName else { return }
+    Persistence.save(
+      Saved(guide: guide, currentStepId: currentStepId, doneStepIds: doneStepIds, doneAt: doneAt, startedAt: startedAt),
+      as: persistenceName
+    )
   }
 
   static func loadBundled(named name: String = "sample-guide", bundle: Bundle = .main) throws -> Guide {

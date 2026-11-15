@@ -26,8 +26,12 @@ final class RelayClient {
   // Bumped on every new socket, so callbacks from a dead socket can't touch the current one.
   @ObservationIgnored private var generation = 0
   @ObservationIgnored private var attempt = 0
+  /// Saved on every change, so steps finished offline still reach the expert after the app is killed.
   @ObservationIgnored private var outbox: [StepDone] = [] {
-    didSet { outboxCount = outbox.count }
+    didSet {
+      outboxCount = outbox.count
+      Persistence.save(outbox, as: Self.outboxFile)
+    }
   }
   @ObservationIgnored private var flushing = false
   @ObservationIgnored private var pingTimer: Timer?
@@ -35,6 +39,7 @@ final class RelayClient {
   @ObservationIgnored private var wantsConnection = false
 
   private static let urlKey = "relayURL"
+  private static let outboxFile = "outbox"
   private let encoder = JSONEncoder()
   private let decoder = JSONDecoder()
 
@@ -42,6 +47,7 @@ final class RelayClient {
     if let saved = UserDefaults.standard.string(forKey: Self.urlKey), let url = URL(string: saved) {
       self.url = url
     }
+    outbox = Persistence.load([StepDone].self, from: Self.outboxFile) ?? []
   }
 
   // MARK: Connection

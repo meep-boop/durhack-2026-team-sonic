@@ -43,6 +43,13 @@ both sides can talk. Phone and laptop must be on the same Wi-Fi or hotspot (peer
 Lock the phone or switch apps mid-call and the voice keeps going while the camera pauses; it picks up again when you
 come back.
 
+## Offline, then back online (the resync demo)
+1. Connect the phone to the relay; the expert page shows it online.
+2. Turn the phone's Wi-Fi off. Tap Done on three steps: the card says they'll sync later.
+3. Kill the app (swipe it away). Open it again: you're on the same step, and the three are still waiting.
+4. Turn Wi-Fi back on. The phone reconnects by itself, the toast says "3 steps synced to the expert", and the expert
+   page logs the three `step.done` with the times you tapped them, not the time they arrived.
+
 ## Laptop assistant and voice (optional)
 With `GEMINI_API_KEY` set, the laptop button identifies the laptop from the camera, writes the SSD-swap steps, pins
 parts ("Show me where") and checks each step ("Check my work"). Everything it says is labelled AI-generated, and it

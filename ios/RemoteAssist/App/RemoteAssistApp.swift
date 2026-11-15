@@ -13,12 +13,18 @@ struct RemoteAssistApp: App {
 }
 
 private struct RootView: View {
-  @State private var loaded = Result { try GuidePlayer.loadBundled() }
+  /// Where the user left off (it survives the app being killed), else the bundled sample guide.
+  @State private var loaded = Result { () throws -> GuidePlayer in
+    if let restored = GuidePlayer.restored(from: "player") { return restored }
+    let player = GuidePlayer(guide: try GuidePlayer.loadBundled())
+    player.persistenceName = "player"
+    return player
+  }
 
   var body: some View {
     switch loaded {
-    case .success(let guide):
-      ContentView(player: GuidePlayer(guide: guide))
+    case .success(let player):
+      ContentView(player: player)
     case .failure(let error):
       Text("Couldn't load the guide: \(error.localizedDescription)")
         .padding()

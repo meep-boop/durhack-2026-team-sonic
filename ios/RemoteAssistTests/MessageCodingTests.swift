@@ -97,4 +97,28 @@ final class MessageCodingTests: XCTestCase {
     XCTAssertEqual(player.currentStepId, guide.steps.first?.id)
     XCTAssertTrue(player.doneStepIds.isEmpty)
   }
+
+  /// The phone owns its place: killing the app mid-guide must not lose it or the steps already done.
+  func testPlayerSurvivesARelaunch() throws {
+    let name = "test-player-\(UUID().uuidString)"
+    defer { Persistence.remove(name) }
+    let player = GuidePlayer(guide: try GuidePlayer.loadBundled())
+    player.persistenceName = name
+    player.next()
+    player.next()
+
+    let restored = try XCTUnwrap(GuidePlayer.restored(from: name))
+    XCTAssertEqual(restored.currentStepId, player.currentStepId)
+    XCTAssertEqual(restored.doneStepIds, player.doneStepIds)
+    XCTAssertEqual(restored.doneAt.keys.sorted(), ["s1", "s2"])
+    XCTAssertEqual(restored.guide, player.guide)
+  }
+
+  func testOutboxShapedDataRoundTripsThroughPersistence() throws {
+    let name = "test-outbox-\(UUID().uuidString)"
+    defer { Persistence.remove(name) }
+    let done = [StepDone(guideId: "g", rev: 2, stepId: "s1", doneId: "d1", at: 42)]
+    Persistence.save(done, as: name)
+    XCTAssertEqual(Persistence.load([StepDone].self, from: name), done)
+  }
 }
