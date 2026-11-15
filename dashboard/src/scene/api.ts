@@ -35,8 +35,8 @@ export type SceneApi = {
   previewAction(objectId: string): void;
   stopPreview(): void;
 
-  // The expert dragged or turned an object in 3D. The guide builder applies it to the guide and calls showStep.
-  // Not fired yet: dragging comes after the guide plays end to end (Max's task list).
+  // The expert dragged or turned an object in 3D; fired once, when the drag ends. The guide builder applies it to
+  // the guide and calls showStep.
   onObjectMoved(listener: (objectId: string, pos: Vec3, rot: Quat) => void): Unsubscribe;
 
   // The expert clicked an object in 3D, e.g. to select it in the step list.
