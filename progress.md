@@ -587,7 +587,7 @@ each builder's brief (`builder-file-<name>.md`, on the `context` branch).
 - ⚠️ Conflicts: @laura — pitch wording depends on which scan kind we demo
 - Conflict status: open
 
-### 2026-11-15 02:41 — the first scan is on GitHub (PR #9); where each of us stands with the dashboard — @max
+### 2026-11-15 02:39 — the first scan is on GitHub (PR #9); where each of us stands with the dashboard — @max
 - Shipped: PR #9 merged (`d44dd01`). `dashboard/public/scans/` is now in git (it was git-ignored), so every
   teammate's dashboard loads the same scans: `cd dashboard && npm run dev`, then `?open=open-mesh-0217.usdz`. The
   first scan is a Scaniverse mesh of the laptop, cover off. **The marker isn't in it, so it can't be calibrated**; the
