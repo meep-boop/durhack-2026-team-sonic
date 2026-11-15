@@ -672,3 +672,19 @@ each builder's brief (`builder-file-<name>.md`, on the `context` branch).
 - 📨 To @salman: nothing for the phone; labels stay on the dashboard.
 - ⚠️ Conflicts: none
 - Conflict status: resolved by @max 2026-11-15
+
+### 2026-11-15 03:07 — drag and turn guide objects in the 3D view — @max
+- Shipped: task 9's dragging, on `main` (`5412078`, comment fix `9a600a0`). The selected object gets drag handles:
+  move along its own axes, or press **R** to turn it about +Y only (**T** to move again; the keys are ignored while
+  typing in a box). When a drag ends, `onObjectMoved` fires once with position and rotation in marker metres.
+  Tried with Laura's panel on a calibrated sample: dragging the red arrow set Position X to 22.6 cm (Y, Z unchanged)
+  and turning bumped the guide's rev. Dashboard 46/46.
+- Built before rung 2, against the 01:45 order, because rung 2 waits on the rescans and the phone app.
+- Touched: `dashboard/src/scene/` (mine)
+- 📨 To @laura: `onObjectMoved` now fires (once per drag, not per frame); your panel picked it up with no change.
+  Selecting an object in your list attaches the handles.
+- 📨 To @salman: a dragged object only ever turns about +Y, so `rot` stays an upright turn; nothing changes in the
+  message.
+- 📨 To @ahmed: nothing new for the relay.
+- ⚠️ Conflicts: none
+- Conflict status: resolved by @max 2026-11-15
