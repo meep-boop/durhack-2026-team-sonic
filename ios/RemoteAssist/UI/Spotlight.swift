@@ -178,7 +178,7 @@ struct SpotlightOverlay: View {
         .padding(.vertical, 6)
         .glassBackground(in: Capsule())
         .fixedSize()
-        .position(x: rect.midX, y: min(rect.maxY + 22, size.height - 40))
+        .position(Self.labelPoint(for: rect, in: size))
         .allowsHitTesting(false)
     }
     .transition(.opacity)
@@ -209,6 +209,14 @@ struct SpotlightOverlay: View {
     .transition(.opacity)
     .accessibilityElement(children: .ignore)
     .accessibilityLabel("\(label) is off screen. \(SpotlightPolicy.turn(for: direction).words).")
+  }
+
+  /// Under the beam, unless that would sit behind the step card (the bottom ~40% of the screen): then above it.
+  /// Always inside the screen's width.
+  static func labelPoint(for rect: CGRect, in size: CGSize) -> CGPoint {
+    let below = rect.maxY + 22
+    let y = below > size.height * 0.6 ? max(rect.minY - 22, 90) : below
+    return CGPoint(x: min(max(rect.midX, 90), size.width - 90), y: y)
   }
 
   /// Where a ray from the screen centre along `direction` leaves the screen.

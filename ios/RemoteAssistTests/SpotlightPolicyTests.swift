@@ -38,4 +38,13 @@ final class SpotlightPolicyTests: XCTestCase {
     XCTAssertEqual(SpotlightPolicy.turn(for: CGVector(dx: -0.1, dy: 0.95)).words, "Look down")
     XCTAssertEqual(SpotlightPolicy.turn(for: CGVector(dx: 0.2, dy: -1)).symbol, "arrow.up")
   }
+
+  func testTheBeamLabelStaysClearOfTheStepCardAndTheEdges() {
+    let size = CGSize(width: 393, height: 852)
+    let low = SpotlightOverlay.labelPoint(for: CGRect(x: 100, y: 500, width: 160, height: 160), in: size)
+    XCTAssertEqual(low.y, 478, "a beam near the bottom gets its label above it")
+    let high = SpotlightOverlay.labelPoint(for: CGRect(x: 100, y: 150, width: 160, height: 160), in: size)
+    XCTAssertEqual(high.y, 332, "a beam near the top keeps its label underneath")
+    XCTAssertEqual(SpotlightOverlay.labelPoint(for: CGRect(x: 0, y: 150, width: 60, height: 160), in: size).x, 90)
+  }
 }

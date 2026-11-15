@@ -156,8 +156,8 @@ enum Shapes {
 
     var color: UIColor {
       switch self {
-      case .guide: Theme.accentUI
-      case .expert: .white
+      // Purple means "look here" (Theme): the expert's marks are the thing to look at.
+      case .guide, .expert: Theme.accentUI
       case .refit: Theme.accentSoftUI
       }
     }
@@ -167,27 +167,70 @@ enum Shapes {
   private static let ringName = "pin-ring"
   private static let tagName = "pin-tag"
 
-  /// A numbered pin standing on the surface: a pulsing ring, a stem, a ball and "3 · screw" above it.
+  /// A numbered mark on the surface: a solid centre dot and a pulsing halo lying flat (so the mark never hides the
+  /// screw under it), a hairline stem, and a chip with the number and label that always faces the camera.
   /// Built along +Y, so a transform from `PinMath.standing` makes it stand up off any surface.
   static func pin(number: Int, label text: String, kind: PinKind) -> Entity {
     let root = Entity()
     let tint = UnlitMaterial(color: kind.color)
-    let ring = ModelEntity(mesh: .generateCylinder(height: 0.001, radius: 0.011), materials: [UnlitMaterial(color: kind.color.withAlphaComponent(0.55))])
-    ring.name = ringName
-    root.addChild(ring)
-    let stem = ModelEntity(mesh: .generateCylinder(height: 0.035, radius: 0.0012), materials: [tint])
-    stem.position.y = 0.0175
+    let halo = ModelEntity(mesh: .generateCylinder(height: 0.001, radius: 0.012), materials: [UnlitMaterial(color: kind.color.withAlphaComponent(0.35))])
+    halo.name = ringName
+    root.addChild(halo)
+    let dot = ModelEntity(mesh: .generateCylinder(height: 0.0014, radius: 0.0042), materials: [tint])
+    dot.name = tintName
+    root.addChild(dot)
+    let stem = ModelEntity(mesh: .generateCylinder(height: 0.034, radius: 0.0007), materials: [tint])
+    stem.position.y = 0.019
     stem.name = tintName
     root.addChild(stem)
-    let head = ModelEntity(mesh: .generateSphere(radius: 0.007), materials: [tint])
-    head.position.y = 0.037
-    head.name = tintName
-    root.addChild(head)
-    let tag = label("\(number) · \(text)", size: 0.011)
-    tag.position.y = 0.05
+    let tag = chip(badge: "\(number)", text: text, color: kind.color)
+    tag.position.y = 0.046
     tag.name = tagName
     root.addChild(tag)
-    pulse(ring)
+    pulse(halo)
+    return root
+  }
+
+  /// A label that always faces the camera and reads over anything: a dark rounded chip, a coloured badge (a number,
+  /// a tick, or a plain dot when `badge` is nil) and the text in white. Centred on its origin.
+  static func chip(badge: String?, text: String, color: UIColor) -> Entity {
+    let root = Entity()
+    root.components.set(BillboardComponent())
+    let textModel = ModelEntity(
+      mesh: .generateText(text, extrusionDepth: 0.0002, font: .systemFont(ofSize: 0.0095, weight: .semibold)),
+      materials: [UnlitMaterial(color: .white)]
+    )
+    let textBounds = textModel.visualBounds(relativeTo: nil)
+    let badgeSize: Float = badge == nil ? 0.006 : 0.0125
+    let pad: Float = 0.0035
+    let gap: Float = 0.003
+    let height: Float = 0.0165
+    let width = pad + badgeSize + gap + textBounds.extents.x + pad * 1.4
+    let left = -width / 2
+
+    let background = ModelEntity(
+      mesh: .generatePlane(width: width, height: height, cornerRadius: height / 2),
+      materials: [UnlitMaterial(color: UIColor.black.withAlphaComponent(0.8))]
+    )
+    root.addChild(background)
+    // Each layer a fraction of a millimetre nearer the camera than the one behind it, so they never flicker.
+    let badgeDisc = ModelEntity(
+      mesh: .generatePlane(width: badgeSize, height: badgeSize, cornerRadius: badgeSize / 2),
+      materials: [UnlitMaterial(color: color)]
+    )
+    badgeDisc.position = [left + pad + badgeSize / 2, 0, 0.0003]
+    root.addChild(badgeDisc)
+    if let badge {
+      let badgeText = ModelEntity(
+        mesh: .generateText(badge, extrusionDepth: 0.0002, font: .systemFont(ofSize: 0.0082, weight: .heavy)),
+        materials: [UnlitMaterial(color: .white)]
+      )
+      let bounds = badgeText.visualBounds(relativeTo: nil)
+      badgeText.position = [badgeDisc.position.x - bounds.center.x, -bounds.center.y, 0.0006]
+      root.addChild(badgeText)
+    }
+    textModel.position = [left + pad + badgeSize + gap - textBounds.min.x, -textBounds.center.y, 0.0006]
+    root.addChild(textModel)
     return root
   }
 
@@ -196,10 +239,10 @@ enum Shapes {
     let color = done ? UIColor.systemGreen : kind.color
     for child in pin.children {
       guard let model = child as? ModelEntity, child.name == tintName || child.name == ringName else { continue }
-      model.model?.materials = [UnlitMaterial(color: color.withAlphaComponent(child.name == ringName ? 0.55 : 1))]
+      model.model?.materials = [UnlitMaterial(color: color.withAlphaComponent(child.name == ringName ? 0.35 : 1))]
     }
     if let old = pin.children.first(where: { $0.name == tagName }) {
-      let tag = label(done ? "✓ \(number)" : "\(number) · \(text)", size: 0.011)
+      let tag = chip(badge: done ? "✓" : "\(number)", text: text, color: color)
       tag.position = old.position
       tag.name = tagName
       old.removeFromParent()
@@ -233,7 +276,7 @@ enum Shapes {
       root.addChild(bar(from: lifted[i], to: lifted[(i + 1) % 4], thickness: 0.0025, color: Theme.accentUI))
     }
     let centre = lifted.reduce(.zero, +) / 4
-    let tag = label(text, size: 0.013)
+    let tag = chip(badge: nil, text: text, color: Theme.accentUI)
     tag.position = centre + simd_normalize(normal) * 0.03
     root.addChild(tag)
     return root
