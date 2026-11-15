@@ -460,3 +460,12 @@ each builder's brief (`builder-file-<name>.md`, on the `context` branch).
   when the send completes, and resend the whole outbox in order on reconnect. Older builds just ignore the echo.
 - ⚠️ Conflicts: @salman — the phone now receives its own `step.done`; harmless until he uses it
 - Conflict status: open
+
+### 2026-11-15 01:47 — the relay keeps one calibration per scan — @ahmed
+- Shipped: `calib.set` is now kept per `splatId` (the scan's file name) and every one is replayed to a dashboard
+  that connects, so the closed scan and the cover-off scan each keep their own. The message shape is unchanged. An
+  older `relay/state.json` still loads. 41 relay tests pass. Commit `b9a5e86`.
+- Touched: `relay/relay.ts`, `contracts/protocol.ts` (comment only)
+- 📨 To @max: send one `calib.set` per scan with its file name as `splatId`; on connect you get them all back.
+- ⚠️ Conflicts: none
+- Conflict status: resolved by @ahmed 2026-11-15
