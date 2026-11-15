@@ -175,6 +175,11 @@ struct ContentView: View {
       stepChanged()
     }
     .onChange(of: ghostToolOn) { updateGhost() }
+    .onChange(of: player.startedAt) {
+      // A new guide or a restart: verdicts belong to the run they were given in.
+      verified = [:]
+      aiChecks = [:]
+    }
     .onChange(of: player.isFinished) { _, finished in
       reportURL = nil
       if finished { makeReport() }

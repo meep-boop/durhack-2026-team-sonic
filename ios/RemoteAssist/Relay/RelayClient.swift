@@ -241,6 +241,9 @@ final class RelayClient {
     guard !trimmed.isEmpty else { return }
     let message = ChatMessage(id: UUID().uuidString.lowercased(), from: .user, text: String(trimmed.prefix(500)), at: Int64(Date().timeIntervalSince1970 * 1000))
     sentChatIds.insert(message.id)
+    if sentChatIds.count > Self.chatLimit * 2 {
+      sentChatIds = Set(chat.suffix(Self.chatLimit).map(\.id)).intersection(sentChatIds).union([message.id])
+    }
     appendChat(message)
     chatOutbox.append(message)
     flushChat()
@@ -269,7 +272,8 @@ final class RelayClient {
 
   private func receiveChat(_ message: ChatMessage) {
     // The relay replays recent chat on every connect, and may echo ours back: ids make that harmless.
-    guard !chat.contains(where: { $0.id == message.id }) else { return }
+    // Ours already shows from when it was typed; an "echo" carrying our id adds nothing and might carry edited text.
+    guard !chat.contains(where: { $0.id == message.id }), !sentChatIds.contains(message.id) else { return }
     var message = message
     message.text = String(message.text.prefix(500))
     appendChat(message)

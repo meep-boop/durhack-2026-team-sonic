@@ -75,7 +75,8 @@ enum RepairReport {
         let done = step.doneAt.map { "done \($0.formatted(time))" } ?? "not done"
         write("\(step.number). \(step.text.replacingOccurrences(of: "\n", with: " · "))", .systemFont(ofSize: 11), gap: 2)
         var notes = [done]
-        if let rig = step.rig { notes.append(rig.ok ? "rig: correct" : "rig: \(rig.detail ?? "not right")") }
+        // The relay doesn't authenticate senders, so the rig's verdict is reported as what arrived, not as proof.
+        if let rig = step.rig { notes.append(rig.ok ? "rig (via relay): correct" : "rig (via relay): \(rig.detail ?? "not right")") }
         if let check = step.aiCheck { notes.append("AI check: \(check.done ? "looks done" : "not yet") (\(check.feedback))") }
         write(notes.joined(separator: " · "), .systemFont(ofSize: 10), .darkGray, gap: 8)
       }
