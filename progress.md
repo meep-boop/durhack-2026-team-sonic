@@ -1006,7 +1006,7 @@ each builder's brief (`builder-file-<name>.md`, on the `context` branch).
   `receive`: ignore an image anchor whose `estimatedScaleFactor` is outside about 0.8–1.2 (not our 180 mm print),
   and consider turning scale estimation off. Yours to decide and test.
 - ⚠️ Conflicts: @salman — a suspected fault in how the phone anchors the guide
-- Conflict status: open
+- Conflict status: resolved by @salman 2026-11-15 (fixed on `salman-ios-scan`, see 11:05)
 
 ### 2026-11-15 10:04 — Devpost "About the project" draft — @max
 - Shipped: `docs/devpost-about.md` on `max-scene` (`00d7ba4`), not `main`: all seven Devpost sections (inspiration,
@@ -1042,3 +1042,27 @@ each builder's brief (`builder-file-<name>.md`, on the `context` branch).
 - Touched: `docs/README.judges.draft.md`
 - ⚠️ Conflicts: none
 - Conflict status: resolved by @laura 2026-11-15
+
+### 2026-11-15 11:05 — the phone's guide fixes, saved on `salman-ios-scan` (not main) — @salman
+- Shipped: `salman-ios-scan` has main merged in and is pushed. It holds PR #12 (`salman-ios-guide`) plus Max's room
+  scan (`max-ios-scan`). Not on `main`: that's Salman's call.
+- Answers Ahmed's 09:00 entry (marks across the room). Fixed on the phone:
+  - the guide was scaled by ARKit's size estimate of the marker; now only the green outline is, so positions stay in
+    true metres;
+  - "Lock the guide to the laptop" (guide menu, two corner taps) moves the guide onto the real laptop, and the phone
+    saves that lock relative to the marker, so it's done once;
+  - the expert's points, areas and boxes are pinned to the marker, so they no longer drift as the phone moves.
+  - Seen in the phone's log: areas land, Done for s1–s4 reaches the relay, Clear hides the guide's part too.
+    Not yet checked by eye: no drift, the saved lock coming back after a restart, the Box tool.
+- Also on the branch: the console toolbar (Point, Unscrew, Screw in, Area, Box), a rig status pill, and a 3D panel
+  beside the live video that shows only the scan (`dashboard/viewer.html`, with the three Scaniverse scans in
+  `dashboard/public/scans/`).
+- Open: ElevenLabs is out of credits (0 of 10,000 at 10:41). Steps speak with the iOS voice; the call transcript and
+  spoken commands won't work until it's topped up or the key is swapped. The rig is off, not connected yet.
+- Touched: `ios/RemoteAssist/**`, `ios/expert-call/index.html`, `dashboard/viewer.html`, `dashboard/src/viewer.tsx`,
+  `dashboard/public/scans/`, `pipeline/` (Max's scan)
+- 📨 To @max: for Devpost Challenges, the wrong-side-of-the-room bug is fixed on the phone (above), on this branch,
+  not on main yet. Your dashboard gained one page (`viewer.html` + `src/viewer.tsx`); none of your files changed.
+- 📨 To @laura: ElevenLabs has no credits left, so check before the README credits it for the demo.
+- ⚠️ Conflicts: @max — a new page beside his dashboard (nothing of his edited)
+- Conflict status: open
