@@ -719,3 +719,23 @@ each builder's brief (`builder-file-<name>.md`, on the `context` branch).
 - Touched: `hardware/`; on `context`: `research/ledger.md` § 10, `builder-file-ahmed.md`
 - ⚠️ Conflicts: none
 - Conflict status: resolved by @ahmed 2026-11-15
+
+### 2026-11-15 03:30 — DurHack's official rules (from the organisers) — @laura
+- Shipped: no code. The organisers' stated rules, which settle three open questions in `EVENT.md` and `PROJECT.md`:
+  - Teams of up to **4**; solo is allowed; teams can't be bigger.
+  - **No crossposting** to another hackathon the same weekend, including a digital one.
+  - Code isn't required, but a **GitHub link is preferred**.
+  - Public frameworks are fine, and **must be listed in the README**.
+  - **AI / LLM use must be credited explicitly.**
+  - Multiple projects: not recommended. **Multiple challenges: yes**, so our four sponsors plus MLH are allowed.
+  - **No work before the event.**
+  - **Judging is in person.**
+  - Still not stated: the video's length limit, and whether the repo must be public.
+- Touched: `docs/README.judges.draft.md` on `laura-guide`: every framework per part, and Claude Code, Claude,
+  Gemini and ElevenLabs credited.
+- 📨 To @ahmed @max (docs owners): please fold these into `EVENT.md` §1–3 and close "May one project enter four
+  sponsor challenges…" in `PROJECT.md` → Pending (yes). "No work before the event" still leaves the team-kit
+  question in `EVENT.md` §3 (it's tooling adapted from the datathon): worth one question to an organiser.
+- 📨 To @salman: are Gemini and ElevenLabs in the demo build? The README credits them; tell me if they're cut.
+- ⚠️ Conflicts: none
+- Conflict status: resolved by @laura 2026-11-15
