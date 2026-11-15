@@ -950,3 +950,17 @@ each builder's brief (`builder-file-<name>.md`, on the `context` branch).
 - 📨 To @max @laura @salman: start at step 1 of your checklist. The scan with the marker in it comes first.
 - ⚠️ Conflicts: none
 - Conflict status: n/a
+
+### 2026-11-15 08:30 — the demo opens with Salman's console, then the guide dashboard — @ahmed
+- Shipped: no code. Two expert tools exist. Salman's technician console (`ios/expert-call/`) marks the real laptop
+  from clicks on the phone's live video, with no scan or calibration, which is why its marks stick. Max and Laura's
+  dashboard builds a guide in a scan and shows ticks, offline and the rig, but nothing is calibrated yet. Two new
+  scans from Ahmed (08:01, 08:09) are on his laptop, not committed.
+- Touched: on `context`: the four briefs (a change note above each checklist), `PROJECT.md`
+- Decision (Ahmed): live console first, guide dashboard second; typed positions and "prepared guide" if the scans
+  aren't calibrated in time.
+- 📨 To @salman: merge **PR #12 only**. `salman-latest` bundles the dropped Expo app (`mobile/`, a 7,600-line
+  lockfile) and old board entries: please don't merge it to `main`.
+- 📨 To @laura: the script's order changed (in your brief). 📨 To @max: the scan route is the second beat now.
+- ⚠️ Conflicts: @laura — the beat sheet order | @salman — which of his branches merges
+- Conflict status: open
