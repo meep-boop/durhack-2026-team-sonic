@@ -182,6 +182,8 @@ rung 2 a guide built in the scan lines up on the phone; rung 3 the extras. Decis
    - *Done when:* either a DGX-Spark-trained splat of the set is in the dashboard, or a board entry says why not.
 
 ## 4. Done log (newest first)
+- 2026-11-15 02:39 — PR #9 merged (`d44dd01`): `dashboard/public/scans/` is in git, with the first scan (mesh, cover
+  off, no marker: reference only). Notes to Laura, Ahmed and Salman on the board and in their briefs.
 - 2026-11-15 02:32 — mesh scans (`.usdz`, `.glb`) load beside splats; pick dots a fixed size on screen; first real
   scan loaded (no marker: rescan needed). `main` `009153c`; 42 tests.
 - 2026-11-15 02:16 — PR #6 merged; `ahmed-dashboard` merged; app shell with the GuidePanel slot, `isCalibrated` /
@@ -189,7 +191,10 @@ rung 2 a guide built in the scan lines up on the phone; rung 3 the extras. Decis
   reload); `showStep` with select, focus, click-to-select and action previews. `main` `0fddd63`; 22 tests.
 
 ## 5. Waiting on / owed to others
-- 📥 **Waiting on @laura:** the finished demo set to scan (now Ahmed's laptop on a board). *(Marker 180 mm and the
+- 📥 **Waiting on @laura:** the finished demo set to scan (now Ahmed's laptop on a board). *(02:39: asked her to fix
+  the marker flat beside the laptop, corners clear, and post when ready; her task 1.)*
+- 📥 **Waiting on @salman:** which printed edges red +X and blue +Z point to (his item 3), and `salman-ios-polish` on
+  `main` for rung 1. *(Marker 180 mm and the
   six glTF models are on `main`: a model's tip, not its centre, sits at `pos`.)*
 - 📥 **Waiting on @ahmed:** the labelling endpoint. (The contract, sample guide, relay and fake phone are on
   `main`: `node fixtures/fake-phone.ts ws://<relay>:8080`.)

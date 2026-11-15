@@ -48,6 +48,7 @@ Source: `EVENT.md` §1 (one notes file, not yet checked against Devpost). The 02
 
 | Date | Decision |
 |---|---|
+| 2026-11-15 | Scans are kept in git (`dashboard/public/scans/`), not per machine, so the team and the judges see the same files; a scan's file name is its calibration id, so never overwrite one (Max, 02:39; reverses the git-ignored folder in Ahmed's 01:45 plan) |
 | 2026-11-15 | The dashboard loads both splat and mesh scans from Scaniverse; we demo whichever scan of the set comes out better, and the pitch names the kind honestly (Max, 02:32) |
 | 2026-11-15 | No placing before calibration: the dashboard's `pickPoint()` resolves to null and objects aren't drawn until the scan on screen is calibrated (Max, 02:16; Ahmed recommended it) |
 | 2026-11-15 | No text chat: Salman's `chat` message stays out of the contract and the relay (Ahmed, 01:55) |
