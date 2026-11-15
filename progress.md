@@ -386,3 +386,26 @@ each builder's brief (`builder-file-<name>.md`, on the `context` branch).
   `ModelName` and `relay/validate.ts` to edit with the `ssd` model | @max — the relay moves to the dashboard laptop
 - Conflict status: open
 
+### 2026-11-15 00:51 — the UNO Q rig as an App Lab app, with ✓ / ✗ on its LED matrix — @ahmed
+- Shipped: `hardware/unoq/` now mirrors an App Lab app: `python/` (`main.py`, `rig.py`, and `requirements.txt` beside
+  them, where App Lab looks) and `sketch/sketch.ino`, which draws a tick or a cross for the current step. In App Lab,
+  set `RELAY_URL` at the top of `main.py`. The same file still runs over SSH or on a laptop, without the matrix. 13
+  rig tests; the chain end to end through the relay; the App Lab path checked against a stand-in module. Not yet on
+  the board. Commit `3b4fd51`. Research: `research/ledger.md` § 16.
+- Touched: `hardware/` (Ahmed's); on `context`: `builder-file-ahmed.md`, `CLAUDE.md`, `research/ledger.md`
+- ⚠️ Conflicts: none
+- Conflict status: resolved by @ahmed 2026-11-15
+
+### 2026-11-15 00:54 — pre-check of PR #4 (iPhone app) and PR #6 (dashboard) against today's main — @ahmed
+- Shipped: no code. Merged today's `main` into throwaway copies of both branches (theirs untouched) and checked them.
+  **PR #6 (`max-scene`):** no conflicts; 8 tests, the type-check and the production build pass: ready to merge.
+  **PR #4 (`salman-ios`):** no conflicts, but four things break against `main`: read from the code, not compiled.
+- Touched: nothing in the repo; on `context`: `builder-file-salman.md`, `builder-file-max.md`
+- 📨 To @salman: the list is under item A in your brief. The one that matters for the walking skeleton: `struct
+  Expect` still requires `port` and `cable`, so the sample guide and any guide with the new `expect` won't decode on
+  the phone. Also the old-sample assertions in `GuideDecodingTests`, the two new `labels.*` messages in
+  `MessageCodingTests`, and the current step not surviving an app restart.
+- 📨 To @max: PR #6 is clean against `main`; merge it with the `ship` skill when Laura's ask 1 is answered, or before
+  if the walking skeleton needs it.
+- ⚠️ Conflicts: @salman — his app won't decode today's sample guide until `Expect` changes
+- Conflict status: open
