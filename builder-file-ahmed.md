@@ -168,8 +168,8 @@ but all three teammates build on them, so every change after the first version i
 - 📤 **Owed to @salman @max @laura:** nothing right now.
 - 📥 **Waiting on @salman:** the +X/+Z printed edges; PR #4 merged.
 - 📥 **Waiting on @max:** PR #6 merged; the relay running on his laptop (task 10).
-- 📥 **Waiting on @laura:** the board, the SSD sticker and the Nicla's spot (her task 2); `ssd` in the contract with
-  her models.
+- 📥 **Waiting on @laura:** the board, the SSD sticker and the Nicla's spot (her task 2). (`ssd` in the contract: ✅
+  00:57, `61a771e`.)
 
 ## 6. Working-style notes for the agent
 - Verbosity: Level 0.

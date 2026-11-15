@@ -81,6 +81,9 @@ splats until that's settled. Training splats in the app (the scan is taken in Sc
   4. Only the relay URL is saved (`UserDefaults`), not the current step. A reconnect keeps the place (`GuidePlayer`
      keeps the step on a same-id `guide.set`), but an app restart mid-guide goes back to step 1 (item B).
   Coming next: once Laura adds the `ssd` model, `enum ModelName` needs `case ssd` or a guide using it won't decode.
+  **Update by @ahmed (2026-11-15 01:00):** `salman-ios-polish` (`820423b`) already fixes 1, 2 and 3 and has `case ssd`
+  (Laura's model landed on `main` at 00:57, `61a771e`), and it merges cleanly with `main`. Item 4 is still open (B).
+  So merge `salman-ios-polish` for item C, not `salman-ios` on its own.
 - B. ⬜ **The phone owns its place.** Since 23:09 the relay no longer replays the current step to phones on reconnect:
   keep your position and your queued taps across reconnects and app restarts. *Done when:* kill the relay mid-guide,
   tap on, restart it, and the fake expert logs every tap in order while the phone stays on its step.
