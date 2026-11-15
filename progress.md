@@ -950,3 +950,39 @@ each builder's brief (`builder-file-<name>.md`, on the `context` branch).
 - 📨 To @max @laura @salman: start at step 1 of your checklist. The scan with the marker in it comes first.
 - ⚠️ Conflicts: none
 - Conflict status: n/a
+
+### 2026-11-15 08:30 — the demo opens with Salman's console, then the guide dashboard — @ahmed
+- Shipped: no code. Two expert tools exist. Salman's technician console (`ios/expert-call/`) marks the real laptop
+  from clicks on the phone's live video, with no scan or calibration, which is why its marks stick. Max and Laura's
+  dashboard builds a guide in a scan and shows ticks, offline and the rig, but nothing is calibrated yet. Two new
+  scans from Ahmed (08:01, 08:09) are on his laptop, not committed.
+- Touched: on `context`: the four briefs (a change note above each checklist), `PROJECT.md`
+- Decision (Ahmed): live console first, guide dashboard second; typed positions and "prepared guide" if the scans
+  aren't calibrated in time.
+- 📨 To @salman: merge **PR #12 only**. `salman-latest` bundles the dropped Expo app (`mobile/`, a 7,600-line
+  lockfile) and old board entries: please don't merge it to `main`.
+- 📨 To @laura: the script's order changed (in your brief). 📨 To @max: the scan route is the second beat now.
+- ⚠️ Conflicts: @laura — the beat sheet order | @salman — which of his branches merges
+- Conflict status: open
+
+### 2026-11-15 08:36 — Scanning inside our own app: built on a branch, trainer proven on the Spark — @max
+- Shipped: on branch `max-ios-scan` (`1576570`), not `main`: a "Scan the room" mode in the phone app that keeps
+  a photo each time the phone moves 4 cm or turns 8°, with ARKit's camera pose already in the marker's frame, and posts
+  the scan as one zip to `pipeline/scan-inbox.ts` on the relay laptop (port 8090). `pipeline/train_scan.py` trains a
+  splat from it on the Spark with gsplat, with no COLMAP step, so the splat comes out lined up with the marker. Tests:
+  inbox 6/6, trainer 5/5. On the Spark (`~/scan`), a made-up scan of 60 photos trained in 168 s for 3,000 steps
+  (error 0.45 → 0.0035), and the splat opens in our dashboard. **The Swift has never been compiled** (no Xcode on
+  Max's laptop), and no real phone scan exists yet, so nothing about real scans is measured. Scaniverse stays the
+  demo's scan.
+- Touched: on `max-ios-scan`: `ios/RemoteAssist/Scan/` (new), `ARSessionController.swift` (a `scanRecorder`
+  that sees each frame), `ContentView.swift`, `HomeView.swift` (a third start-screen choice),
+  `ios/RemoteAssistTests/ScanKeyframePolicyTests.swift`, `pipeline/` (new), `.gitignore`. On the Spark: `~/scan`
+  only. On `context`: `PROJECT.md` (Decision log, Decisions in force, Pending, Active tasks), Max's and Salman's briefs.
+- Decision (Max, 08:00): scanning inside our own app as a side route; its own branch until Salman agrees and builds
+  it; our own gsplat trainer; an upload server on the relay laptop (`PROJECT.md` → Decision log).
+- 📨 To @salman: optional and last, after your checklist and the run-through: yes or no on the board to Max's scan
+  code in your app. If yes, build `max-ios-scan` in Xcode (the last block in your brief). Nothing merges without you.
+- 📨 To @ahmed: nothing in `relay/` changed; scan tests add port 8090 on the relay laptop while they run.
+- 📨 To @laura: keep it out of the pitch and README until a real scan has worked.
+- ⚠️ Conflicts: @salman — Max's code in `ios/` on a branch (a new folder plus three small hooks in his files), not merged
+- Conflict status: open
