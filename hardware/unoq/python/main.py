@@ -50,9 +50,9 @@ def nicla_lines(path: str | None) -> Iterator[str]:
     if path == "-":
         yield from sys.stdin
         return
-    # Sources disagree on whether OpenMV sends its prints with DTR set or cleared (research/ledger.md § 10), so
-    # start cleared and switch whenever the port stays silent.
-    dtr = False
+    # Measured on our Nicla Vision (2026-11-15): nothing arrives until DTR is set. OpenMV's README says the opposite
+    # (research/ledger.md § 10), so the other setting is still tried whenever the port stays silent.
+    dtr = True
     while True:
         try:
             nicla = serial.Serial()
