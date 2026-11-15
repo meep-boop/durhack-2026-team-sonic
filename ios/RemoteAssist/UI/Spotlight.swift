@@ -30,6 +30,15 @@ enum SpotlightPolicy {
     bounds.insetBy(dx: wasBeam ? -40 : 20, dy: wasBeam ? -40 : 20).contains(centre)
   }
 
+  /// Which way to move the phone for a target off screen (`direction`: x right, y down), in words anyone can follow
+  /// without reading the guide: the bigger component wins.
+  static func turn(for direction: CGVector) -> (words: String, symbol: String) {
+    if abs(direction.dx) >= abs(direction.dy) {
+      return direction.dx >= 0 ? ("Turn right", "arrow.right") : ("Turn left", "arrow.left")
+    }
+    return direction.dy >= 0 ? ("Look down", "arrow.down") : ("Look up", "arrow.up")
+  }
+
   /// The projected points' bounding box, padded, at least big enough to read as a beam, clipped to the screen.
   static func beamRect(around points: [CGPoint], in bounds: CGRect) -> CGRect? {
     guard let first = points.first else { return nil }
@@ -179,25 +188,27 @@ struct SpotlightOverlay: View {
 
   private func edgeGlow(_ direction: CGVector, label: String, size: CGSize) -> some View {
     let point = Self.edgePoint(direction, in: size)
-    let angle = Angle(radians: atan2(direction.dy, direction.dx))
     return ZStack {
       RadialGradient(colors: [Theme.accent.opacity(0.75), .clear], center: .center, startRadius: 0, endRadius: 170)
         .frame(width: 340, height: 340)
         .position(point)
-      HStack(spacing: 6) {
-        Text(label).font(.footnote.weight(.semibold))
-        Image(systemName: "chevron.right").rotationEffect(angle)
+      // Words and a big arrow, not just a glow: anyone holding the phone knows which way to move it.
+      let turn = SpotlightPolicy.turn(for: direction)
+      VStack(spacing: 4) {
+        Image(systemName: turn.symbol).font(.system(size: 34, weight: .bold))
+        Text(turn.words).font(.headline.weight(.bold))
+        Text(label).font(.caption.weight(.semibold)).foregroundStyle(.white.opacity(0.75))
       }
-      .padding(.horizontal, 12)
-      .padding(.vertical, 6)
-      .glassBackground(in: Capsule())
+      .padding(.horizontal, 16)
+      .padding(.vertical, 10)
+      .glassBackground(in: RoundedRectangle(cornerRadius: 18, style: .continuous))
       .fixedSize()
-      .position(Self.inset(point, toward: CGPoint(x: size.width / 2, y: size.height / 2), by: 70))
+      .position(Self.inset(point, toward: CGPoint(x: size.width / 2, y: size.height / 2), by: 90))
     }
     .allowsHitTesting(false)
     .transition(.opacity)
     .accessibilityElement(children: .ignore)
-    .accessibilityLabel("\(label) is off screen. Turn the phone toward the glow.")
+    .accessibilityLabel("\(label) is off screen. \(SpotlightPolicy.turn(for: direction).words).")
   }
 
   /// Where a ray from the screen centre along `direction` leaves the screen.

@@ -34,12 +34,17 @@ struct ContentView: View {
   @State private var showingHome = true
   /// The last guide the relay sent, to go back to when leaving the laptop guide.
   @State private var relayGuide: Guide?
+  /// The expert's last spoken command the phone acted on ("Next step"), shown for a few seconds.
+  @State private var expertHeard: String?
+  /// A big "Look left" arrow, from the expert's voice, for a few seconds.
+  @State private var lookCue: ExpertSpeech.Direction?
   @AppStorage("ghostToolOn") private var ghostToolOn = true
   @AppStorage("onboarded") private var onboarded = false
   @AppStorage("voiceOn") private var voiceOn = true
   @Environment(\.scenePhase) private var scenePhase
 
   private var isLaptopGuide: Bool { player.guide.id == LaptopGuide.guideId }
+  private var inCall: Bool { call.state == .connecting || call.state == .live || call.state == .reconnecting }
 
   var body: some View {
     lifecycle(presentations(layers))
@@ -50,7 +55,9 @@ struct ContentView: View {
       ARViewContainer(controller: ar)
         .ignoresSafeArea()
 
-      if showingHome && showingLaptop {
+      if showingHome && inCall {
+        liveAssistScreen.transition(.opacity)
+      } else if showingHome && showingLaptop {
         LaptopChecklistCard(laptop: laptop, onStart: startLaptopGuide, onCancel: { showingLaptop = false })
           .transition(.opacity)
       } else if showingHome {
@@ -63,6 +70,19 @@ struct ContentView: View {
         .transition(.opacity)
       } else {
         guideScreen
+      }
+
+      if let lookCue, inCall {
+        let cue = ExpertSpeech.cue(for: lookCue)
+        VStack(spacing: 10) {
+          Image(systemName: cue.symbol).font(.system(size: 64, weight: .bold))
+          Text(cue.words).font(.title2.weight(.bold))
+        }
+        .foregroundStyle(.white)
+        .padding(28)
+        .glassBackground(in: RoundedRectangle(cornerRadius: 28, style: .continuous))
+        .allowsHitTesting(false)
+        .transition(.scale.combined(with: .opacity))
       }
 
       if call.state == .ringing {
@@ -82,6 +102,30 @@ struct ContentView: View {
           .padding(.top, 70)
           .padding(.trailing)
       }
+    }
+  }
+
+  /// A call answered from the start screen: the camera, undimmed, with the call bar and captions at the top, the
+  /// spotlight on whatever the expert marks, and one line saying what just happened. No step card: the expert leads.
+  /// When the call ends the start screen comes back by itself.
+  private var liveAssistScreen: some View {
+    ZStack {
+      SpotlightOverlay(tracker: spotlight)
+      VStack(spacing: 10) {
+        InCallBar(call: call) { showingTranscript = true }
+        CaptionStrip(call: call)
+        Spacer()
+        Label(expertHeard.map { "Heard “\($0)”" } ?? pinMessage ?? "The expert can see your camera and is guiding you",
+              systemImage: expertHeard != nil ? "ear.fill" : "hand.point.up.left.fill")
+          .font(.subheadline.weight(.semibold))
+          .multilineTextAlignment(.center)
+          .padding(.horizontal, 16)
+          .padding(.vertical, 10)
+          .glassBackground(in: Capsule())
+      }
+      .padding(.horizontal)
+      .padding(.top, 4)
+      .padding(.bottom, 12)
     }
   }
 
@@ -172,6 +216,7 @@ struct ContentView: View {
       return .init(text: "Teaching: tap each part on the laptop · \(count) marked", symbol: "hand.point.up.left.fill")
     }
     if let problem = commands.problem { return .init(text: problem, symbol: "mic.badge.xmark", tint: .orange) }
+    if let expertHeard { return .init(text: "Expert: “\(expertHeard)”", symbol: "ear.fill") }
     if let heard = commands.heard { return .init(text: "Heard “\(heard)”", symbol: "mic.fill") }
     if let pinMessage { return .init(text: pinMessage, symbol: "info.circle.fill") }
     if let syncedToast { return .init(text: syncedToast, symbol: "checkmark.circle.fill", tint: .green) }
@@ -223,6 +268,8 @@ struct ContentView: View {
     .animation(.easeInOut, value: ar.markerSeen)
     .animation(.easeInOut, value: ar.markerLostForAWhile)
     .animation(.easeInOut, value: pinMessage)
+    .animation(.snappy, value: lookCue)
+    .animation(.easeInOut, value: expertHeard)
     .animation(.snappy, value: syncedToast)
     .onChange(of: relay.outboxCount) { old, new in
       // The offline queue just drained into the expert's view: say so, as in the explainer video.
@@ -258,7 +305,11 @@ struct ContentView: View {
     .onChange(of: voiceOn) { voiceOn ? speakCurrentStep() : voice.stop() }
     .onChange(of: call.state) { updateListening() }
     .onChange(of: call.state) { old, new in
-      if new == .idle, !isLaptopGuide { ar.clearPins(kinds: [.expert]) }
+      guard new == .idle else { return }
+      ar.clearExpertArea()
+      lookCue = nil
+      expertHeard = nil
+      if !isLaptopGuide { ar.clearPins(kinds: [.expert]) }
     }
     .onChange(of: relay.state) {
       // A call can't survive losing its signalling path for long; end it rather than leave it hanging.
@@ -308,7 +359,18 @@ struct ContentView: View {
       pinMessage = "The expert marked: \(tap.label)"
       return true
     }
-    call.onExpertClear = { ar.clearPins(kinds: [.expert]) }
+    call.onExpertArea = { area in
+      guard ar.placeExpertArea(corners: area.corners, label: area.label, secondsAgo: area.secondsAgo) else { return false }
+      spotlight.enabled = true
+      pinTicks += 1
+      pinMessage = "The expert marked: \(area.label)"
+      return true
+    }
+    call.onExpertClear = {
+      ar.clearPins(kinds: [.expert])
+      ar.clearExpertArea()
+    }
+    call.onExpertLine = { line in heardFromExpert(line.text) }
     voice.onSpeakingChanged = { speaking in
       appSpeaking = speaking
       updateListening()
@@ -373,6 +435,40 @@ struct ContentView: View {
   /// The mic listens for commands only when nothing else is using the audio: not while the app talks, not in a call.
   private func updateListening() {
     commands.setSuspended(appSpeaking || call.state != .idle || scenePhase == .background)
+  }
+
+  /// The expert's finished lines drive the screen when they're a clear command (`ExpertSpeech`), so the user can
+  /// keep both hands on the laptop. Each one says what it did, so a wrong guess is visible at once.
+  private func heardFromExpert(_ text: String) {
+    guard let command = ExpertSpeech.command(in: text) else { return }
+    let note: String
+    switch command {
+    case .next:
+      guard !showingHome, player.currentStep != nil, ar.markerSeen || isLaptopGuide else { return }
+      next()
+      note = "Next step"
+    case .back:
+      guard !showingHome else { return }
+      player.back()
+      note = "Go back"
+    case .look(let direction):
+      lookCue = direction
+      note = ExpertSpeech.cue(for: direction).words
+      Task {
+        try? await Task.sleep(for: .seconds(3))
+        if lookCue == direction { lookCue = nil }
+      }
+    case .clear:
+      ar.clearPins(kinds: [.expert])
+      ar.clearExpertArea()
+      note = "Clear the marks"
+    }
+    pinTicks += 1
+    expertHeard = note
+    Task {
+      try? await Task.sleep(for: .seconds(3))
+      if expertHeard == note { expertHeard = nil }
+    }
   }
 
   private func run(_ command: VoiceCommands.Command) {

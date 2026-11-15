@@ -30,4 +30,12 @@ final class SpotlightPolicyTests: XCTestCase {
     XCTAssertTrue(SpotlightPolicy.onScreen(centre: CGPoint(x: 300, y: 400), bounds: bounds, wasBeam: false))
     XCTAssertFalse(SpotlightPolicy.onScreen(centre: CGPoint(x: 460, y: 400), bounds: bounds, wasBeam: true))
   }
+
+  func testAnOffScreenTargetSaysWhichWayToMoveThePhone() {
+    XCTAssertEqual(SpotlightPolicy.turn(for: CGVector(dx: -1, dy: 0.2)).words, "Turn left")
+    XCTAssertEqual(SpotlightPolicy.turn(for: CGVector(dx: 0.9, dy: -0.3)).words, "Turn right")
+    XCTAssertEqual(SpotlightPolicy.turn(for: CGVector(dx: 0.2, dy: -1)).words, "Look up")
+    XCTAssertEqual(SpotlightPolicy.turn(for: CGVector(dx: -0.1, dy: 0.95)).words, "Look down")
+    XCTAssertEqual(SpotlightPolicy.turn(for: CGVector(dx: 0.2, dy: -1)).symbol, "arrow.up")
+  }
 }

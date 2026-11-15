@@ -512,6 +512,7 @@ final class ARSessionController: NSObject, ARSessionDelegate {
     anchor.addChild(Shapes.laptopOutline(corners: frame.corners, normal: frame.normal))
     arView.scene.addAnchor(anchor)
     outlineAnchor = anchor
+    lastSurface = SurfacePoint(position: frame.corners[0], normal: frame.normal)
   }
 
   /// A pulsing marker on the first tapped corner; nil takes it away.
@@ -560,6 +561,15 @@ final class ARSessionController: NSObject, ARSessionDelegate {
     var normal: SIMD3<Float>
   }
 
+  /// The last surface anything landed on (an expert pin, a tapped corner, the laptop's frame). With plane detection
+  /// off for good, ARKit's estimate often finds nothing under a tap on a plain desk; the ray then meets this plane,
+  /// which is nearly always the same desk.
+  @ObservationIgnored private var lastSurface: SurfacePoint?
+  /// The expert's marked area: lit on the surface, and the first thing the spotlight shows.
+  @ObservationIgnored private var expertAreaAnchor: AnchorEntity?
+  @ObservationIgnored private var expertAreaCorners: [SIMD3<Float>] = []
+  @ObservationIgnored private var expertAreaLabel = ""
+
 
   func placeStoredPins(_ stored: [(number: Int, label: String, transform: simd_float4x4)], kind: Shapes.PinKind) {
     for item in stored {
@@ -568,14 +578,47 @@ final class ARSessionController: NSObject, ARSessionDelegate {
     updateGhost(rebuild: false)
   }
 
-  /// The expert tapped the live video: a pin where they tapped, through the camera that filmed that frame.
+  /// The expert tapped the live video: a pin where they tapped, through the camera that filmed that frame. One thing
+  /// at a time: a pin replaces the expert's marked area.
   func placeExpertPin(at point: UprightPoint, label: String, secondsAgo: Double) -> Bool {
     guard let camera = cameraContext(secondsAgo: secondsAgo) else { return false }
     guard let surface = surfacePoint(for: point, camera: camera)
-      ?? fallbackSurfacePoint(for: point, camera: camera, reference: nil) else { return false }
+      ?? fallbackSurfacePoint(for: point, camera: camera, reference: lastSurface) else { return false }
+    lastSurface = surface
+    clearExpertArea()
     let number = (pins.filter { $0.kind == .expert }.map(\.number).max() ?? 0) + 1
     addPin(number: number, label: label, kind: .expert, transform: PinMath.standing(at: surface.position, normal: surface.normal), photoPoint: nil)
     return true
+  }
+
+  /// The expert dragged a box on the live video: that patch of the surface is lit and the spotlight dims everything
+  /// else. `corners` go round the box in order. All four land on one plane (the one under the box's centre, else
+  /// under any corner, else the last surface), so the area stays a flat, clean shape. It replaces the expert's pins.
+  func placeExpertArea(corners points: [UprightPoint], label: String, secondsAgo: Double) -> Bool {
+    guard points.count == 4, let camera = cameraContext(secondsAgo: secondsAgo) else { return false }
+    let centre = UprightPoint(x: points.map(\.x).reduce(0, +) / 4, y: points.map(\.y).reduce(0, +) / 4)
+    guard let plane = surfacePoint(for: centre, camera: camera)
+      ?? points.lazy.compactMap({ self.surfacePoint(for: $0, camera: camera) }).first
+      ?? lastSurface else { return false }
+    let corners = points.compactMap { fallbackSurfacePoint(for: $0, camera: camera, reference: plane)?.position }
+    guard corners.count == 4 else { return false }
+    lastSurface = plane
+
+    clearPins(kinds: [.expert])
+    clearExpertArea()
+    let anchor = AnchorEntity(world: matrix_identity_float4x4)
+    anchor.addChild(Shapes.focusArea(corners: corners, normal: plane.normal, label: label))
+    arView.scene.addAnchor(anchor)
+    expertAreaAnchor = anchor
+    expertAreaCorners = corners
+    expertAreaLabel = label
+    return true
+  }
+
+  func clearExpertArea() {
+    expertAreaAnchor.map { arView.scene.removeAnchor($0) }
+    expertAreaAnchor = nil
+    expertAreaCorners = []
   }
 
   /// Clears pins of the given kinds (all by default).
@@ -641,7 +684,9 @@ final class ARSessionController: NSObject, ARSessionDelegate {
       let hit = arView.raycast(from: location, allowing: .existingPlaneGeometry, alignment: .horizontal).first
         ?? arView.raycast(from: location, allowing: .estimatedPlane, alignment: .any).first
       guard let t = hit?.worldTransform else { return }
-      onSurfaceTap?(SIMD3(t.columns.3.x, t.columns.3.y, t.columns.3.z), SIMD3(t.columns.1.x, t.columns.1.y, t.columns.1.z))
+      let surface = SurfacePoint(position: SIMD3(t.columns.3.x, t.columns.3.y, t.columns.3.z), normal: SIMD3(t.columns.1.x, t.columns.1.y, t.columns.1.z))
+      lastSurface = surface
+      onSurfaceTap?(surface.position, surface.normal)
       return
     }
     // Nearest pin on screen within a finger's width: kinder than hit-testing a 7 mm ball.
@@ -690,8 +735,12 @@ final class ARSessionController: NSObject, ARSessionDelegate {
     var label: String
   }
 
-  /// The pins still to do, then the step's zone of the laptop, then the marker step.
+  /// The expert's marked area, then the pins still to do, then the step's zone of the laptop, then the marker step:
+  /// what the expert marked last is what's lit.
   func spotlightTarget() -> SpotlightTarget? {
+    if !expertAreaCorners.isEmpty {
+      return SpotlightTarget(points: expertAreaCorners, label: expertAreaLabel)
+    }
     let pending = pins.filter { !$0.done }
     if !pending.isEmpty {
       let label = pending.count == 1 ? "\(pending[0].number) · \(pending[0].label)" : "\(pending.count) left"

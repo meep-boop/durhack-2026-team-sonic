@@ -38,6 +38,18 @@ final class CallManager: NSObject {
   /// Called on main; returns whether the tap landed on a surface, which goes back to the expert as ✓ or "missed".
   @ObservationIgnored var onExpertTap: ((ExpertTap) -> Bool)?
   @ObservationIgnored var onExpertClear: (() -> Void)?
+
+  /// The expert dragged a box on the live video: its corners in order round the box, as fractions of the upright video.
+  struct ExpertArea: Equatable {
+    var id: String
+    var corners: [CGPoint]
+    var label: String
+    var secondsAgo: Double
+  }
+  /// Called on main; returns whether the area landed on a surface, answered like a tap.
+  @ObservationIgnored var onExpertArea: ((ExpertArea) -> Bool)?
+  /// Each finished line the expert says, once (never the live partial captions). Called on main.
+  @ObservationIgnored var onExpertLine: ((TranscriptLine) -> Void)?
   /// Not lazy: the AR session queue pushes frames into it, and a lazy var must not be created from two threads.
   @ObservationIgnored let videoSource: ArFrameVideoSource
 
@@ -56,6 +68,9 @@ final class CallManager: NSObject {
   @ObservationIgnored private var lastMint: [String: Date] = [:]
   @ObservationIgnored private var mintsThisCall = 0
   @ObservationIgnored private var transcriptStarted = false
+  /// A ring nobody answers ends by itself: the contract has no "cancel", so an expert who gave up can't stop it.
+  @ObservationIgnored private var ringTimeout: Task<Void, Never>?
+  static let ringSeconds: Double = 30
 
   var isSendingVideo: Bool { state == .connecting || state == .live || state == .reconnecting }
 
@@ -80,6 +95,12 @@ final class CallManager: NSObject {
       pendingOffer = sdp
       pendingCandidates = []
       state = .ringing
+      ringTimeout?.cancel()
+      ringTimeout = Task { @MainActor [weak self] in
+        try? await Task.sleep(for: .seconds(Self.ringSeconds))
+        guard let self, !Task.isCancelled, self.state == .ringing else { return }
+        self.decline()
+      }
     case .answer:
       break  // The phone never offers, so it never expects an answer.
     case .candidate(let candidate, let sdpMid, let sdpMLineIndex):
@@ -96,6 +117,7 @@ final class CallManager: NSObject {
 
   func accept() {
     guard state == .ringing, let offer = pendingOffer else { return }
+    ringTimeout?.cancel()
     pendingOffer = nil
     expertSendsVideo = Self.offerSendsVideo(offer)
     transcript = []
@@ -146,6 +168,7 @@ final class CallManager: NSObject {
   }
 
   func decline() {
+    ringTimeout?.cancel()
     pendingOffer = nil
     pendingCandidates = []
     state = .idle
@@ -297,7 +320,8 @@ extension CallManager: RTCDataChannelDelegate {
   }
 
   /// Point-and-guide rides the call's own channel, peer to peer, so it needs no relay or contract change:
-  /// `ping` → `pong` (for the expert page's latency estimate), `tap` → a pin, then `pinned`, and `clear`.
+  /// `ping` → `pong` (for the expert page's latency estimate), `tap` → a pin and `area` → a lit area, each answered
+  /// with `pinned`, and `clear`. The shapes are listed at the top of ios/expert-call/index.html.
   func dataChannel(_ dataChannel: RTCDataChannel, didReceiveMessageWith buffer: RTCDataBuffer) {
     guard dataChannel.label == "control", !buffer.isBinary,
           let message = try? JSONSerialization.jsonObject(with: buffer.data) as? [String: Any],
@@ -316,6 +340,20 @@ extension CallManager: RTCDataChannelDelegate {
       )
       onMain { [weak self] in
         let ok = self?.onExpertTap?(tap) ?? false
+        Self.send(["kind": "pinned", "id": id, "ok": ok], on: dataChannel)
+      }
+    case "area":
+      let numbers = ["x0", "y0", "x1", "y1"].compactMap { message[$0] as? Double }
+      guard let id = message["id"] as? String, numbers.count == 4, numbers.allSatisfy({ (0...1).contains($0) }) else { return }
+      let (x0, y0, x1, y1) = (numbers[0], numbers[1], numbers[2], numbers[3])
+      let area = ExpertArea(
+        id: id,
+        corners: [CGPoint(x: x0, y: y0), CGPoint(x: x1, y: y0), CGPoint(x: x1, y: y1), CGPoint(x: x0, y: y1)],
+        label: (message["label"] as? String).flatMap { $0.isEmpty ? nil : String($0.prefix(40)) } ?? "here",
+        secondsAgo: min(max(message["latency"] as? Double ?? 0.15, 0), 2)
+      )
+      onMain { [weak self] in
+        let ok = self?.onExpertArea?(area) ?? false
         Self.send(["kind": "pinned", "id": id, "ok": ok], on: dataChannel)
       }
     case "clear":
@@ -351,6 +389,7 @@ extension CallManager: RTCDataChannelDelegate {
           self.transcript.append(line)
           if self.transcript.count > 400 { self.transcript.removeFirst() }
           if self.caption?.speaker == line.speaker { self.caption = nil }
+          if line.speaker == .expert { self.onExpertLine?(line) }
         }
       }
     default:
