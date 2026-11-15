@@ -72,4 +72,8 @@ final class ExpertSpeechTests: XCTestCase {
     XCTAssertFalse(reading.isFlat)
     XCTAssertTrue(reading.line.contains("standing up"))
   }
+
+  func testAMeasuredPointReadsInTheDashboardsCentimetres() {
+    XCTAssertEqual(MarkerReading.positionText([0.312, 0.012, -0.098]), "x 31.2 · y 1.2 · z -9.8 cm")
+  }
 }

@@ -5,6 +5,7 @@ struct GuideMenu: View {
   let isLaptopGuide: Bool
   let frameLocked: Bool
   let teaching: Bool
+  let measuring: Bool
   let inCall: Bool
   let layoutFile: URL?
   @Binding var voiceOn: Bool
@@ -16,6 +17,7 @@ struct GuideMenu: View {
   let onSetup: () -> Void
   let onTeach: () -> Void
   let onUndoTeach: () -> Void
+  let onMeasure: () -> Void
   let onHandsFree: () -> Void
   let onLeave: () -> Void
 
@@ -43,6 +45,14 @@ struct GuideMenu: View {
             }
           }
           Toggle(isOn: $ghostToolOn) { Label("Ghost screwdriver", systemImage: "screwdriver") }
+        }
+      }
+
+      if !isLaptopGuide {
+        Section("Line the guide up") {
+          Button(action: onMeasure) {
+            Label(measuring ? "Stop measuring" : "Measure positions", systemImage: "ruler")
+          }
         }
       }
 
