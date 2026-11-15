@@ -180,8 +180,21 @@ function start(url) {
   connect(url);
 }
 $("connectBtn").onclick = () => start($("relayUrl").value.trim());
-// Opened from the dashboard's Call button (?relay=) or used before: connect straight away.
-if ($("relayUrl").value) start($("relayUrl").value.trim());
+
+// A relay on this machine or the local network, as on the team's hotspot. Only those connect without a click: a link
+// with someone else's ?relay= would otherwise point the console (and, on Call, the technician's mic) at their relay.
+function isLocalRelay(url) {
+  try {
+    const host = new URL(url).hostname;
+    return host === location.hostname || host === "localhost" || host.endsWith(".local")
+      || /^127\./.test(host) || /^10\./.test(host) || /^192\.168\./.test(host) || /^172\.(1[6-9]|2\d|3[01])\./.test(host);
+  } catch { return false; }
+}
+// Opened from the dashboard's Call button (?relay=) or used before: connect straight away if it's a local relay;
+// anything else is filled in and waits for Connect (and is only remembered once connected).
+const initialRelay = $("relayUrl").value.trim();
+if (initialRelay && isLocalRelay(initialRelay)) start(initialRelay);
+else if (initialRelay) log("Check the relay address below, then press Connect");
 
 function connect(url) {
   ws?.close();
@@ -189,7 +202,7 @@ function connect(url) {
   ws = new WebSocket(url);
   ws.onopen = () => {
     send({ type: "hello", protocol: 1, role: "expert", client: "Expert call page" });
-    setPill("relayDot", "relayText", "green", "Relay connected");
+    setPill("relayDot", "relayText", "green", "Relay connected · " + new URL(url).host);
     updateCallButton();
     log("Connected to the relay");
   };
