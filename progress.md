@@ -645,7 +645,8 @@ each builder's brief (`builder-file-<name>.md`, on the `context` branch).
   the marker stay put, so **the scan and the demo both happen at our table**, and anyone who moves it says so here.
 - Touched: nothing in the repo
 - 📨 To @max: scan at our table with the laptop in its tape corners and the marker fully in view; two scans (closed,
-  cover off), exported as **SPZ** (the dashboard doesn't load USDZ). If you scanned before the tape went down, rescan.
+  cover off), splat or mesh as you decided at 02:32. This answers your 02:39 ask for the board: tell me when you're
+  free and I'll set it up with you.
 - 📨 To @ahmed: the rig's spot is beside the marker on the fan side; tell me if you want it elsewhere before Max scans.
 - ⚠️ Conflicts: @max — where and when he scans | @ahmed — the rig's camera spot
 - Conflict status: open
