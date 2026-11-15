@@ -25,6 +25,11 @@
   .badge { position: absolute; top: 14px; left: 14px; display: none; align-items: center; gap: 8px; background: rgba(0,0,0,.55); backdrop-filter: blur(10px); padding: 6px 12px; border-radius: 999px; font-size: 13px; }
   .badge .dot { background: var(--red); animation: pulse 1.4s infinite; }
   @keyframes pulse { 50% { opacity: .35; } }
+  .stage.live video#remote { cursor: crosshair; }
+  .tapdot { position: absolute; width: 22px; height: 22px; margin: -11px 0 0 -11px; border-radius: 50%; border: 3px solid var(--amber); background: rgba(245,158,11,.25); pointer-events: none; }
+  .tapdot span { position: absolute; left: 26px; top: -2px; white-space: nowrap; font-size: 12px; font-weight: 600; background: rgba(0,0,0,.6); padding: 2px 8px; border-radius: 999px; }
+  .tapdot.ok { border-color: var(--green); background: rgba(34,197,94,.25); }
+  .tapdot.miss { border-color: var(--red); background: rgba(239,68,68,.25); }
   #selfView { position: absolute; right: 14px; bottom: 14px; width: 180px; border-radius: 12px; border: 1px solid var(--line); display: none; }
   aside { display: flex; flex-direction: column; gap: 14px; overflow: auto; }
   .card { background: var(--panel); border: 1px solid var(--line); border-radius: 16px; padding: 16px; }
@@ -80,6 +85,10 @@
       </div>
       <div class="row"><button id="muteBtn" class="secondary" disabled>Mute mic</button></div>
       <p class="hint" id="callState">Not in a call.</p>
+      <h2 style="margin-top:14px">Point at something</h2>
+      <input id="tapLabel" placeholder="Label for the next tap, e.g. this screw" maxlength="40">
+      <div class="row"><button id="clearPins" class="secondary" disabled>Clear pins</button></div>
+      <p class="hint">Click the live video: a pin appears on that spot on the real laptop, in the phone's AR view.</p>
       <meter id="level" min="0" max="1" value="0" title="Phone audio level"></meter>
     </div>
 
@@ -96,7 +105,7 @@
 // Messages follow contracts/protocol.ts: hello, rtc.signal, presence, step.done, pose.
 const $ = (id) => document.getElementById(id);
 const STUN = [{ urls: "stun:stun.l.google.com:19302" }];
-let ws, pc, control, mic, pendingCandidates = [], lastPoseLog = 0, meterTimer;
+let ws, pc, control, mic, pendingCandidates = [], lastPoseLog = 0, meterTimer, pingTimer, rttMs = 150;
 
 $("relayUrl").value = new URLSearchParams(location.search).get("relay") || localStorage.getItem("relayUrl") || "";
 
@@ -188,6 +197,13 @@ $("callBtn").onclick = async () => {
   // The phone ends the call by closing this channel, so both sides hang up at once.
   control = pc.createDataChannel("control");
   control.onclose = () => endCall("The phone ended the call");
+  control.onopen = () => {
+    $("clearPins").disabled = false;
+    // Round trips over this channel estimate how old the video frame under the cursor is, so the phone projects a
+    // tap through the camera pose that filmed that frame, not where the phone points now.
+    pingTimer = setInterval(() => sendControl({ kind: "ping", t: performance.now() }), 2000);
+  };
+  control.onmessage = (e) => onControl(JSON.parse(e.data));
   mic.getTracks().forEach((t) => pc.addTrack(t, mic));
   if (!$("sendCam").checked) pc.addTransceiver("video", { direction: "recvonly" });
   if ($("sendCam").checked) { $("selfView").srcObject = mic; $("selfView").style.display = "block"; }
@@ -195,7 +211,7 @@ $("callBtn").onclick = async () => {
   pc.onicecandidate = (e) => { if (e.candidate) signal({ kind: "candidate", candidate: e.candidate.candidate, sdpMid: e.candidate.sdpMid, sdpMLineIndex: e.candidate.sdpMLineIndex }); };
   pc.ontrack = (e) => {
     $("remote").srcObject = e.streams[0] || new MediaStream([e.track]);
-    if (e.track.kind === "video") { $("empty").style.display = "none"; $("liveBadge").style.display = "flex"; }
+    if (e.track.kind === "video") { $("empty").style.display = "none"; $("liveBadge").style.display = "flex"; document.querySelector(".stage").classList.add("live"); }
     if (e.track.kind === "audio") startMeter($("remote").srcObject);
   };
   pc.onconnectionstatechange = () => {
@@ -210,6 +226,61 @@ $("callBtn").onclick = async () => {
   $("callState").textContent = "Ringing the phone…";
   $("callBtn").disabled = true; $("endBtn").disabled = false; $("muteBtn").disabled = false;
   log("Calling the phone");
+};
+
+function sendControl(message) { if (control?.readyState === "open") control.send(JSON.stringify(message)); }
+
+function onControl(message) {
+  if (message.kind === "pong") rttMs = 0.7 * rttMs + 0.3 * (performance.now() - message.t);
+  if (message.kind === "pinned") {
+    const dot = document.getElementById("tap-" + message.id);
+    if (dot) dot.classList.add(message.ok ? "ok" : "miss");
+    log(message.ok ? "Pinned on the phone ✓" : "The phone couldn't find a surface there. Try again once it has scanned the desk.");
+  }
+}
+
+// How long ago the frame on screen left the phone: half a round trip plus the receiver's jitter buffer.
+async function frameAgeSeconds() {
+  let buffer = 0.1;
+  try {
+    const stats = await pc.getStats();
+    stats.forEach((r) => {
+      if (r.type === "inbound-rtp" && r.kind === "video" && r.jitterBufferEmittedCount > 0) buffer = r.jitterBufferDelay / r.jitterBufferEmittedCount;
+    });
+  } catch {}
+  return rttMs / 2000 + buffer + 0.03;
+}
+
+$("remote").addEventListener("click", async (e) => {
+  const video = $("remote");
+  if (!pc || !control || control.readyState !== "open" || !video.videoWidth) return;
+  // The video is letterboxed (object-fit: contain): work out where the picture really is inside the element.
+  const box = video.getBoundingClientRect();
+  const scale = Math.min(box.width / video.videoWidth, box.height / video.videoHeight);
+  const w = video.videoWidth * scale, h = video.videoHeight * scale;
+  const left = box.left + (box.width - w) / 2, top = box.top + (box.height - h) / 2;
+  const x = (e.clientX - left) / w, y = (e.clientY - top) / h;
+  if (x < 0 || x > 1 || y < 0 || y > 1) return;
+  const id = Math.random().toString(36).slice(2, 10);
+  const label = $("tapLabel").value.trim() || "here";
+  sendControl({ kind: "tap", id, x, y, label, latency: await frameAgeSeconds() });
+  const dot = document.createElement("div");
+  dot.className = "tapdot";
+  dot.id = "tap-" + id;
+  dot.style.left = (e.clientX - video.parentElement.getBoundingClientRect().left) + "px";
+  dot.style.top = (e.clientY - video.parentElement.getBoundingClientRect().top) + "px";
+  const tag = document.createElement("span");
+  tag.textContent = label;
+  dot.append(tag);
+  video.parentElement.append(dot);
+  setTimeout(() => dot.remove(), 6000);
+  log(`Pointed at “${label}”`);
+});
+
+$("clearPins").onclick = () => {
+  sendControl({ kind: "clear" });
+  document.querySelectorAll(".tapdot").forEach((d) => d.remove());
+  log("Cleared the phone's pins");
 };
 
 $("endBtn").onclick = () => endCall("You ended the call");
@@ -237,6 +308,9 @@ function startMeter(stream) {
 function endCall(reason) {
   if (!pc) return;
   try { control?.close(); } catch {}
+  clearInterval(pingTimer); $("clearPins").disabled = true;
+  document.querySelector(".stage").classList.remove("live");
+  document.querySelectorAll(".tapdot").forEach((d) => d.remove());
   pc.close(); pc = null; control = null; pendingCandidates = [];
   mic?.getTracks().forEach((t) => t.stop()); mic = null;
   clearInterval(meterTimer); $("level").value = 0;

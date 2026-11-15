@@ -19,6 +19,19 @@ final class CallManager: NSObject {
   private(set) var remoteVideoTrack: RTCVideoTrack?
 
   @ObservationIgnored var sendSignal: ((RtcSignal) -> Void)?
+
+  /// The expert tapped a spot on the live video. Fractions of the upright video, plus how long ago (seconds) that
+  /// frame left the phone, by the expert page's own estimate.
+  struct ExpertTap: Equatable {
+    var id: String
+    var x: Double
+    var y: Double
+    var label: String
+    var secondsAgo: Double
+  }
+  /// Called on main; returns whether the tap landed on a surface, which goes back to the expert as ✓ or "missed".
+  @ObservationIgnored var onExpertTap: ((ExpertTap) -> Bool)?
+  @ObservationIgnored var onExpertClear: (() -> Void)?
   /// Not lazy: the AR session queue pushes frames into it, and a lazy var must not be created from two threads.
   @ObservationIgnored let videoSource: ArFrameVideoSource
 
@@ -235,5 +248,37 @@ extension CallManager: RTCDataChannelDelegate {
     }
   }
 
-  func dataChannel(_ dataChannel: RTCDataChannel, didReceiveMessageWith buffer: RTCDataBuffer) {}
+  /// Point-and-guide rides the call's own channel, peer to peer, so it needs no relay or contract change:
+  /// `ping` → `pong` (for the expert page's latency estimate), `tap` → a pin, then `pinned`, and `clear`.
+  func dataChannel(_ dataChannel: RTCDataChannel, didReceiveMessageWith buffer: RTCDataBuffer) {
+    guard !buffer.isBinary,
+          let message = try? JSONSerialization.jsonObject(with: buffer.data) as? [String: Any],
+          let kind = message["kind"] as? String else { return }
+    switch kind {
+    case "ping":
+      Self.send(["kind": "pong", "t": message["t"] ?? 0], on: dataChannel)
+    case "tap":
+      guard let id = message["id"] as? String, let x = message["x"] as? Double, let y = message["y"] as? Double,
+            (0...1).contains(x), (0...1).contains(y) else { return }
+      let tap = ExpertTap(
+        id: id, x: x, y: y,
+        label: (message["label"] as? String).flatMap { $0.isEmpty ? nil : String($0.prefix(40)) } ?? "here",
+        // Clamped: the camera history only goes back about 2.5 s.
+        secondsAgo: min(max(message["latency"] as? Double ?? 0.15, 0), 2)
+      )
+      onMain { [weak self] in
+        let ok = self?.onExpertTap?(tap) ?? false
+        Self.send(["kind": "pinned", "id": id, "ok": ok], on: dataChannel)
+      }
+    case "clear":
+      onMain { [weak self] in self?.onExpertClear?() }
+    default:
+      break
+    }
+  }
+
+  private static func send(_ message: [String: Any], on channel: RTCDataChannel) {
+    guard channel.readyState == .open, let data = try? JSONSerialization.data(withJSONObject: message) else { return }
+    channel.sendData(RTCDataBuffer(data: data, isBinary: false))
+  }
 }

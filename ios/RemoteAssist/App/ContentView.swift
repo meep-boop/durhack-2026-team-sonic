@@ -200,6 +200,14 @@ struct ContentView: View {
       if message.guideId == player.guide.id { verified[message.stepId] = message }
     }
     call.sendSignal = { [relay] signal in relay.sendSignal(signal) }
+    call.onExpertTap = { tap in
+      guard ar.placeExpertPin(at: CGPoint(x: tap.x, y: tap.y), label: tap.label, secondsAgo: tap.secondsAgo) else { return false }
+      spotlight.enabled = true
+      pinTicks += 1
+      pinMessage = "The expert marked: \(tap.label)"
+      return true
+    }
+    call.onExpertClear = { ar.clearPins(kinds: [.expert], focus: false) }
     relay.connectSaved()
     if onboarded { ar.start() }
   }
