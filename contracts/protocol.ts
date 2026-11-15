@@ -19,9 +19,9 @@ export type Role = "expert" | "user" | "rig";
 
 // Must match the file names in assets/models/ (glTF for the dashboard, USDZ for the phone). Adding a model is a
 // contract change: flag it to Max, Laura and Salman. Every model is in metres, +Y up, with its working tip (screw
-// point, arrow point, fingertip, plug contacts) at the origin, so the tip lands exactly on `pos`
+// point, arrow point, fingertip, plug contacts, SSD contact edge) at the origin, so the tip lands exactly on `pos`
 // (assets/models/README.md).
-export type ModelName = "screw" | "bolt" | "arrow" | "screwdriver" | "hand" | "cable-plug";
+export type ModelName = "screw" | "bolt" | "arrow" | "screwdriver" | "hand" | "cable-plug" | "ssd";
 
 // Every action moves or turns the model along `axis` and loops until the user taps Next. `axis` decides the
 // direction; the guide builder fills it from the model's own +Y after rotation (pull +Y, push -Y, turns around Y)
