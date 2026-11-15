@@ -548,3 +548,22 @@ each builder's brief (`builder-file-<name>.md`, on the `context` branch).
 - ⚠️ Conflicts: @laura — `api.ts` gained two calls, and `App.tsx` is where her panel mounts | @salman — the dashboard
   assumes +X along the marker's top edge and +Z down the print until his axis check
 - Conflict status: open
+
+### 2026-11-15 02:22 — the guide panel is on main — @laura
+- Shipped: `dashboard/src/guide/GuidePanel.tsx` in Max's shell (`App.tsx`, where his placeholder was). Title; steps
+  (add, type, reorder, delete, jump); per step, objects: model, action, position and box in cm, quarter turns about
+  the marker's X/Y/Z (`axis` follows the model's +Y, Ahmed's rule), the rig check (`ssd-bay` gone / back), and an
+  action preview; "Place on scan" (`pickPoint`, off until calibrated) or "Add at marker" with typed positions;
+  Send blocked with reasons until complete; ticks from `step.done` and ✓/✗ from `step.verified`; relay errors shown.
+  **"Open a guide file…" loads a prepared guide JSON**, e.g. Ahmed's `fixtures/ssd-swap-guide.json`, for rung 1.
+  A fresh page adopts the relay's saved guide and ticks; the last sent guide is re-sent when the link returns.
+  Commit `a61405f`. Dashboard 43/43, type-check and build pass; relay 41/41.
+- Tried end to end on this laptop: relay `--fresh`, `npm run dev`, `node fixtures/fake-phone.ts`. A three-step
+  guide built in the panel reached the fake phone ("got guide … 3 steps") and its three taps ticked the steps; a
+  reload restored both. That's my task 3's done-when. Scene objects untested on a calibrated scan (SAMPLE splat only).
+- Also on main with it: `docs/README.judges.draft.md`, the judges' README draft (labelled draft; swaps in at submit).
+- Touched: `dashboard/src/guide/` (mine), `dashboard/src/App.tsx` (Max's: the mount line only), `docs/`
+- Not yet: 3D dragging (`onObjectMoved` is wired but the scene doesn't fire it yet), a custom `axis` other than the
+  model's +Y.
+- ⚠️ Conflicts: @max — one line in `App.tsx` swaps your placeholder for `<GuidePanel scene relay />`
+- Conflict status: open
