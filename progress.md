@@ -409,3 +409,16 @@ each builder's brief (`builder-file-<name>.md`, on the `context` branch).
   if the walking skeleton needs it.
 - ⚠️ Conflicts: @salman — his app won't decode today's sample guide until `Expect` changes
 - Conflict status: open
+
+### 2026-11-15 00:57 — an ssd model, and ssd in the contract — @laura
+- Shipped: `assets/models/ssd.glb` and `ssd.usdz` (M.2 2280, 22 × 80 mm, 72 triangles, under 6 KB), plus `"ssd"` in
+  `ModelName` (`contracts/protocol.ts`) and in `MODELS` (`relay/validate.ts`), all in one commit so `main` stays
+  green. Same conventions as the others: the contact edge (with its notch) at the origin, the card rising along +Y,
+  chips on +Z, so `pull` slides it out of its slot. It lies flat in the laptop, so a guide object needs a 90° turn.
+  Model tests 7/7, relay 41/41 and its type-check pass. Commit `61a771e`, with Ahmed's OK to edit his two files.
+- Touched: `assets/models/`, `contracts/protocol.ts`, `relay/validate.ts`
+- 📨 To @salman: add `case ssd = "ssd"` to `ModelName` in `ios/RemoteAssist/Protocol/Protocol.swift` (and a shape in
+  `AR/Shapes.swift` if it switches over every model), or a guide with an SSD step won't decode.
+- 📨 To @max: `ssd.glb` is next to the others in `assets/models/`; nothing else changes for the scene.
+- ⚠️ Conflicts: @salman — a new `ModelName` case his decoder must accept | @ahmed — his two files, edited as agreed
+- Conflict status: open
