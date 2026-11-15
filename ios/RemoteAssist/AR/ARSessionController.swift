@@ -638,17 +638,36 @@ final class ARSessionController: NSObject, ARSessionDelegate {
   /// The expert dragged a box on the live video: that patch of the surface is lit and the spotlight dims everything
   /// else. `corners` go round the box in order. All four land on one plane (the one under the box's centre, else
   /// under any corner, else the last surface), so the area stays a flat, clean shape. It replaces the expert's pins.
+  /// How far an area's corner may be from the box's centre: more than a laptop's half-diagonal, less than a desk.
+  static let areaReach: Float = 0.45
+
   func placeExpertArea(corners points: [UprightPoint], label: String, secondsAgo: Double) -> Bool {
     guard points.count == 4, let camera = cameraContext(secondsAgo: secondsAgo) else { return false }
     let centre = UprightPoint(x: points.map(\.x).reduce(0, +) / 4, y: points.map(\.y).reduce(0, +) / 4)
     guard let plane = surfacePoint(for: centre, camera: camera)
       ?? points.lazy.compactMap({ self.surfacePoint(for: $0, camera: camera) }).first
-      ?? lastSurface else { return false }
-    let corners = points.compactMap { fallbackSurfacePoint(for: $0, camera: camera, reference: plane)?.position }
-    guard corners.count == 4 else { return false }
-    // A side longer than a laptop means the box met the surface at a grazing angle: a giant shape over the whole
-    // screen. Better to say missed.
-    for i in 0..<4 where simd_distance(corners[i], corners[(i + 1) % 4]) > 0.6 { return false }
+      ?? lastSurface else {
+      Self.log.notice("Area \"\(label, privacy: .public)\" missed: no surface under the box")
+      return false
+    }
+    // Each corner where its ray meets that plane, pulled in to at most 0.45 m from the box's centre. Drawn from an
+    // angle, a box round a laptop meets the table far away at its top corners; refusing those turned normal areas red.
+    let up = simd_normalize(plane.normal)
+    let centreRay = PinMath.ray(for: centre, in: camera)
+    let middle = PinMath.intersect(origin: centreRay.origin, direction: centreRay.direction, planePoint: plane.position, planeNormal: up) ?? plane.position
+    var pulled = 0
+    let corners = points.map { point -> SIMD3<Float> in
+      let ray = PinMath.ray(for: point, in: camera)
+      let hit = PinMath.intersect(origin: ray.origin, direction: ray.direction, planePoint: plane.position, planeNormal: up)
+      // A ray that never meets the plane (above the horizon) still points somewhere along it.
+      var along = ray.direction - simd_dot(ray.direction, up) * up
+      if simd_length(along) < 1e-4 { along = SIMD3(1, 0, 0) }
+      let target = hit ?? middle + simd_normalize(along) * Self.areaReach
+      let corner = PinMath.pulledIn(target, toward: middle, limit: Self.areaReach)
+      if corner != target { pulled += 1 }
+      return corner
+    }
+    Self.log.notice("Area \"\(label, privacy: .public)\": placed, centre \(simd_distance(middle, centreRay.origin), format: .fixed(precision: 2), privacy: .public) m from the camera, \(pulled, privacy: .public)/4 corners pulled in")
     lastSurface = plane
 
     clearPins(kinds: [.expert])

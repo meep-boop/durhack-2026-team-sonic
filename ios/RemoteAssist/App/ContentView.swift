@@ -387,7 +387,9 @@ struct ContentView: View {
   private var stepCard: some View {
     StepCard(
       player: player,
-      canAdvance: ar.markerSeen || isLaptopGuide || ar.guideOnLaptop,
+      // Always: a step the user has done must never be stuck behind the marker (Salman, 09:45). Without the marker or
+      // a laptop lock the card still says where to point; it just doesn't block.
+      canAdvance: true,
       note: stepNote,
       reportURL: reportURL,
       verification: player.currentStepId.flatMap { verified[$0] },
@@ -530,7 +532,6 @@ struct ContentView: View {
     case .next:
       guard !showingHome else { note = "Next step: tap Open the guide first"; break }
       guard player.currentStep != nil else { return }
-      guard ar.markerSeen || isLaptopGuide else { note = "Next step: point the camera at the printed marker first"; break }
       next()
       note = "Next step"
     case .back:
@@ -560,7 +561,7 @@ struct ContentView: View {
   private func run(_ command: VoiceCommands.Command) {
     switch command {
     case .next:
-      if ar.markerSeen || isLaptopGuide { next() }
+      next()
     case .back:
       player.back()
     case .showMe:

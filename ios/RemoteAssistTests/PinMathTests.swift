@@ -88,4 +88,12 @@ final class PinMathTests: XCTestCase {
     let corner = SpotlightOverlay.edgePoint(CGVector(dx: -0.6, dy: 0.8), in: size)
     XCTAssertEqual(corner.x, 0, accuracy: 1e-9)
   }
+
+  func testAFarAreaCornerIsPulledInButANearOneStays() {
+    let centre = SIMD3<Float>(0, 0, 0)
+    let far = PinMath.pulledIn([3, 0, 0], toward: centre, limit: 0.45)
+    XCTAssertEqual(far.x, 0.45, accuracy: 1e-5)
+    let near = SIMD3<Float>(0.2, 0, -0.1)
+    XCTAssertEqual(PinMath.pulledIn(near, toward: centre, limit: 0.45), near)
+  }
 }
