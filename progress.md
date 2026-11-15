@@ -250,6 +250,31 @@ each builder's brief (`builder-file-<name>.md`, on the `context` branch).
 - Conflict status: open
 
 
+### 2026-11-14 22:10 — iPhone app runs on a phone and talks to the relay; call library picked — @salman
+- Shipped (branch `salman-ios`, PR #4, draft): the native app in `ios/` (SwiftUI + ARKit/RealityKit, XcodeGen). Tracks
+  Laura's `assets/marker/marker.png` at 0.18 m under world tracking with one tracked image, and draws an outline plus
+  an axis marker. Plays the sample guide pinned to the marker frame with Next. Relay client (task 3): `hello` as
+  user, `guide.set`/`step.set` in, `step.done` queued and sent in order, marker-frame `pose` about 5 Hz, reconnect.
+  Every example in `fixtures/messages.json` decodes in the tests (5 passing). Runs on an iPhone 16, **iOS 26.3.1**,
+  built with **Xcode 26.0.1**.
+- Touched: `ios/` (all new)
+- Decision: by Salman: **accept pure native Swift** and the phone role; Expo PRs #2 and #3 can be closed. **WebRTC
+  library: Google's WebRTC framework** (`stasel/WebRTC` Swift package), peer-to-peer on the hotspot, signalling over
+  the existing `rtc.signal`. Next: two-way audio plus the phone's AR camera to the expert (task 4).
+- Still owed from task 1: the +X/+Z printed edges and the offset in mm, once checked on the printed marker.
+- 📨 To @max: I'm building a small standalone expert call page in `ios/expert-call/` (live camera plus two-way voice)
+  so task 4 can be tested tonight. Lift its code into your dashboard's video panel whenever you like.
+- 📨 To @ahmed @laura @max: **proposal, not decided**: make the demo a nervous person swapping the **SSD in a
+  laptop** alone. The phone identifies the laptop (Gemini), builds the steps, points at each screw, checks the work,
+  and reads every step aloud (ElevenLabs), with the expert on call. It changes Laura's set and the rig's port check, so
+  it needs your OK.
+- 📨 To @ahmed: **proposal**: also enter the MLH prizes (Gemini, ElevenLabs, Vultr, Tiger Data). Your area if you
+  want them: host the relay on Vultr (works beyond the hotspot) and log `step.done`/`pose` to Tiger Data. Also from a
+  security review: plain `ws://` with no auth lets anyone on the network push a guide; a shared team code in `hello`
+  would close it (a contract change, your call).
+- ⚠️ Conflicts: @ahmed @laura @max — the demo-scope and prize proposals above | @max — the call page overlaps your
+  dashboard's future video panel
+- Conflict status: open
 ### 2026-11-14 22:15 — dashboard stack picked, splat on screen — @max
 - Shipped: research in `research/ledger.md` § 7 (splat renderer), § 8 (dashboard shell), § 9 (training splats on
   the DGX Spark). `dashboard/` scaffolded on `max-scene` (`49342b3`, not merged yet): Vite + React, the scene in
@@ -956,3 +981,16 @@ each builder's brief (`builder-file-<name>.md`, on the `context` branch).
 - Touched: `mobile/` (new), `progress.md`
 - ⚠️ Conflicts: none
 - Conflict status: resolved by @salman 2026-11-14
+### 2026-11-14 23:25 — iPhone app: live call, models, rig verdict, AR stays when covered — @salman
+- Shipped on `salman-ios` (PR #4, still draft; builds for a device, not yet merged): the expert can **call the phone**
+  (Google WebRTC: the AR camera and two-way audio, signalling over `rtc.signal`); `ios/expert-call/` is a standalone
+  expert page for it. The guide now sits on a **world anchor**, so a hand over the marker no longer hides it; hands are
+  drawn in front of the boxes. Laura's six USDZ models load and loop their action along `axis`. The rig's
+  `step.verified` shows ✓ or the `detail` on the step card. `expect` is mirrored. Optional Gemini laptop assistant and
+  ElevenLabs voice (keys stay in a git-ignored file). Setup: `ios/README.md`.
+- Touched: `ios/` only
+- 📨 To @max: `ios/expert-call/index.html` is the expert side of the call in plain JS (offer, `rtc.signal`, a data
+  channel for hang-up). Lift it into your dashboard's video panel when you're ready.
+- 📨 To @laura: your models load in RealityKit as they are; I'll report size and up-direction once seen on the phone.
+- ⚠️ Conflicts: @max — the call page overlaps your future video panel
+- Conflict status: open
