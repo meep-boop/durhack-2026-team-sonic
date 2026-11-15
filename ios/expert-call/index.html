@@ -142,7 +142,7 @@
         <option value="scan-0809.usdz">Scan 08:09</option>
         <option value="scan-0735.usdz">Scan 07:35</option>
       </select>
-      <a id="scanOpen" target="_blank" rel="noopener" style="margin-left:auto;font-size:13px;color:var(--muted)">Open full ↗</a>
+      <span style="margin-left:auto;font-size:12px;color:var(--muted)">Drag to turn · scroll to zoom</span>
     </div>
     <iframe id="scanFrame" title="3D scan: drag to turn, scroll to zoom"></iframe>
   </section>
@@ -615,16 +615,15 @@ $("remote").addEventListener("pointerup", (e) => {
   log(`Marked an area: “${text}”`);
 });
 
-// The 3D scan comes from Max's dashboard on the same laptop (port 5173): its viewer already orbits and zooms the
-// Scaniverse scans in dashboard/public/scans/. Shown beside the live video, never instead of it.
+// The 3D scan comes from the dashboard's scan-only viewer on the same laptop (port 5173, dashboard/viewer.html): the
+// Scaniverse scans in dashboard/public/scans/, orbit and zoom, nothing else. Beside the live video, never instead of it.
 function scanUrl() {
-  const relay = ws?.url || $("relayUrl").value;
-  return `http://${location.hostname}:5173/?relay=${encodeURIComponent(relay)}&splat=${encodeURIComponent($("scanPick").value)}`;
+  return `http://${location.hostname}:5173/viewer.html?splat=${encodeURIComponent($("scanPick").value)}`;
 }
 function show3d(on) {
   document.querySelector("main").classList.toggle("with3d", on);
   $("toggle3d").textContent = on ? "3D ◂" : "3D ▸";
-  if (on) { $("scanFrame").src = scanUrl(); $("scanOpen").href = scanUrl(); }
+  if (on) $("scanFrame").src = scanUrl();
 }
 $("toggle3d").onclick = () => show3d(!document.querySelector("main").classList.contains("with3d"));
 $("scanPick").onchange = () => show3d(true);

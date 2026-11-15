@@ -457,6 +457,7 @@ struct ContentView: View {
     call.onExpertClear = {
       ar.clearPins(kinds: [.expert])
       ar.clearExpertArea()
+      ar.hideGuideParts()
     }
     call.onExpertLine = { line in heardFromExpert(line.text) }
     voice.onSpeakingChanged = { speaking in
@@ -560,6 +561,7 @@ struct ContentView: View {
     case .clear:
       ar.clearPins(kinds: [.expert])
       ar.clearExpertArea()
+      ar.hideGuideParts()
       note = "Clear the marks"
     }
     pinTicks += 1
