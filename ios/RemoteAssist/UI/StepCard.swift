@@ -15,6 +15,9 @@ struct StepCard: View {
   var tools: AnyView? = nil
   /// "3 of 8 done" while there are pins to tick on this step.
   var pinProgress: PinProgress? = nil
+  /// Hands-free voice commands: on or off, the command just heard, and why it can't run.
+  var handsFree: (on: Bool, heard: String?, problem: String?) = (false, nil, nil)
+  var onToggleHandsFree: () -> Void = {}
   /// Ahmed's UNO Q rig's verdict on this step, when it checks it.
   var verification: StepVerified? = nil
   let onNext: () -> Void
@@ -31,6 +34,21 @@ struct StepCard: View {
               .font(.caption.weight(.bold))
               .foregroundStyle(.secondary)
             Spacer()
+            if let heard = handsFree.heard {
+              Text("“\(heard)”")
+                .font(.caption.weight(.semibold))
+                .foregroundStyle(Color.accentColor)
+                .transition(.opacity.combined(with: .scale))
+            }
+            Button(action: onToggleHandsFree) {
+              Image(systemName: handsFree.on ? "mic.fill" : "mic.slash")
+                .font(.subheadline)
+                .frame(width: 32, height: 32)
+                .symbolEffect(.pulse, isActive: handsFree.on)
+            }
+            .buttonStyle(.plain)
+            .foregroundStyle(handsFree.on ? Color.accentColor : .secondary)
+            .accessibilityLabel(handsFree.on ? "Stop hands-free commands" : "Hands-free: say next, back, check my work")
             Button {
               voiceOn.toggle()
             } label: {
@@ -48,6 +66,14 @@ struct StepCard: View {
             .contentTransition(.opacity)
             .id(step.id)
             .transition(.asymmetric(insertion: .move(edge: .trailing).combined(with: .opacity), removal: .opacity))
+        }
+
+        if let problem = handsFree.problem {
+          Label(problem, systemImage: "mic.badge.xmark").font(.footnote).foregroundStyle(.orange)
+        } else if handsFree.on, handsFree.heard == nil {
+          Text("Say “next”, “back”, “show me where”, “check my work” or “repeat”")
+            .font(.caption)
+            .foregroundStyle(.secondary)
         }
 
         if let tools { tools }

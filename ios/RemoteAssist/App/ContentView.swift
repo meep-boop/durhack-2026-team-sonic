@@ -19,6 +19,8 @@ struct ContentView: View {
   @State private var screwMemory = ScrewMemory()
   @State private var pinTicks = 0
   @State private var spotlight = SpotlightTracker()
+  @State private var commands = VoiceCommands()
+  @State private var appSpeaking = false
   @AppStorage("ghostToolOn") private var ghostToolOn = true
   @AppStorage("onboarded") private var onboarded = false
   @AppStorage("voiceOn") private var voiceOn = true
@@ -107,6 +109,8 @@ struct ContentView: View {
           voiceOn: $voiceOn,
           tools: isAIGuide && player.currentStep != nil ? AnyView(aiTools) : nil,
           pinProgress: pinProgress,
+          handsFree: (commands.isOn, commands.heard, commands.problem),
+          onToggleHandsFree: commands.toggle,
           verification: player.currentStepId.flatMap { verified[$0] },
           onNext: next,
           onBack: player.back
@@ -175,6 +179,7 @@ struct ContentView: View {
     .sensoryFeedback(.success, trigger: pinTicks)
     .sensoryFeedback(.selection, trigger: spotlight.arrivals)
     .onChange(of: voiceOn) { voiceOn ? speakCurrentStep() : voice.stop() }
+    .onChange(of: call.state) { updateListening() }
     .onChange(of: call.state) { old, new in
       // AI pins are for working alone; when the expert joins they point at things themselves.
       if old == .ringing, new == .connecting { ar.clearPins(kinds: [.ai], focus: true); pinMessage = nil }
@@ -216,6 +221,11 @@ struct ContentView: View {
       return true
     }
     call.onExpertClear = { ar.clearPins(kinds: [.expert], focus: false) }
+    voice.onSpeakingChanged = { speaking in
+      appSpeaking = speaking
+      updateListening()
+    }
+    commands.onCommand = { command in run(command) }
     relay.connectSaved()
     if onboarded { ar.start() }
   }
@@ -225,11 +235,13 @@ struct ContentView: View {
   private func handle(_ phase: ScenePhase) {
     switch phase {
     case .background:
+      commands.setSuspended(true)
       spotlight.stop()
       ar.pause()
       voice.stop()
       call.setBackgrounded(true)
     case .active:
+      updateListening()
       spotlight.start(ar)
       call.setBackgrounded(false)
       if onboarded { ar.resume() }
@@ -243,6 +255,28 @@ struct ContentView: View {
     guard let step = player.currentStep else { return }
     relay.sendStepDone(guide: player.guide, stepId: step.id)
     player.next()
+  }
+
+  /// The mic listens for commands only when nothing else is using the audio: not while the app talks, not in a call.
+  private func updateListening() {
+    commands.setSuspended(appSpeaking || call.state != .idle || scenePhase == .background)
+  }
+
+  private func run(_ command: VoiceCommands.Command) {
+    switch command {
+    case .next:
+      if ar.markerSeen || isAIGuide { next() }
+    case .back:
+      player.back()
+    case .rescan:
+      if isAIGuide { showWhere() } else { spotlight.enabled = true }
+    case .check:
+      if isAIGuide { checkWork() }
+    case .repeatStep:
+      if let step = player.currentStep { voice.speak(step.text) }
+    case .callExpert:
+      showingConnection = true
+    }
   }
 
   private func speakCurrentStep() {

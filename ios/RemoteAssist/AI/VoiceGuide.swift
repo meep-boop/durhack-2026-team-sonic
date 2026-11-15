@@ -22,6 +22,15 @@ final class VoiceGuide: NSObject {
   private var generation = 0
 
   var usesElevenLabs: Bool { apiKey != nil }
+  /// Called on main when reading aloud starts and stops, so voice commands don't hear the app talking.
+  var onSpeakingChanged: ((Bool) -> Void)?
+  private var speaking = false {
+    didSet {
+      guard speaking != oldValue else { return }
+      let value = speaking
+      DispatchQueue.main.async { self.onSpeakingChanged?(value) }
+    }
+  }
 
   override init() {
     super.init()
@@ -66,12 +75,16 @@ final class VoiceGuide: NSObject {
     player?.stop()
     player = nil
     if fallback.isSpeaking { fallback.stopSpeaking(at: .immediate) }
-    if endSession { audio.playbackEndedOnQueue() }
+    if endSession {
+      speaking = false
+      audio.playbackEndedOnQueue()
+    }
   }
 
   private func play(_ data: Data?, orSay text: String, gen: Int) {
     guard gen == generation else { return }
     audio.activateForPlaybackOnQueue()
+    speaking = true
     if let data, let player = try? AVAudioPlayer(data: data) {
       player.delegate = self
       self.player = player
@@ -101,11 +114,16 @@ extension VoiceGuide: AVAudioPlayerDelegate, AVSpeechSynthesizerDelegate {
     queue.async {
       guard player === self.player else { return }
       self.player = nil
+      self.speaking = false
       self.audio.playbackEndedOnQueue()
     }
   }
 
   func speechSynthesizer(_ synthesizer: AVSpeechSynthesizer, didFinish utterance: AVSpeechUtterance) {
-    queue.async { if !synthesizer.isSpeaking { self.audio.playbackEndedOnQueue() } }
+    queue.async {
+      guard !synthesizer.isSpeaking, self.player == nil else { return }
+      self.speaking = false
+      self.audio.playbackEndedOnQueue()
+    }
   }
 }

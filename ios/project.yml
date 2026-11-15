@@ -53,7 +53,8 @@ targets:
         GENERATE_INFOPLIST_FILE: YES
         INFOPLIST_KEY_CFBundleDisplayName: Remote Assist
         INFOPLIST_KEY_NSCameraUsageDescription: Remote Assist uses the camera to line the guide up with the printed marker and to show the expert what you see.
-        INFOPLIST_KEY_NSMicrophoneUsageDescription: Remote Assist uses the microphone so you can talk to the expert during a call.
+        INFOPLIST_KEY_NSMicrophoneUsageDescription: Remote Assist uses the microphone so you can talk to the expert during a call, and to hear hands-free commands like "next".
+        INFOPLIST_KEY_NSSpeechRecognitionUsageDescription: Remote Assist listens for hands-free commands like "next" and "check my work", on your phone where it can.
         INFOPLIST_KEY_UILaunchScreen_Generation: YES
         INFOPLIST_KEY_UISupportedInterfaceOrientations: UIInterfaceOrientationPortrait
         INFOPLIST_KEY_UIStatusBarStyle: UIStatusBarStyleLightContent

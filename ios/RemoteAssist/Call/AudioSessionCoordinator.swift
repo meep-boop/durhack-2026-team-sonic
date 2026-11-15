@@ -15,6 +15,8 @@ final class AudioSessionCoordinator {
   private var callActive = false
   private var speakerOn = true
   private var playbackActive = false
+  /// Hands-free voice commands are on: the mic stays open between steps.
+  private var listening = false
 
   private var session: AVAudioSession { .sharedInstance() }
 
@@ -40,23 +42,58 @@ final class AudioSessionCoordinator {
     queue.async {
       guard self.callActive else { return }
       self.callActive = false
-      if self.playbackActive {
-        // A step is being read: hand the session back to playback instead of pulling it away.
-        try? self.session.setCategory(.playback, mode: .spokenAudio, options: [.duckOthers])
+      // Hand the session back to whoever still needs it instead of pulling it away under them.
+      if self.listening || self.playbackActive {
+        self.applyCategory()
       } else {
         try? self.session.setActive(false, options: .notifyOthersOnDeactivation)
       }
     }
   }
 
+  /// Opens the mic for voice commands; `ready` runs on `queue` once the session can record.
+  func beginListening(ready: @escaping () -> Void) {
+    queue.async {
+      self.listening = true
+      self.applyCategory()
+      try? self.session.setActive(true)
+      ready()
+    }
+  }
+
+  /// `stopped` runs on `queue` before the session changes, so the mic engine can stop first.
+  func endListening(stopped: @escaping () -> Void) {
+    queue.async {
+      stopped()
+      guard self.listening else { return }
+      self.listening = false
+      guard !self.callActive else { return }
+      if self.playbackActive {
+        self.applyCategory()
+      } else {
+        try? self.session.setActive(false, options: .notifyOthersOnDeactivation)
+      }
+    }
+  }
+
+  /// Outside a call: play-and-record while listening (the speaker still reads steps), plain playback otherwise.
+  private func applyCategory() {
+    guard !callActive else { return }
+    if listening {
+      // Only when it changes: re-setting the category under a running mic engine interrupts it.
+      guard session.category != .playAndRecord || session.mode != .default else { return }
+      try? session.setCategory(.playAndRecord, mode: .default, options: [.defaultToSpeaker, .allowBluetoothHFP, .duckOthers])
+    } else if session.category != .playback {
+      try? session.setCategory(.playback, mode: .spokenAudio, options: [.duckOthers])
+    }
+  }
+
   /// Must be called on `queue`. During a call the session is already play-and-record and stays that way.
   func activateForPlaybackOnQueue() {
     dispatchPrecondition(condition: .onQueue(queue))
-    if !callActive, session.category != .playback {
-      try? session.setCategory(.playback, mode: .spokenAudio, options: [.duckOthers])
-    }
-    // During a call it's already active; between steps it's still active from the last one.
-    if !callActive && !playbackActive { try? session.setActive(true) }
+    applyCategory()
+    // During a call or while listening it's already active; between steps it's still active from the last one.
+    if !callActive && !listening && !playbackActive { try? session.setActive(true) }
     playbackActive = true
   }
 
@@ -65,6 +102,6 @@ final class AudioSessionCoordinator {
     dispatchPrecondition(condition: .onQueue(queue))
     guard playbackActive else { return }
     playbackActive = false
-    if !callActive { try? session.setActive(false, options: .notifyOthersOnDeactivation) }
+    if !callActive && !listening { try? session.setActive(false, options: .notifyOthersOnDeactivation) }
   }
 }
