@@ -34,7 +34,7 @@ enum VerifiedProcedures {
   static let latitude5530 = Procedure(
     source: "Dell's service manual, checked on the demo laptop",
     captiveScrews: true,
-    locateHint: "This is a Dell Latitude 5530: its base cover has eight captive screws.",
+    locateHint: "This is a Dell Latitude 5530: its base cover has eight captive screws, and its SSD is in the M.2 slot next to the fan.",
     steps: [
       step("Shut down and unplug", "Save your work, shut down, and unplug the charger and anything else.", "the charger port"),
       step("Enter Service Mode", "Hold B and press the power button for 3 seconds. After 3 beeps it switches off in Service Mode, with the power cut.", "the power button",
@@ -44,7 +44,8 @@ enum VerifiedProcedures {
       step("Lift at the notches", "Lift the cover at the U-shaped notches on the top edge with a plastic pry tool.", "the U-shaped notches on the top edge",
            caution: "Plastic only: a metal tool scratches the case and can short the board."),
       step("Lift the cover off", "Hold the left and right sides and lift the cover off.", "the base cover edges"),
-      step("Undo the SSD screw", "Undo the one screw that holds the SSD.", ssdScrew, phase: "remove"),
+      // Where it sits: Laura, progress.md 02:15 ("the M.2 slot next to the fan").
+      step("Undo the SSD screw", "The SSD is in the M.2 slot next to the fan. Undo the one screw that holds it.", ssdScrew, phase: "remove"),
       step("Slide the SSD out", "Slide the SSD out of its slot at an angle.", "the M.2 SSD"),
       step("Slide it back in", "Slide the same SSD back in at the same angle and press it flat.", "the M.2 slot"),
       step("Put the SSD screw back", "Put the SSD's screw back.", ssdScrew, phase: "refit"),
