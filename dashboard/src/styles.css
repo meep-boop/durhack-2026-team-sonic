@@ -77,6 +77,10 @@ body,
   color: #fcd34d;
 }
 
+.hud .ok {
+  color: #86efac;
+}
+
 .guide {
   padding: 10px;
   border-left: 1px solid #262a33;

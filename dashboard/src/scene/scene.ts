@@ -1,7 +1,7 @@
 import { SparkRenderer } from "@sparkjsdev/spark";
 import * as THREE from "three";
 import { OrbitControls } from "three/addons/controls/OrbitControls.js";
-import type { Marker, Vec3 } from "../../../contracts/protocol.ts";
+import type { Marker, Pose, Vec3 } from "../../../contracts/protocol.ts";
 import type { SceneApi } from "./api.ts";
 import { type Calibration, solveCalibration } from "./calibration.ts";
 import { createFrameMeter } from "./frameMeter.ts";
@@ -22,6 +22,9 @@ export type SceneHandle = SceneApi & {
   pickScanPoint(): Promise<Vec3 | null>;
   // Marks the corners clicked so far, so the expert sees which ones are done.
   showCornerClicks(points: readonly Vec3[]): void;
+  // Draws the phone's camera where it is (pose in the marker frame), or hides it with null. Amber while the phone
+  // can't see the marker: its position then comes from world tracking alone and may drift.
+  showUser(pose: Pose | null, markerTracked: boolean): void;
   // Keeps a scan's calibration and applies it if that scan is on screen. Throws if the corners don't solve.
   setCalibration(splatId: string, corners: Corners): void;
   fps(): number;
@@ -53,6 +56,9 @@ export function createScene(container: HTMLElement, marker: Pick<Marker, "width"
   scene.add(markerGroup);
   markerGroup.add(onTop(markerOutline(marker)), onTop(new THREE.AxesHelper(0.1)));
   const objects = createObjectLayer(markerGroup);
+  const user = onTop(cameraFrustum());
+  user.visible = false;
+  markerGroup.add(user);
 
   // Spark's raycast can land on splats too faint to see (its issues #497, #498), so every pick leaves a dot where
   // it actually hit, and the expert can tell a bad pick from a good one.
@@ -230,6 +236,14 @@ export function createScene(container: HTMLElement, marker: Pick<Marker, "width"
       return markerGroup.worldToLocal(new THREE.Vector3().fromArray(point)).toArray() as Vec3;
     },
 
+    showUser(pose, markerTracked) {
+      user.visible = pose !== null;
+      if (!pose) return;
+      user.position.fromArray(pose.p);
+      user.quaternion.fromArray(pose.q);
+      (user.material as THREE.LineBasicMaterial).color.set(markerTracked ? TRACKED_COLOUR : DRIFTING_COLOUR);
+    },
+
     showStep: (list) => objects.showStep(list),
     select: (id) => objects.select(id),
     previewAction: (id) => objects.previewAction(id),
@@ -282,6 +296,18 @@ function onTop<T extends THREE.Line>(line: T): T {
   material.depthTest = false;
   line.renderOrder = 1;
   return line;
+}
+
+const TRACKED_COLOUR = 0x4ade80;
+const DRIFTING_COLOUR = 0xf59e0b;
+
+// The phone's camera as a small wireframe pyramid, apex at the lens, opening along -Z: the way an ARKit camera looks.
+function cameraFrustum() {
+  const [w, h, d] = [0.03, 0.04, 0.06];
+  const corners = [[-w, h], [w, h], [w, -h], [-w, -h]].map(([x, y]) => new THREE.Vector3(x, y, -d));
+  const apex = new THREE.Vector3();
+  const points = corners.flatMap((corner, i) => [apex, corner, corner, corners[(i + 1) % 4]!]);
+  return new THREE.LineSegments(new THREE.BufferGeometry().setFromPoints(points), new THREE.LineBasicMaterial({ color: TRACKED_COLOUR }));
 }
 
 // The printed marker's edge, flat on y = 0, so the expert can see the fit sit on the print.
