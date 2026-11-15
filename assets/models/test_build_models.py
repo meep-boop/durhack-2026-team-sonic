@@ -74,7 +74,7 @@ class BuiltModels(unittest.TestCase):
 
     def test_sizes_are_real_world_metres(self):
         tallest = {"screw": 0.016, "bolt": 0.030, "arrow": 0.050, "screwdriver": 0.180, "hand": 0.180,
-                   "cable-plug": 0.070}
+                   "cable-plug": 0.070, "ssd": 0.080}
         for name, height in tallest.items():
             with self.subTest(name):
                 self.assertAlmostEqual(max(p[1] for p in self.glbs[name]["positions"]), height, places=6)
