@@ -518,3 +518,11 @@ each builder's brief (`builder-file-<name>.md`, on the `context` branch).
   to check: which of the two M.2 slots holds the SSD (for the Nicla's `ssd-bay` region).
 - ⚠️ Conflicts: none
 - Conflict status: resolved by @laura 2026-11-15
+
+### 2026-11-15 02:15 — where the SSD sits in Ahmed's laptop — @laura
+- Shipped: no code. Checked on the laptop: the SSD is in the **M.2 slot next to the fan**. That's where the Nicla's
+  `ssd-bay` region goes, and where step 7–10's objects sit in `fixtures/ssd-swap-guide.json`.
+- Touched: on `context`: `research/ledger.md` § 17
+- 📨 To @ahmed: point the Nicla at the slot next to the fan; a photo of the open laptop is coming if you need one.
+- ⚠️ Conflicts: none
+- Conflict status: resolved by @laura 2026-11-15
