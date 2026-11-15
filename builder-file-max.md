@@ -1,5 +1,5 @@
 # Max: the dashboard's 3D view (splat, picking, calibration, cut-outs) and the splats
-**GitHub:** `xaw1` · **Branch:** `max-scene` · **Brief last updated:** 2026-11-14 by ahmed
+**GitHub:** `xaw1` · **Branch:** `max-scene` · **Brief last updated:** 2026-11-15 by max
 **Spec:** `PROJECT.md` (NOW first); the § numbers below refer to it. **Deadlines:** `PROJECT.md` → NOW → Clock.
 **The plan in full:** `docs/remote-assist/README.md` and `architecture.md` (on `main`, written by @max).
 
@@ -68,32 +68,39 @@ and the walking skeleton is the next one. Anything new for you is in the block a
 their detail.** Why: the phone side is nearly there, but the dashboard is still a viewer with no relay connection,
 so we climb a ladder: rung 0 the real phone plays a prepared guide; rung 1 the dashboard connects and sends it;
 rung 2 a guide built in the scan lines up on the phone; rung 3 the extras. Decisions: `PROJECT.md` → Decision log.
-1. ⬜ P0 **Merge PR #6 now** (item B): it's only the shell, it passed the pre-check, and three people build on it.
-2. ⬜ P0 **App shell** (answers Laura's ask 1): `App.tsx` makes the scene once and renders the viewport beside
+1. ✅ P0 **Merge PR #6 now** (item B): it's only the shell, it passed the pre-check, and three people build on it.
+2. ✅ P0 **App shell** (answers Laura's ask 1): `App.tsx` makes the scene once and renders the viewport beside
    `<GuidePanel scene relay />`. Add `isCalibrated()` and `onCalibrated()` to `SceneApi` (ask 3). Asks 2 and 4 fall
    away: the laptop lies flat beside the marker, so objects stand upright and turn only about Y.
-3. ⬜ P0 **Two scans** (decided by Ahmed): closed, then cover off, both with the marker in view and the laptop in
+3. 🟡 P0 **Two scans** (decided by Ahmed): closed, then cover off, both with the marker in view and the laptop in
    Laura's corner stops. Load by URL (`?splat=`) from a git-ignored folder, with a Closed / Open switch. A scan's
    id is its file name; the relay will keep one calibration per scan.
-4. ⬜ P0 **`pickPoint()`** (task 2) with three's `Raycaster` on the `SplatMesh`. Show the hit as a dot: Spark can
+   *Status (02:16):* the loading and the switch are built (`?closed=<file>&open=<file>` from
+   `dashboard/public/scans/`). Left: take the two scans in Scaniverse and calibrate each.
+4. ✅ P0 **`pickPoint()`** (task 2) with three's `Raycaster` on the `SplatMesh`. Show the hit as a dot: Spark can
    hit hidden splats (its issues #497, #498).
-5. ⬜ P0 **Calibration screen** (task 3): four clicks → `solveCalibration` → one `markerGroup` holding the
+5. ✅ P0 **Calibration screen** (task 3): four clicks → `solveCalibration` → one `markerGroup` holding the
    marker→scan transform → `calib.set`. Draw the marker outline and axes on the scan, show the residual, refuse
    above 5 mm. Ahmed recommends no placing until calibrated (your open question; yours and his to settle).
-6. ⬜ P0 **`showStep()`** (task 4): the yellow box plus the `.glb` under `markerGroup`. `GLTFLoader` is a three
+6. ✅ P0 **`showStep()`** (task 4): the yellow box plus the `.glb` under `markerGroup`. `GLTFLoader` is a three
    add-on; Vite needs `server.fs.allow: [".."]` to serve `../assets/models`.
 7. ⬜ P1 **The user's position** (task 6): a cone under `markerGroup` from `pose`, which is already in the marker frame.
 8. ⬜ P1 **Labels** (task 7): snapshot → `labels.request` → labels on screen → search box → `focus()`.
 9. ⬜ P1 **Dragging** with three's `TransformControls` → `onObjectMoved`; then **cut-outs** (task 5). Both stay in
    scope (Ahmed), after rung 2.
-- 📨 **Ahmed asks your OK** for his agent to build two pieces in `dashboard/`: `src/relay/client.ts` (the relay
+- ✅ (OK given; merged 02:16) 📨 **Ahmed asks your OK** for his agent to build two pieces in `dashboard/`: `src/relay/client.ts` (the relay
   connection: hello as `expert`, reconnect, typed `send` and `on`) and `src/scene/calibration.ts`
   (`solveCalibration(corners, marker)`, pure maths with tests). Everything that needs the 3D view stays yours.
 - **You're now a docs owner** (`team.conf`): Ahmed's laptop is the demo prop, so it goes dark for the scans, the
   video and the demo. You can publish any shared doc.
 - The call screen is Salman's `ios/expert-call/` page beside the dashboard; no React video panel.
 
-> 🟡 **START HERE (2026-11-14 23:55, @max's session):** answer Laura's four asks on `dashboard/src/scene/api.ts`
+> 🟡 **START HERE (2026-11-15 02:16, @max's session):** rung-1 dashboard code is on `main` (`0fddd63`): shell,
+> scan switch, picking, calibration (blocks placing until done), `showStep`. Next: take the two real scans (item 3),
+> calibrate them, then P1 items 7–9. Free port 8080 on this laptop before the demo: a node process already holds it.
+> Still open: PR #1 (merge or close).
+>
+> *Older note (2026-11-14 23:55):* answer Laura's four asks on `dashboard/src/scene/api.ts`
 > (her `progress.md` entry at 23:04). **Ask 1 blocks her:** how `dashboard/src/guide/` gets the `SceneApi` instance
 > and where her panel mounts (`main.tsx` renders only `<Viewport />` today). Asks 2–4: return the surface normal from
 > `pickPoint()`; a calibrated flag plus a change event; `size` in `onObjectMoved` if boxes resize in 3D. Each changes
@@ -107,9 +114,9 @@ rung 2 a guide built in the scan lines up on the phone; rung 3 the extras. Decis
   demo, so it can't host it). Node 24, then `cd relay && npm install && npm start`; add `--labels` only for Claude
   labelling, which also needs Anthropic credentials on that laptop. *Done when:* the phone, the dashboard and the rig
   all connect to it on the hotspot. `[with @ahmed]`
-- B. ⬜ **Merge PR #6 with the `ship` skill before the walking skeleton** (`PROJECT.md` → Clock), and merge or close
+- B. 🟡 **Merge PR #6 with the `ship` skill before the walking skeleton** (`PROJECT.md` → Clock), and merge or close
   PR #1. Pre-check by @ahmed (2026-11-15 00:54, read-only): `max-scene` at `6a6753b` with today's `main` merged in has no
-  conflicts; 8 tests, the type-check and `npm run build` all pass.
+  conflicts; 8 tests, the type-check and `npm run build` all pass. *Status (02:16):* PR #6 merged. PR #1 still open.
 - C. Scanning the laptop: **nobody sprays it** (Ahmed); your correction that it was never your request is noted.
 
 1. 🟡 **Dashboard shell with a splat on screen, and the scene API**
@@ -168,14 +175,16 @@ rung 2 a guide built in the scan lines up on the phone; rung 3 the extras. Decis
    - *Done when:* either a DGX-Spark-trained splat of the set is in the dashboard, or a board entry says why not.
 
 ## 4. Done log (newest first)
-- _(empty)_
+- 2026-11-15 02:16 — PR #6 merged; `ahmed-dashboard` merged; app shell with the GuidePanel slot, `isCalibrated` /
+  `onCalibrated`; scan switch; `pickPoint` in marker metres; calibration screen (5 mm limit, `calib.set`, restored on
+  reload); `showStep` with select, focus, click-to-select and action previews. `main` `0fddd63`; 22 tests.
 
 ## 5. Waiting on / owed to others
 - 📥 **Waiting on @laura:** the finished demo set to scan (now Ahmed's laptop on a board). *(Marker 180 mm and the
   six glTF models are on `main`: a model's tip, not its centre, sits at `pos`.)*
 - 📥 **Waiting on @ahmed:** the labelling endpoint. (The contract, sample guide, relay and fake phone are on
   `main`: `node fixtures/fake-phone.ts ws://<relay>:8080`.)
-- 📤 **Owed to @laura:** answers to her four asks on `api.ts` (23:04 board entry); ask 1 blocks her.
+- ✅ ~~Owed to @laura: answers to her four asks on `api.ts`~~ answered in the 02:16 board entry.
 
 ## 6. Working-style notes for the agent
 - Verbosity: project level (Level 0) unless Max changes it.

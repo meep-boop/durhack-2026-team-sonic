@@ -48,6 +48,7 @@ Source: `EVENT.md` §1 (one notes file, not yet checked against Devpost). The 02
 
 | Date | Decision |
 |---|---|
+| 2026-11-15 | No placing before calibration: the dashboard's `pickPoint()` resolves to null and objects aren't drawn until the scan on screen is calibrated (Max, 02:16; Ahmed recommended it) |
 | 2026-11-15 | No text chat: Salman's `chat` message stays out of the contract and the relay (Ahmed, 01:55) |
 | 2026-11-15 | A plan to the deadline as a four-rung ladder: prepared guide on the phone, dashboard sends it, a guide built in the scan lines up, then extras (Ahmed, 01:45; `.omc/plans/remote-assist-to-deadline.md` on his machine, tasks in the briefs) |
 | 2026-11-15 | Taps get a receipt: the relay sends each `step.done` it accepts, and each repeat, back to its sender; the phone drops a tap only on its receipt (Ahmed) |
@@ -116,9 +117,9 @@ SSD-swap demo (23:03).
   travel in. Researched in `research/ledger.md` § 6.
 - **Which way the marker frame's +x and +z point across the print.** Owner: Salman, with an axis marker on the
   phone. Provisional in `contracts/protocol.ts` until then.
-- **Before the marker is calibrated, can the expert place objects?** Block placing until calibrated, or place in
-  scan coordinates and convert later. Only `dashboard/src/scene/` changes either way. Owner: Max + Ahmed, after
-  calibration works. **Not decided.** (Asked for by Max, board entry 22:40.)
+- **Settled 02:16 by Max: no placing before calibration.** Until the scan on screen is calibrated, `pickPoint()`
+  resolves to null and no objects are drawn, so no position measured from nothing can reach the phone. Built on
+  `main` (`0fddd63`).
 - **Settled 22:55 by Ahmed: offline conflict rule.** The latest guide wins and the phone keeps its place and done
   steps by step id; the relay no longer replays the current step to phones, which closes the gap below. The
   original note: what happens if the expert edits the guide while the phone is offline.
@@ -161,8 +162,6 @@ SSD-swap demo (23:03).
   Ahmed. **Not decided.**
 - **The phone scales the guide by ARKit's size estimate.** Measure alignment with and without. Owner: Salman.
   **Not decided.**
-- **Placing before calibration (01:45):** Ahmed's agent recommends none until calibrated, with one `markerGroup`
-  carrying the marker→scan transform. Still Max + Ahmed's to settle (the item above).
 
 ### Active tasks (details in each brief)
 | Who | Now |
@@ -337,7 +336,7 @@ The diagram, components, alignment maths and draft protocol are in `docs/remote-
   (Ahmed's agent had recommended parking both); Ahmed's agent builds `dashboard/src/relay/` and
   `dashboard/src/scene/calibration.ts` once Max agrees; Max becomes a docs owner because Ahmed's laptop, his only
   machine, is the demo prop; the Clock is left alone with 02:00 marked missed.
-- Not decided: no placing before calibration (recommended; Max + Ahmed); Salman's `chat` message; how the pitch
+- Not decided: Salman's `chat` message; how the pitch
   answers "no central hub"; scaling by ARKit's size estimate on the phone (Salman, after measuring).
 
 ## 2026-11-14 23:30 — Call direction, Salman's extras, deadlines, the laptop scan
