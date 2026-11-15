@@ -27,7 +27,8 @@ try:
 except ImportError:
     App = Bridge = None
 
-# App Lab can't pass arguments or environment variables, so in App Lab put the relay's address here.
+# App Lab can't pass arguments or environment variables, so in App Lab put the relay's address between these quotes.
+# Edit this line; a second RELAY_URL line higher up is overwritten by this one.
 RELAY_URL = ""
 
 # Codes for show_verdict in ../sketch/sketch.ino.

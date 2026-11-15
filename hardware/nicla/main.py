@@ -28,9 +28,14 @@ sensor.reset()
 sensor.set_pixformat(sensor.RGB565)
 sensor.set_framesize(sensor.QVGA)
 sensor.skip_frames(time=2000)
-# Automatic gain and white balance would shift the sticker's colour as the scene changes and break the threshold.
-sensor.set_auto_gain(False)
-sensor.set_auto_whitebal(False)
+# Automatic gain and white balance shift the sticker's colour as the scene changes, so they go off where the sensor
+# allows it. The Nicla Vision's GC2145 refuses ("operation is not supported by the sensor"): there, keep the light on
+# the set steady and tune STICKER_LAB under that light.
+for lock_setting in (sensor.set_auto_gain, sensor.set_auto_whitebal):
+    try:
+        lock_setting(False)
+    except RuntimeError:
+        print("this sensor can't turn off " + lock_setting.__name__[4:])
 
 
 def seen_in(img):
