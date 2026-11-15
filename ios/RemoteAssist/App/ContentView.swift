@@ -29,6 +29,9 @@ struct ContentView: View {
   @State private var teaching = false
   /// The layout as a JSON file to share, rewritten only when the layout changes.
   @State private var layoutFile: URL?
+  @State private var confirmingLeave = false
+  /// The last guide the relay sent, to go back to when leaving the laptop guide.
+  @State private var relayGuide: Guide?
   @AppStorage("ghostToolOn") private var ghostToolOn = true
   @AppStorage("onboarded") private var onboarded = false
   @AppStorage("voiceOn") private var voiceOn = true
@@ -37,6 +40,10 @@ struct ContentView: View {
   private var isLaptopGuide: Bool { player.guide.id == LaptopGuide.guideId }
 
   var body: some View {
+    lifecycle(presentations(layers))
+  }
+
+  private var layers: some View {
     ZStack {
       ARViewContainer(controller: ar)
         .ignoresSafeArea()
@@ -107,20 +114,7 @@ struct ContentView: View {
             .transition(.move(edge: .bottom).combined(with: .opacity))
         }
 
-        StepCard(
-          player: player,
-          canAdvance: ar.markerSeen || isLaptopGuide,
-          outboxCount: relay.outboxCount,
-          voiceOn: $voiceOn,
-          tools: isLaptopGuide && player.currentStep != nil ? AnyView(laptopTools) : nil,
-          pinProgress: pinProgress,
-          handsFree: (commands.isOn, commands.heard, commands.problem),
-          onToggleHandsFree: commands.toggle,
-          reportURL: reportURL,
-          verification: player.currentStepId.flatMap { verified[$0] },
-          onNext: next,
-          onBack: player.back
-        )
+        stepCard
       }
       .padding(.horizontal)
       .padding(.top, 4)
@@ -137,6 +131,40 @@ struct ContentView: View {
           .padding(.trailing)
       }
     }
+  }
+
+  /// Sheets and alerts, apart from the layers so the type checker can cope with the screen.
+  private func presentations(_ content: some View) -> some View {
+    content
+    .sheet(isPresented: $showingConnection) {
+      ConnectionSheet(relay: relay, voice: voice, pauseAR: ar.pause, resumeAR: ar.resume)
+        .presentationDetents([.medium, .large])
+    }
+    .sheet(isPresented: $showingLaptop) {
+      LaptopGuideSheet(laptop: laptop, isRunning: isLaptopGuide, onBackToMarker: leaveLaptopGuide) { guide in
+        screwMemory.reset()
+        player.replace(with: guide)
+        player.restart()
+        if laptopFrame == nil { startSetup() }
+      }
+      .presentationDetents([.large])
+    }
+    .alert("Leave the laptop guide?", isPresented: $confirmingLeave) {
+      Button("Leave", role: .destructive, action: leaveLaptopGuide)
+      Button("Stay", role: .cancel) {}
+    } message: {
+      Text("You'll go back to the marker guide. Your laptop setup is cleared.")
+    }
+    .sheet(isPresented: $showingTranscript) {
+      TranscriptSheet(call: call).presentationDetents([.medium, .large])
+    }
+    .fullScreenCover(isPresented: .constant(!onboarded)) {
+      Onboarding { onboarded = true }
+    }
+  }
+
+  private func lifecycle(_ content: some View) -> some View {
+    content
     .animation(.snappy, value: call.state)
     .animation(.snappy, value: setup)
     .task(id: setup) {
@@ -158,25 +186,6 @@ struct ContentView: View {
         try? await Task.sleep(for: .seconds(2.5))
         syncedToast = nil
       }
-    }
-    .sheet(isPresented: $showingConnection) {
-      ConnectionSheet(relay: relay, voice: voice, pauseAR: ar.pause, resumeAR: ar.resume)
-        .presentationDetents([.medium, .large])
-    }
-    .sheet(isPresented: $showingLaptop) {
-      LaptopGuideSheet(laptop: laptop) { guide in
-        screwMemory.reset()
-        player.replace(with: guide)
-        player.restart()
-        if laptopFrame == nil { startSetup() }
-      }
-      .presentationDetents([.large])
-    }
-    .sheet(isPresented: $showingTranscript) {
-      TranscriptSheet(call: call).presentationDetents([.medium, .large])
-    }
-    .fullScreenCover(isPresented: .constant(!onboarded)) {
-      Onboarding { onboarded = true }
     }
     .onAppear(perform: wire)
     .onChange(of: onboarded) { if onboarded { ar.start() } }
@@ -211,6 +220,24 @@ struct ContentView: View {
     }
   }
 
+  private var stepCard: some View {
+    StepCard(
+      player: player,
+      canAdvance: ar.markerSeen || isLaptopGuide,
+      outboxCount: relay.outboxCount,
+      voiceOn: $voiceOn,
+      tools: isLaptopGuide && player.currentStep != nil ? AnyView(laptopTools) : nil,
+      pinProgress: pinProgress,
+      handsFree: (commands.isOn, commands.heard, commands.problem),
+      onToggleHandsFree: commands.toggle,
+      reportURL: reportURL,
+      verification: player.currentStepId.flatMap { verified[$0] },
+      onNext: next,
+      onBack: player.back,
+      onLeave: isLaptopGuide ? { confirmingLeave = true } : nil
+    )
+  }
+
   private var topBar: some View {
     HStack(spacing: 10) {
       StatusCapsule(ar: ar, relay: relay, call: call) { showingConnection = true }
@@ -232,7 +259,10 @@ struct ContentView: View {
     ar.onCameraFrame = { [videoSource = call.videoSource] buffer, time in
       videoSource.push(buffer, timestamp: time)
     }
-    relay.onGuide = { [player] guide in player.replace(with: guide) }
+    relay.onGuide = { [player] guide in
+      relayGuide = guide
+      player.replace(with: guide)
+    }
     relay.onStepSet = { [player] message in
       if message.guideId == player.guide.id { player.jump(to: message.stepId) }
     }
@@ -397,6 +427,21 @@ struct ContentView: View {
     if layout.isTaught(part) { return currentPhase == "remove" ? "Work on each lit pin and tap it when done" : nil }
     guard currentPhase == "remove" || currentPhase == "refit" else { return nil }
     return "Not measured yet: tap Teach and tap \(part) once, or ask the expert to tap them"
+  }
+
+  /// Back to the marker guide: the relay's latest if it sent one, else the bundled sample. Clears the laptop setup.
+  private func leaveLaptopGuide() {
+    cancelSetup()
+    setTeaching(false)
+    laptopFrame = nil
+    ar.showLaptopOutline(nil)
+    ar.clearPins()
+    ar.clearFocus()
+    screwMemory.reset()
+    laptop.resetSafety()
+    if let guide = relayGuide ?? (try? GuidePlayer.loadBundled()) {
+      player.replace(with: guide)
+    }
   }
 
   private func startSetup() {

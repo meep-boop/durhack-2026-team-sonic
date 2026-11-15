@@ -24,6 +24,8 @@ struct StepCard: View {
   var verification: StepVerified? = nil
   let onNext: () -> Void
   let onBack: () -> Void
+  /// On the first step, Back leaves the guide instead (when there's somewhere to go back to).
+  var onLeave: (() -> Void)? = nil
 
   var body: some View {
     VStack(alignment: .leading, spacing: 14) {
@@ -110,15 +112,16 @@ struct StepCard: View {
         }
 
         HStack(spacing: 12) {
-          Button(action: onBack) {
-            Image(systemName: "chevron.left")
+          let leaves = index == 0 && onLeave != nil
+          Button(action: leaves ? (onLeave ?? {}) : onBack) {
+            Image(systemName: leaves ? "rectangle.portrait.and.arrow.right" : "chevron.left")
               .font(.headline)
               .frame(width: 52, height: 52)
           }
           .buttonStyle(.bordered)
           .buttonBorderShape(.circle)
-          .disabled(index == 0)
-          .accessibilityLabel("Previous step")
+          .disabled(index == 0 && !leaves)
+          .accessibilityLabel(leaves ? "Leave this guide" : "Previous step")
 
           Button(action: onNext) {
             Label(index + 1 == player.guide.steps.count ? "Finish" : "Done, next step", systemImage: index + 1 == player.guide.steps.count ? "checkmark" : "arrow.right")

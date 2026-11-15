@@ -4,6 +4,9 @@ import SwiftUI
 /// the first step.
 struct LaptopGuideSheet: View {
   let laptop: LaptopGuide
+  /// The laptop guide is already the one playing.
+  var isRunning = false
+  var onBackToMarker: () -> Void = {}
   let onStart: (Guide) -> Void
   @Environment(\.dismiss) private var dismiss
   @State private var confirmingOverride = false
@@ -40,6 +43,18 @@ struct LaptopGuideSheet: View {
           }
           .buttonStyle(.borderedProminent)
           .buttonBorderShape(.capsule)
+
+          if isRunning {
+            Button {
+              onBackToMarker()
+              dismiss()
+            } label: {
+              Label("Back to the marker guide", systemImage: "qrcode.viewfinder")
+                .frame(maxWidth: .infinity, minHeight: 44)
+            }
+            .buttonStyle(.bordered)
+            .buttonBorderShape(.capsule)
+          }
         }
         .padding(24)
       }
