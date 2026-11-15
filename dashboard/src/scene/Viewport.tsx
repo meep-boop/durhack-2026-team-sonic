@@ -1,6 +1,7 @@
 import { type RefObject, useEffect, useState } from "react";
 import type { RelayClient } from "../relay/client.ts";
 import { Calibrate } from "./Calibrate.tsx";
+import { Labels } from "./Labels.tsx";
 import { PhoneStatus } from "./PhoneStatus.tsx";
 import type { ScanInfo, SceneHandle } from "./scene.ts";
 import { type Scan, SAMPLE_SPLAT, scansFromQuery } from "./scans.ts";
@@ -89,6 +90,7 @@ export function Viewport({ containerRef, scene, relay, marker }: Props) {
         {scene && relay && <PhoneStatus scene={scene} relay={relay} />}
         <div className="hint">Scans go in dashboard/public/scans/: ?closed=&lt;file&gt;&amp;open=&lt;file&gt;, or drop one here</div>
       </div>
+      {scene && relay && status.state === "ready" && <Labels scene={scene} relay={relay} scanId={status.info.name} />}
     </div>
   );
 }

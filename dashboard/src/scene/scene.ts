@@ -1,7 +1,8 @@
 import { SparkRenderer } from "@sparkjsdev/spark";
 import * as THREE from "three";
 import { OrbitControls } from "three/addons/controls/OrbitControls.js";
-import type { Marker, Pose, Vec3 } from "../../../contracts/protocol.ts";
+import { CSS2DObject, CSS2DRenderer } from "three/addons/renderers/CSS2DRenderer.js";
+import type { LabelsRequest, Marker, Pose, Vec3 } from "../../../contracts/protocol.ts";
 import type { SceneApi } from "./api.ts";
 import { type Calibration, solveCalibration } from "./calibration.ts";
 import { createFrameMeter } from "./frameMeter.ts";
@@ -11,6 +12,10 @@ import { type ScanKind, type ScanSource, sourceName } from "./scanSource.ts";
 
 export type ScanInfo = { name: string; kind: ScanKind; count: number; loadMs: number };
 export type Corners = [Vec3, Vec3, Vec3, Vec3];
+// A part named by the AI labeller, placed on the scan (scan coordinates: labels stay on the dashboard).
+export type SceneLabel = { id: string; text: string; point: Vec3 };
+// The view a snapshot was taken from, so its pixels can be turned into points even after the camera has moved.
+export type Snapshot = Pick<LabelsRequest, "image" | "width" | "height"> & { view: THREE.PerspectiveCamera };
 
 // The scene's own controls on top of what the guide builder may call: loading scans and calibrating them.
 export type SceneHandle = SceneApi & {
@@ -25,6 +30,12 @@ export type SceneHandle = SceneApi & {
   // Draws the phone's camera where it is (pose in the marker frame), or hides it with null. Amber while the phone
   // can't see the marker: its position then comes from world tracking alone and may drift.
   showUser(pose: Pose | null, markerTracked: boolean): void;
+  // The current view of the scan alone, at most 1280 px on the long side (the size Claude reads without scaling).
+  snapshot(): Snapshot;
+  // The point on the scan under pixel (x, y) of a snapshot, or null where the pixel shows no scan.
+  pointAt(snapshot: Snapshot, x: number, y: number): Vec3 | null;
+  showLabels(labels: readonly SceneLabel[], highlightId: string | null): void;
+  focusPoint(point: Vec3): void;
   // Keeps a scan's calibration and applies it if that scan is on screen. Throws if the corners don't solve.
   setCalibration(splatId: string, corners: Corners): void;
   fps(): number;
@@ -68,6 +79,13 @@ export function createScene(container: HTMLElement, marker: Pick<Marker, "width"
   const dotMaterial = new THREE.SpriteMaterial({ color: 0x22d3ee, depthTest: false, sizeAttenuation: false });
   let scanRadius = 1;
 
+  // Labels are DOM elements over the canvas, so their text stays crisp and readable at any zoom.
+  const labelRenderer = new CSS2DRenderer();
+  labelRenderer.domElement.className = "scene-labels";
+  container.appendChild(labelRenderer.domElement);
+  const labelLayer = new THREE.Group();
+  scene.add(labelLayer);
+
   const meter = createFrameMeter();
   const raycaster = new THREE.Raycaster();
   const calibrations = new Map<string, Calibration>();
@@ -82,6 +100,7 @@ export function createScene(container: HTMLElement, marker: Pick<Marker, "width"
   const resize = () => {
     const { clientWidth: w, clientHeight: h } = container;
     renderer.setSize(w, h, false);
+    labelRenderer.setSize(w, h);
     camera.aspect = w / Math.max(h, 1);
     camera.updateProjectionMatrix();
   };
@@ -94,6 +113,7 @@ export function createScene(container: HTMLElement, marker: Pick<Marker, "width"
     controls.update();
     objects.tick(time);
     renderer.render(scene, camera);
+    labelRenderer.render(scene, camera);
   });
 
   const isCalibrated = () => currentId !== null && calibrations.has(currentId);
@@ -166,6 +186,13 @@ export function createScene(container: HTMLElement, marker: Pick<Marker, "width"
     });
   };
 
+  // Orbits round `centre` from the current direction, at `distance` or a tenth of the scan, whichever is further.
+  function lookAt(centre: THREE.Vector3, distance: number) {
+    const direction = camera.position.clone().sub(controls.target).normalize();
+    controls.target.copy(centre);
+    camera.position.copy(centre).addScaledVector(direction, Math.max(distance, scanRadius / 10));
+  }
+
   function frameOn(box: THREE.Box3) {
     const centre = box.getCenter(new THREE.Vector3());
     const radius = box.getSize(new THREE.Vector3()).length() / 2 || 1;
@@ -189,6 +216,7 @@ export function createScene(container: HTMLElement, marker: Pick<Marker, "width"
 
       cancelPick();
       dots.clear();
+      labelLayer.clear();
       if (scan) {
         scene.remove(scan.object);
         scan.dispose();
@@ -253,11 +281,48 @@ export function createScene(container: HTMLElement, marker: Pick<Marker, "width"
       const group = objects.find(objectId);
       if (!group || !markerGroup.visible) return;
       const box = new THREE.Box3().setFromObject(group);
-      const centre = box.getCenter(new THREE.Vector3());
-      const distance = Math.max(box.getSize(new THREE.Vector3()).length() * 3, scanRadius / 10);
-      const direction = camera.position.clone().sub(controls.target).normalize();
-      controls.target.copy(centre);
-      camera.position.copy(centre).addScaledVector(direction, distance);
+      lookAt(box.getCenter(new THREE.Vector3()), box.getSize(new THREE.Vector3()).length() * 3);
+    },
+
+    focusPoint: (point) => lookAt(new THREE.Vector3().fromArray(point), 0),
+
+    snapshot() {
+      // Claude should see the scan, not our overlays: a yellow box or a dot could be read as a part.
+      const shown = [markerGroup, dots].map((layer) => [layer, layer.visible] as const);
+      shown.forEach(([layer]) => (layer.visible = false));
+      renderer.render(scene, camera);
+      const source = renderer.domElement;
+      const k = Math.min(1, 1280 / Math.max(source.width, source.height));
+      const canvas = document.createElement("canvas");
+      canvas.width = Math.round(source.width * k);
+      canvas.height = Math.round(source.height * k);
+      // Read straight after the render, before the browser presents and clears the WebGL buffer.
+      canvas.getContext("2d")!.drawImage(source, 0, 0, canvas.width, canvas.height);
+      shown.forEach(([layer, visible]) => (layer.visible = visible));
+      return {
+        image: { mediaType: "image/jpeg", data: canvas.toDataURL("image/jpeg", 0.85).split(",")[1]! },
+        width: canvas.width,
+        height: canvas.height,
+        view: camera.clone(),
+      };
+    },
+
+    pointAt({ view, width, height }, x, y) {
+      if (!scan) return null;
+      raycaster.setFromCamera(new THREE.Vector2((x / width) * 2 - 1, -(y / height) * 2 + 1), view);
+      return (raycaster.intersectObject(scan.object, true)[0]?.point.toArray() as Vec3 | undefined) ?? null;
+    },
+
+    showLabels(labels, highlightId) {
+      labelLayer.clear();
+      for (const label of labels) {
+        const element = document.createElement("div");
+        element.className = label.id === highlightId ? "scene-label highlight" : "scene-label";
+        element.textContent = label.text;
+        const tag = new CSS2DObject(element);
+        tag.position.fromArray(label.point);
+        labelLayer.add(tag);
+      }
     },
 
     onObjectMoved(listener) {
@@ -279,6 +344,8 @@ export function createScene(container: HTMLElement, marker: Pick<Marker, "width"
       renderer.domElement.removeEventListener("pointerup", onPointerUp);
       window.removeEventListener("keydown", onKeyDown);
       controls.dispose();
+      labelLayer.clear();
+      labelRenderer.domElement.remove();
       objects.dispose();
       dotMaterial.dispose();
       scan?.dispose();
