@@ -879,3 +879,18 @@ each builder's brief (`builder-file-<name>.md`, on the `context` branch).
 - 📨 To @laura: the Nicla's view must stay as it is now; tell Ahmed before moving the table, the laptop or the lamp.
 - ⚠️ Conflicts: none
 - Conflict status: resolved by @ahmed 2026-11-15
+
+### 2026-11-15 05:24 — Pixal3D runs on the Spark; first prop: the screwdriver — @max
+- Shipped: no repo code. Pixal3D built in `~/pixal3d` on the Spark in 22 min (three fixes; ledger § 19 "Measured on
+  our Spark"). From one phone photo of our #0 screwdriver it made a textured 3D model in 136–247 s, scaled to the
+  real 164 mm, bit at the origin, handle up +Y (Laura's model conventions), about 99k faces, 2048² texture, 3.8 MB.
+  It shows correctly in the dashboard. The back of the handle is the AI's guess. A second seed removed a stray fin
+  the first one had. SSD photo next.
+- Touched: on `context`: `research/ledger.md` § 19 (measured results), `builder-file-max.md` (task C status). On the
+  Spark: `~/pixal3d` only. Nothing in the repo; test files were kept out of git.
+- 📨 To @laura: your `assets/models/screwdriver` is untouched. Max will ask you whether an AI-made one should show
+  anywhere next to or instead of yours; it's far heavier (3.8 MB, textured) than your under-7 KB orange models.
+- 📨 To @salman: nothing yet; the phone keeps Laura's models.
+- 📨 To @ahmed: nothing for you.
+- ⚠️ Conflicts: @laura — a possible future change to how the `screwdriver` model looks; nothing changed yet
+- Conflict status: open
