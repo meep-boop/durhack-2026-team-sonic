@@ -69,7 +69,7 @@ but all three teammates build on them, so every change after the first version i
 their detail.** Why: the phone side is nearly there, but the dashboard is still a viewer with no relay connection,
 so we climb a ladder: rung 0 the real phone plays a prepared guide; rung 1 the dashboard connects and sends it;
 rung 2 a guide built in the scan lines up on the phone; rung 3 the extras. Decisions: `PROJECT.md` → Decision log.
-1. ⬜ P0 **Relay: the tap receipt**, then **one calibration per scan**. Each ships alone with tests; contract
+1. ✅ (01:47, `8756560` and `b9a5e86`, both on `main`) P0 **Relay: the tap receipt**, then **one calibration per scan**. Each ships alone with tests; contract
    comments updated; `fixtures/fake-phone.ts` waits for receipts, as Salman's reference.
 2. ⬜ P0 **Relay on Max's laptop** and the run sheet (task 10).
 3. ⬜ P0 **`dashboard/src/relay/client.ts`**, once Max agrees: hello as `expert`, reconnect, typed `send` and `on`;
@@ -169,6 +169,7 @@ rung 2 a guide built in the scan lines up on the phone; rung 3 the extras. Decis
     - *Done when:* a backup exists and you've checked it opens.
 
 ## 4. Done log (newest first)
+- 2026-11-15 01:47: the tap receipt (`8756560`) and one calibration per scan (`b9a5e86`); 41 relay tests. Before that, the plan to the deadline in every brief.
 - 2026-11-15 00:51: 9c packaged as an App Lab app and 9d written (`3b4fd51`); 13 rig tests, the chain end to end.
 - 2026-11-14 23:40: the task sweep (every brief, five decisions). Code since 22:27, all on `main`: offline resync (`32ff3e8`),
   the video test page (`03827d1`, then the dashboard calls, `6afbfa5`), Claude labelling (`63b4be1`), the rig and the
