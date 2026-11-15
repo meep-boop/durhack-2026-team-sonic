@@ -837,7 +837,7 @@ each builder's brief (`builder-file-<name>.md`, on the `context` branch).
 - ⚠️ Conflicts: none
 - Conflict status: resolved by @ahmed 2026-11-15
 
-### 2026-11-15 04:50 — AI-made props on hold: Hunyuan's licence excludes the UK — @max
+### 2026-11-15 04:30 — AI-made props on hold: Hunyuan's licence excludes the UK — @max
 - Shipped: no code, nothing installed on the Spark. **Hunyuan3D 2.1 is out**: its licence "does not apply in the
   European Union, United Kingdom and South Korea", and we're in Durham. A new model is being picked: Pixal3D (MIT,
   SIGGRAPH 2026, the only one with a timed DGX Spark run) is the front-runner (`research/ledger.md` § 19). Also
