@@ -54,7 +54,7 @@ enum Shapes {
     ]
     let edges = [(0, 1), (1, 2), (2, 3), (3, 0), (4, 5), (5, 6), (6, 7), (7, 4), (0, 4), (1, 5), (2, 6), (3, 7)]
     for (a, b) in edges {
-      root.addChild(bar(from: corners[a], to: corners[b], thickness: 0.0012, color: Theme.accentUI))
+      root.addChild(bar(from: corners[a], to: corners[b], thickness: 0.0025, color: Theme.accentUI))
     }
     return root
   }
@@ -88,34 +88,72 @@ enum Shapes {
 
   /// Loops the action until the step changes, along `axis` (in the model's frame), as assets/models/README.md says:
   /// pull is +axis, push is -axis, unscrew spins around it, flip and rotate90 turn about it.
-  static func animate(_ entity: Entity, action: Action, axis: SIMD3<Float>) {
+  /// Plays a guide part's action on a loop that reads at a glance (Ahmed's spec, 2026-11-15): an unscrew is two turns
+  /// out of the hole while rising 15 mm, a pull or push is 4 cm one way; each holds 0.4 s at the end and restarts from
+  /// the start, never back and forth. `delay` staggers parts so a row of screws ripples.
+  static func animate(_ entity: Entity, action: Action, axis: SIMD3<Float>, delay: TimeInterval = 0) {
     let direction = simd_length(axis) > 0 ? simd_normalize(axis) : SIMD3<Float>(0, 1, 0)
     let start = entity.transform
-    var end = start
-    var mode = AnimationRepeatMode.autoReverse
-    var duration = 0.8
+    var steps: [AnimationResource] = []
+    func move(from: Transform, to: Transform, _ duration: TimeInterval, _ timing: AnimationTimingFunction) {
+      if let step = try? AnimationResource.generate(with: FromToByAnimation(from: from, to: to, duration: duration, timing: timing, bindTarget: .transform)) {
+        steps.append(step)
+      }
+    }
 
     switch action {
-    case .pull:
-      end.translation += direction * 0.02
-    case .push:
-      end.translation -= direction * 0.02
     case .unscrew:
-      // Anticlockwise seen from +axis (out of the hole), the way a screw comes undone. Spin, not a from–to half
-      // turn: a half turn starts and ends at the same orientation, so it could play in either direction.
-      spin(entity, anticlockwise: true, axis: direction)
-      return
-    case .flip:
-      end.rotation = simd_quatf(angle: .pi, axis: direction) * start.rotation
-      duration = 1.2
-    case .rotate90:
-      end.rotation = simd_quatf(angle: .pi / 2, axis: direction) * start.rotation
+      // Anticlockwise seen from +axis (out of the hole), the way a screw comes undone, in quarter turns: a from–to
+      // rotation of more than a half turn could go either way round.
+      var from = start
+      for step in unscrewSteps() {
+        var to = from
+        to.rotation = simd_quatf(angle: step.angle, axis: direction) * from.rotation
+        to.translation += direction * step.rise
+        move(from: from, to: to, step.duration, .linear)
+        from = to
+      }
+      move(from: from, to: from, 0.4, .linear)
+    case .pull, .push:
+      var to = start
+      to.translation += direction * (action == .pull ? 0.04 : -0.04)
+      move(from: start, to: to, 1.0, .easeInOut)
+      move(from: to, to: to, 0.4, .linear)
+    case .flip, .rotate90:
+      var end = start
+      end.rotation = simd_quatf(angle: action == .flip ? .pi : .pi / 2, axis: direction) * start.rotation
+      move(from: start, to: end, action == .flip ? 1.2 : 0.8, .easeInOut)
+      move(from: end, to: end, 0.4, .linear)
     }
 
-    let definition = FromToByAnimation(from: start, to: end, duration: duration, timing: .easeInOut, bindTarget: .transform, repeatMode: mode)
-    if let animation = try? AnimationResource.generate(with: definition) {
-      entity.playAnimation(animation)
+    guard !steps.isEmpty, let sequence = try? AnimationResource.sequence(with: steps),
+          let loop = try? AnimationResource.generate(with: sequence.definition.repeatingForever()) else { return }
+    // Delayed once, not every loop, so the ripple keeps its spacing instead of drifting apart.
+    if delay > 0 {
+      DispatchQueue.main.asyncAfter(deadline: .now() + delay) { [weak entity] in entity?.playAnimation(loop) }
+    } else {
+      entity.playAnimation(loop)
     }
+  }
+
+  /// An unscrew as quarter turns: `turns` full turns rising `rise` metres over `duration` seconds in all.
+  static func unscrewSteps(turns: Int = 2, rise: Float = 0.015, duration: TimeInterval = 1.6) -> [(angle: Float, rise: Float, duration: TimeInterval)] {
+    let count = max(turns, 1) * 4
+    return Array(repeating: (angle: Float.pi / 2, rise: rise / Float(count), duration: duration / Double(count)), count: count)
+  }
+
+  /// A thin white ring under a guide part, gently pulsing, so each part reads as "this one" from across the table.
+  static func partRing(radius: Float) -> Entity {
+    guard let mesh = annulus(inner: max(radius - 0.0015, 0.001), outer: radius) else { return Entity() }
+    let ring = ModelEntity(mesh: mesh, materials: [UnlitMaterial(color: UIColor.white.withAlphaComponent(0.85))])
+    if let animation = try? AnimationResource.generate(with: FromToByAnimation(
+      from: Transform(scale: [1, 1, 1]), to: Transform(scale: [1.15, 1, 1.15]), duration: 0.9, timing: .easeInOut, bindTarget: .transform, repeatMode: .autoReverse
+    )) {
+      ring.playAnimation(animation)
+    }
+    let root = Entity()
+    root.addChild(ring)
+    return root
   }
 
   /// Stand-ins for when a model file is missing.

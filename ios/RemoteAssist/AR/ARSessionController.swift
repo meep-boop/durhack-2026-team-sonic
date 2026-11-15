@@ -956,20 +956,23 @@ final class ARSessionController: NSObject, ARSessionDelegate {
     stepRoot.children.removeAll()
     guard let step else { return }
 
-    for object in step.objects {
+    for (index, object) in step.objects.enumerated() {
       // Positions are already in the marker frame (contracts/protocol.ts), so they go straight onto the anchor.
       let node = Entity()
       node.position = object.pos.simd
       node.orientation = object.rot.simd
       node.addChild(Shapes.highlightBox(size: object.size.simd))
+      let ring = Shapes.partRing(radius: max(object.size.x, object.size.z) / 2 + 0.004)
+      ring.position.y = -object.size.y / 2 + 0.001
+      node.addChild(ring)
       let model = Shapes.model(object.model)
       node.addChild(model)
       if let action = object.action {
         // The contract's axis is in the marker frame; the model lives in the object's rotated frame.
-        Shapes.animate(model, action: action, axis: object.rot.simd.inverse.act(object.axis.simd))
+        Shapes.animate(model, action: action, axis: object.rot.simd.inverse.act(object.axis.simd), delay: 0.15 * Double(index))
       }
       if let text = object.label {
-        let label = Shapes.label(text)
+        let label = Shapes.label(text, size: 0.018)
         label.position = [0, object.size.y / 2 + 0.012, 0]
         node.addChild(label)
       }
