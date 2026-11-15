@@ -7,17 +7,17 @@ struct StepCard: View {
     var verb: String
   }
 
+  /// The one thing worth saying under the step right now, if anything.
+  struct Note: Equatable {
+    var text: String
+    var symbol: String
+    var tint: Color = Theme.accent
+  }
+
   let player: GuidePlayer
-  /// Marker guides only make sense once the marker is found; AI laptop guides don't use it.
+  /// Marker guides only make sense once the marker is found; the laptop guide doesn't use it.
   let canAdvance: Bool
-  let outboxCount: Int
-  @Binding var voiceOn: Bool
-  var tools: AnyView? = nil
-  /// "3 of 8 done" while there are pins to tick on this step.
-  var pinProgress: PinProgress? = nil
-  /// Hands-free voice commands: on or off, the command just heard, and why it can't run.
-  var handsFree: (on: Bool, heard: String?, problem: String?) = (false, nil, nil)
-  var onToggleHandsFree: () -> Void = {}
+  var note: Note? = nil
   /// The finished guide's PDF report, once it's made.
   var reportURL: URL? = nil
   /// Ahmed's UNO Q rig's verdict on this step, when it checks it.
@@ -33,37 +33,9 @@ struct StepCard: View {
         ProgressSegments(steps: player.guide.steps, current: index, done: player.doneStepIds)
 
         VStack(alignment: .leading, spacing: 6) {
-          HStack {
-            Text("STEP \(index + 1) OF \(player.guide.steps.count)")
-              .font(.caption.weight(.bold))
-              .foregroundStyle(.secondary)
-            Spacer()
-            if let heard = handsFree.heard {
-              Text("“\(heard)”")
-                .font(.caption.weight(.semibold))
-                .foregroundStyle(Theme.accent)
-                .transition(.opacity.combined(with: .scale))
-            }
-            Button(action: onToggleHandsFree) {
-              Image(systemName: handsFree.on ? "mic.fill" : "mic.slash")
-                .font(.subheadline)
-                .frame(width: 32, height: 32)
-                .symbolEffect(.pulse, isActive: handsFree.on)
-            }
-            .buttonStyle(.plain)
-            .foregroundStyle(handsFree.on ? Theme.accent : .secondary)
-            .accessibilityLabel(handsFree.on ? "Stop hands-free commands" : "Hands-free: say next, back, show me")
-            Button {
-              voiceOn.toggle()
-            } label: {
-              Image(systemName: voiceOn ? "speaker.wave.2.fill" : "speaker.slash.fill")
-                .font(.subheadline)
-                .frame(width: 32, height: 32)
-            }
-            .buttonStyle(.plain)
-            .foregroundStyle(voiceOn ? Theme.accent : .secondary)
-            .accessibilityLabel(voiceOn ? "Stop reading steps aloud" : "Read steps aloud")
-          }
+          Text("STEP \(index + 1) OF \(player.guide.steps.count)")
+            .font(.caption.weight(.bold))
+            .foregroundStyle(.secondary)
           Text(step.text)
             .font(.title2.weight(.semibold))
             .fixedSize(horizontal: false, vertical: true)
@@ -72,27 +44,13 @@ struct StepCard: View {
             .transition(.asymmetric(insertion: .move(edge: .trailing).combined(with: .opacity), removal: .opacity))
         }
 
-        if let problem = handsFree.problem {
-          Label(problem, systemImage: "mic.badge.xmark").font(.footnote).foregroundStyle(.orange)
-        } else if handsFree.on, handsFree.heard == nil {
-          Text("Say “next”, “back”, “show me”, “repeat” or “call the expert”")
-            .font(.caption)
-            .foregroundStyle(.secondary)
-        }
-
-        if let tools { tools }
-
-        if let pinProgress {
-          HStack(spacing: 8) {
-            Image(systemName: pinProgress.done == pinProgress.total ? "checkmark.circle.fill" : "hand.tap.fill")
-              .foregroundStyle(pinProgress.done == pinProgress.total ? Color.green : Theme.accent)
-            Text(pinProgress.done == pinProgress.total
-              ? "All \(pinProgress.total) \(pinProgress.verb). Tap Done."
-              : "\(pinProgress.done) of \(pinProgress.total) \(pinProgress.verb) · tap each pin as you go")
-              .font(.subheadline.weight(.semibold))
-              .contentTransition(.numericText())
-          }
-          .animation(.snappy, value: pinProgress)
+        if let note {
+          Label(note.text, systemImage: note.symbol)
+            .font(.subheadline.weight(.semibold))
+            .foregroundStyle(note.tint)
+            .fixedSize(horizontal: false, vertical: true)
+            .contentTransition(.opacity)
+            .animation(.snappy, value: note)
         }
 
         if let verification {
@@ -103,12 +61,6 @@ struct StepCard: View {
           .font(.subheadline.weight(.semibold))
           .foregroundStyle(verification.ok ? .green : .orange)
           .sensoryFeedback(verification.ok ? .success : .warning, trigger: verification)
-        }
-
-        if outboxCount > 0 {
-          Label("\(outboxCount) finished step\(outboxCount == 1 ? "" : "s") will sync when you're back online", systemImage: "icloud.slash")
-            .font(.footnote)
-            .foregroundStyle(.orange)
         }
 
         HStack(spacing: 12) {
@@ -133,11 +85,6 @@ struct StepCard: View {
           .disabled(!canAdvance)
         }
 
-        if !canAdvance {
-          Text("Point the camera at the marker to start.")
-            .font(.footnote)
-            .foregroundStyle(.secondary)
-        }
       } else {
         CompletionView(title: player.guide.title, reportURL: reportURL, onRestart: player.restart)
       }

@@ -30,6 +30,8 @@ struct ContentView: View {
   /// The layout as a JSON file to share, rewritten only when the layout changes.
   @State private var layoutFile: URL?
   @State private var confirmingLeave = false
+  /// The start screen: what are you fixing? Shown at launch and after leaving a guide.
+  @State private var showingHome = true
   /// The last guide the relay sent, to go back to when leaving the laptop guide.
   @State private var relayGuide: Guide?
   @AppStorage("ghostToolOn") private var ghostToolOn = true
@@ -48,35 +50,56 @@ struct ContentView: View {
       ARViewContainer(controller: ar)
         .ignoresSafeArea()
 
+      if showingHome {
+        HomeView(
+          relayConnected: relay.state == .connected,
+          onLaptop: { showingLaptop = true },
+          onMarker: { enterGuide() },
+          onSettings: { showingConnection = true }
+        )
+        .transition(.opacity)
+      } else {
+        guideScreen
+      }
+
+      if call.state == .ringing {
+        IncomingCallBanner(call: call)
+          .padding(.horizontal)
+          .frame(maxHeight: .infinity, alignment: .top)
+          .transition(.move(edge: .top).combined(with: .opacity))
+      }
+
+      // Out of the view tree entirely when the app isn't on screen, so its Metal layer can't ask for drawables.
+      if let face = call.remoteVideoTrack, call.state == .live, scenePhase == .active {
+        RemoteVideoView(track: face)
+          .frame(width: 96, height: 128)
+          .clipShape(RoundedRectangle(cornerRadius: 18, style: .continuous))
+          .overlay(RoundedRectangle(cornerRadius: 18, style: .continuous).stroke(.white.opacity(0.4), lineWidth: 1))
+          .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topTrailing)
+          .padding(.top, 70)
+          .padding(.trailing)
+      }
+    }
+  }
+
+  /// The camera with one status pill and one menu at the top, and either the setup coach or the step card at the
+  /// bottom: never both, and at most one line of extra information.
+  private var guideScreen: some View {
+    ZStack {
       SpotlightOverlay(tracker: spotlight)
 
-      if !ar.markerSeen && !isLaptopGuide {
-        FindMarkerHint { showingLaptop = true }.transition(.opacity)
+      if !ar.markerSeen && !isLaptopGuide && player.currentStep != nil {
+        FindMarkerHint().transition(.opacity)
       }
 
-      if ar.markerLostForAWhile && !isLaptopGuide && player.currentStep != nil {
-        Label("Marker out of view: the guide is holding where it was", systemImage: "pin.fill")
-          .font(.footnote.weight(.semibold))
-          .padding(.horizontal, 14)
-          .padding(.vertical, 8)
-          .glassBackground(in: Capsule())
-          .frame(maxHeight: .infinity, alignment: .center)
-          .allowsHitTesting(false)
-          .transition(.opacity)
-      }
-
-      VStack(spacing: 12) {
-        topBar
-
-        if let setup {
-          LaptopSetupCoach(stage: setup, problem: setupProblem, onCancel: cancelSetup)
-            .transition(.move(edge: .top).combined(with: .opacity))
+      VStack(spacing: 10) {
+        HStack(spacing: 10) {
+          StatusCapsule(ar: ar, relay: relay, call: call, laptopLocked: isLaptopGuide ? laptopFrame != nil : nil) { showingConnection = true }
+          Spacer(minLength: 0)
+          guideMenu
         }
 
-        if call.state == .ringing {
-          IncomingCallBanner(call: call)
-            .transition(.move(edge: .top).combined(with: .opacity))
-        } else if call.state != .idle {
+        if call.state != .idle && call.state != .ringing {
           InCallBar(call: call) { showingTranscript = true }
             .transition(.move(edge: .top).combined(with: .opacity))
           CaptionStrip(call: call)
@@ -87,57 +110,73 @@ struct ContentView: View {
             .font(.footnote.weight(.semibold))
             .padding(10)
             .glassBackground(in: RoundedRectangle(cornerRadius: 14))
-        }
-
-        if let error = ar.errorMessage {
+        } else if let error = ar.errorMessage {
           Label(error, systemImage: "exclamationmark.triangle.fill")
             .font(.footnote)
             .padding(10)
             .glassBackground(in: RoundedRectangle(cornerRadius: 14))
         }
 
-        if let syncedToast {
-          Label(syncedToast, systemImage: "checkmark.circle.fill")
-            .font(.footnote.weight(.semibold))
-            .padding(.horizontal, 14)
-            .padding(.vertical, 8)
-            .glassBackground(in: Capsule())
-            .transition(.move(edge: .top).combined(with: .opacity))
-        }
-
-        if let pinMessage {
-          Text(pinMessage)
-            .font(.footnote.weight(.semibold))
-            .padding(.horizontal, 14)
-            .padding(.vertical, 8)
-            .glassBackground(in: Capsule())
-            .transition(.opacity)
-        }
-
         Spacer()
 
-        if isLaptopGuide, currentPhase == "refit", let group = screwMemory.group(for: currentLookFor) {
-          ScrewMapCard(entries: screwMemory.entries(in: group), photo: screwMemory.photos[group], captive: laptop.captiveScrews)
+        if let setup {
+          LaptopSetupCoach(stage: setup, problem: setupProblem, onCancel: cancelSetup)
             .transition(.move(edge: .bottom).combined(with: .opacity))
+        } else {
+          if isLaptopGuide, currentPhase == "refit", let group = screwMemory.group(for: currentLookFor) {
+            ScrewMapCard(entries: screwMemory.entries(in: group), photo: screwMemory.photos[group], captive: laptop.captiveScrews)
+              .transition(.move(edge: .bottom).combined(with: .opacity))
+          }
+          stepCard
         }
-
-        stepCard
       }
       .padding(.horizontal)
       .padding(.top, 4)
       .padding(.bottom, 8)
-
-      // Out of the view tree entirely when the app isn't on screen, so its Metal layer can't ask for drawables.
-      if let face = call.remoteVideoTrack, call.state == .live, scenePhase == .active {
-        RemoteVideoView(track: face)
-          .frame(width: 96, height: 128)
-          .clipShape(RoundedRectangle(cornerRadius: 18, style: .continuous))
-          .overlay(RoundedRectangle(cornerRadius: 18, style: .continuous).stroke(.white.opacity(0.4), lineWidth: 1))
-          .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topTrailing)
-          .padding(.top, 130)
-          .padding(.trailing)
-      }
     }
+  }
+
+  private var guideMenu: some View {
+    GuideMenu(
+      isLaptopGuide: isLaptopGuide,
+      frameLocked: laptopFrame != nil,
+      teaching: teaching,
+      inCall: call.state != .idle && call.state != .ringing,
+      layoutFile: layoutFile,
+      voiceOn: $voiceOn,
+      ghostToolOn: $ghostToolOn,
+      handsFreeOn: commands.isOn,
+      onConnect: { showingConnection = true },
+      onTranscript: { showingTranscript = true },
+      onSetup: startSetup,
+      onTeach: { setTeaching(!teaching) },
+      onUndoTeach: undoTeach,
+      onHandsFree: commands.toggle,
+      onLeave: { confirmingLeave = true }
+    )
+  }
+
+  /// The single line under the step: the most useful thing to know right now, if anything.
+  private var stepNote: StepCard.Note? {
+    if teaching {
+      let count = layout.part(for: currentLookFor)?.points.count ?? 0
+      return .init(text: "Teaching: tap each part on the laptop · \(count) marked", symbol: "hand.point.up.left.fill")
+    }
+    if let problem = commands.problem { return .init(text: problem, symbol: "mic.badge.xmark", tint: .orange) }
+    if let heard = commands.heard { return .init(text: "Heard “\(heard)”", symbol: "mic.fill") }
+    if let pinMessage { return .init(text: pinMessage, symbol: "info.circle.fill") }
+    if let syncedToast { return .init(text: syncedToast, symbol: "checkmark.circle.fill", tint: .green) }
+    if let progress = pinProgress {
+      return progress.done == progress.total
+        ? .init(text: "All \(progress.total) \(progress.verb). Tap Done.", symbol: "checkmark.circle.fill", tint: .green)
+        : .init(text: "\(progress.done) of \(progress.total) \(progress.verb) · tap each pin as you go", symbol: "hand.tap.fill")
+    }
+    if !isLaptopGuide && !ar.markerSeen { return .init(text: "Point the camera at the printed marker to start", symbol: "qrcode.viewfinder", tint: .secondary) }
+    if !isLaptopGuide && ar.markerLostForAWhile { return .init(text: "Marker out of view: the guide is holding where it was", symbol: "pin.fill", tint: .secondary) }
+    if relay.outboxCount > 0 {
+      return .init(text: "\(relay.outboxCount) finished step\(relay.outboxCount == 1 ? "" : "s") will sync when you're back online", symbol: "icloud.slash", tint: .orange)
+    }
+    return nil
   }
 
   /// Sheets and alerts, apart from the layers so the type checker can cope with the screen.
@@ -148,19 +187,20 @@ struct ContentView: View {
         .presentationDetents([.medium, .large])
     }
     .sheet(isPresented: $showingLaptop) {
-      LaptopGuideSheet(laptop: laptop, isRunning: isLaptopGuide, onBackToMarker: leaveLaptopGuide) { guide in
+      LaptopGuideSheet(laptop: laptop, isRunning: isLaptopGuide && !showingHome, onBackToMarker: leaveGuide) { guide in
         screwMemory.reset()
         player.replace(with: guide)
         player.restart()
+        enterGuide()
         if laptopFrame == nil { startSetup() }
       }
       .presentationDetents([.large])
     }
-    .alert("Leave the laptop guide?", isPresented: $confirmingLeave) {
-      Button("Leave", role: .destructive, action: leaveLaptopGuide)
+    .alert("Leave this guide?", isPresented: $confirmingLeave) {
+      Button("Leave", role: .destructive, action: leaveGuide)
       Button("Stay", role: .cancel) {}
     } message: {
-      Text("You'll go back to the marker guide. Your laptop setup is cleared.")
+      Text("You'll go back to the start. Your place in the guide is kept.")
     }
     .sheet(isPresented: $showingTranscript) {
       TranscriptSheet(call: call).presentationDetents([.medium, .large])
@@ -231,29 +271,13 @@ struct ContentView: View {
     StepCard(
       player: player,
       canAdvance: ar.markerSeen || isLaptopGuide,
-      outboxCount: relay.outboxCount,
-      voiceOn: $voiceOn,
-      tools: isLaptopGuide && player.currentStep != nil ? AnyView(laptopTools) : nil,
-      pinProgress: pinProgress,
-      handsFree: (commands.isOn, commands.heard, commands.problem),
-      onToggleHandsFree: commands.toggle,
+      note: stepNote,
       reportURL: reportURL,
       verification: player.currentStepId.flatMap { verified[$0] },
       onNext: next,
       onBack: player.back,
-      onLeave: isLaptopGuide ? { confirmingLeave = true } : nil
+      onLeave: { confirmingLeave = true }
     )
-  }
-
-  private var topBar: some View {
-    HStack(spacing: 10) {
-      StatusCapsule(ar: ar, relay: relay, call: call) { showingConnection = true }
-      Button { showingLaptop = true } label: {
-        Image(systemName: "laptopcomputer").font(.headline).frame(width: 44, height: 44)
-      }
-      .glassBackground(in: Circle())
-      .accessibilityLabel("Laptop guide")
-    }
   }
 
   private func wire() {
@@ -412,21 +436,6 @@ struct ContentView: View {
 
   // MARK: Laptop setup and layout
 
-  private var laptopTools: some View {
-    LaptopStepTools(
-      laptop: laptop,
-      ghostToolOn: $ghostToolOn,
-      frameLocked: laptopFrame != nil,
-      canTeach: laptopFrame != nil && currentLookFor != nil,
-      teaching: teaching,
-      taughtCount: layout.part(for: currentLookFor)?.points.count ?? 0,
-      shareURL: layoutFile,
-      onSetup: startSetup,
-      onTeach: { setTeaching(!teaching) },
-      onUndo: undoTeach
-    )
-  }
-
   /// What the step card says about lighting up this step's parts.
   private var layoutHint: String? {
     guard isLaptopGuide, let part = currentLookFor else { return nil }
@@ -436,8 +445,19 @@ struct ContentView: View {
     return "Not measured yet: tap Teach and tap \(part) once, or ask the expert to tap them"
   }
 
-  /// Back to the marker guide: the relay's latest if it sent one, else the bundled sample. Clears the laptop setup.
-  private func leaveLaptopGuide() {
+  private func enterGuide() {
+    showingHome = false
+    spotlight.enabled = true
+  }
+
+  /// Back to the start screen. Leaving the laptop guide also clears its setup and returns the player to the marker
+  /// guide (the relay's latest, or the bundled sample), so "Follow the expert's guide" picks up from there.
+  private func leaveGuide() {
+    defer {
+      showingHome = true
+      spotlight.enabled = false
+    }
+    guard isLaptopGuide else { return }
     cancelSetup()
     setTeaching(false)
     laptopFrame = nil

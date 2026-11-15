@@ -64,9 +64,6 @@ struct Onboarding: View {
 
 /// Corner brackets that breathe until the marker is found, so a first-time user knows what to point at.
 struct FindMarkerHint: View {
-  /// Opens the laptop guide, for anyone working on the laptop without the printed marker.
-  var onUseAI: () -> Void = {}
-
   var body: some View {
     VStack(spacing: 16) {
       ZStack {
@@ -86,17 +83,8 @@ struct FindMarkerHint: View {
         .padding(.horizontal, 16)
         .padding(.vertical, 8)
         .glassBackground(in: Capsule())
-        .allowsHitTesting(false)
-
-      Button(action: onUseAI) {
-        Label("No marker? Start the laptop guide", systemImage: "laptopcomputer")
-          .font(.subheadline.weight(.semibold))
-          .padding(.horizontal, 14)
-          .padding(.vertical, 8)
-      }
-      .buttonStyle(.plain)
-      .glassBackground(in: Capsule())
     }
+    .allowsHitTesting(false)
   }
 
   private struct Bracket: Shape {

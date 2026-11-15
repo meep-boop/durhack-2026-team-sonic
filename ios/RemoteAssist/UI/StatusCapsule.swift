@@ -5,12 +5,18 @@ struct StatusCapsule: View {
   let ar: ARSessionController
   let relay: RelayClient
   let call: CallManager
+  /// On the laptop guide: whether its corners are set (shown instead of the marker, which it doesn't use).
+  var laptopLocked: Bool? = nil
   let onTap: () -> Void
 
   var body: some View {
     Button(action: onTap) {
       HStack(spacing: 14) {
-        item("viewfinder", markerColor, markerLabel)
+        if let laptopLocked {
+          item("laptopcomputer", laptopLocked ? .green : .orange, laptopLocked ? "Locked" : "Set up")
+        } else {
+          item("viewfinder", markerColor, markerLabel)
+        }
         Divider().frame(height: 16)
         item("antenna.radiowaves.left.and.right", relayColor, relayLabel)
         if relay.state == .connected {
