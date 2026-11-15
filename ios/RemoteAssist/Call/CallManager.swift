@@ -55,6 +55,7 @@ final class CallManager: NSObject {
   /// and 10 per call, whatever the page does. Main thread only.
   @ObservationIgnored private var lastMint: [String: Date] = [:]
   @ObservationIgnored private var mintsThisCall = 0
+  @ObservationIgnored private var transcriptStarted = false
 
   var isSendingVideo: Bool { state == .connecting || state == .live || state == .reconnecting }
 
@@ -102,6 +103,7 @@ final class CallManager: NSObject {
     transcriptProblem = nil
     lastMint = [:]
     mintsThisCall = 0
+    transcriptStarted = false
     state = .connecting
     audioSession.beginCall(speakerOn: isSpeakerOn)
 
@@ -244,10 +246,16 @@ extension CallManager: RTCPeerConnectionDelegate {
     }
   }
 
+  /// Only the expert page's own "control" channel is listened to; any other channel a peer opens is ignored.
   func peerConnection(_ peerConnection: RTCPeerConnection, didOpen dataChannel: RTCDataChannel) {
+    guard dataChannel.label == "control" else { return }
     dataChannel.delegate = self
-    onMain { [weak self] in self?.control = dataChannel }
-    startTranscript(on: dataChannel)
+    onMain { [weak self] in
+      guard let self, peerConnection === self.peer, !self.transcriptStarted else { return }
+      self.control = dataChannel
+      self.transcriptStarted = true
+      self.startTranscript(on: dataChannel)
+    }
   }
 
   /// Hands the expert's page two single-use ElevenLabs tokens, one per voice, so it can transcribe the call.
@@ -257,10 +265,9 @@ extension CallManager: RTCPeerConnectionDelegate {
       Self.send(["kind": "stt-off", "reason": "no ElevenLabs key on the phone"], on: channel)
       return
     }
-    onMain { [weak self] in
-      self?.mintsThisCall += 2
-      self?.lastMint = ["expert": Date(), "phone": Date()]
-    }
+    // Called on main, once per call: the first two tokens count toward the cap like any other.
+    mintsThisCall += 2
+    lastMint = ["expert": Date(), "phone": Date()]
     Task {
       do {
         async let expert = TranscriptService.mintToken()
@@ -292,7 +299,7 @@ extension CallManager: RTCDataChannelDelegate {
   /// Point-and-guide rides the call's own channel, peer to peer, so it needs no relay or contract change:
   /// `ping` → `pong` (for the expert page's latency estimate), `tap` → a pin, then `pinned`, and `clear`.
   func dataChannel(_ dataChannel: RTCDataChannel, didReceiveMessageWith buffer: RTCDataBuffer) {
-    guard !buffer.isBinary,
+    guard dataChannel.label == "control", !buffer.isBinary,
           let message = try? JSONSerialization.jsonObject(with: buffer.data) as? [String: Any],
           let kind = message["kind"] as? String else { return }
     switch kind {
