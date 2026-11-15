@@ -65,10 +65,10 @@ splats until that's settled. Training splats in the app (the scan is taken in Sc
 
 **▶ What's left (from @ahmed, 2026-11-15 04:12), ahead of the 01:45 block below.** The phone is the one piece not on `main`, and the
 camera freeze on `salman-ios-ar` has no confirmed cause after five fixes. Ahmed's decision: **the plain build first.**
-1. ⬜ P0 **Merge PR #8 (`salman-ios-polish`) to `main` now** and run the six-point smoke test (item 2 in the block
+1. ✅ P0 *(05:18: #11 merged instead of #8, the newer build; waits on Ahmed's OK)* **Merge PR #8 (`salman-ios-polish`) to `main` now** and run the six-point smoke test (item 2 in the block
    below) on the real phone against the relay on Max's laptop. That's the demo build until the camera is proven.
    *Done when:* `ios/` is on `main` and a board entry says which of the six passed, and whether the camera ever froze.
-2. ⬜ P0 **Find the freeze by halving, not by another fix** (`debug` skill): PR #8 is the last known-good end,
+2. ✅ P0 *(found by on-phone A/B instead of a bisect: research § 20)* **Find the freeze by halving, not by another fix** (`debug` skill): PR #8 is the last known-good end,
    `fa51e72` the bad end, about 30 commits apart, so about 5 builds. `git bisect start fa51e72 origin/salman-ios-polish`,
    and for each build: open the app, start a guide, wait 60 s, open and close a sheet. Post the first bad commit.
    Suspects from reading `ARSessionController.swift` at `fa51e72`, for after the bisect, not instead of it:
@@ -77,12 +77,12 @@ camera freeze on `salman-ios-ar` has no confirmed cause after five fixes. Ahmed'
    - the session is still re-run while live from the watchdog (328), `resume()` (404), `setHandsInFront` (420) and
      the thermal and memory observers (212, 222), which `386367d` says must never happen;
    - `replaceView` moves anchors between two `ARView`s sharing one session (262-288).
-3. ⬜ P0 **Bring across only what the demo needs, one at a time, each tested on the phone:** the tap receipt
+3. ✅ P0 *(in #11)* **Bring across only what the demo needs, one at a time, each tested on the phone:** the tap receipt
    (`Outbox.swift`) and place-survives-an-app-kill (`Persistence.swift`) first. They don't touch the camera.
 4. ⬜ P0 **Post the marker axes** (red +X, blue +Z: which printed edges). Max's calibration assumes top edge and
    down the print.
-5. ⬜ P0 **`ios/expert-call/` on `main` with `?relay=` working**, served on port 8000: Max's Call button opens it.
-6. ⬜ P1 Extras (pins, spotlight, voice commands, transcript, report) only after 1–5, and only if the camera holds.
+5. ✅ P0 *(in #11; auto-connects for local relays)* **`ios/expert-call/` on `main` with `?relay=` working**, served on port 8000: Max's Call button opens it.
+6. 🟡 P1 *(in #11, call-tested by Salman; guide Done fix on `salman-ios-guide`)* Extras (pins, spotlight, voice commands, transcript, report) only after 1–5, and only if the camera holds.
 7. ⬜ **Answer Laura:** Gemini is removed on your branch (`a9a884c`); is ElevenLabs in the demo build? The README
    and the MLH entries follow your answer.
 - No chat (decided 01:55): the chat screen comes out before any merge.
@@ -230,6 +230,12 @@ rung 2 a guide built in the scan lines up on the phone; rung 3 the extras. Decis
    - *Done when:* agreed with @max what the app must hand over, and that hand-over works once.
 
 ## 4. Done log (newest first)
+- 2026-11-15 05:50 (Salman's agent): **#11 merged to `main` at 05:18** (`salman-ios-ar`).
+  - The camera freeze cause was measured and fixed; 0 drawable failures and 60 fps on the phone (research § 20).
+  - The technician console and live call: point, area and spoken commands, tested by Salman on his Mac relay.
+  - A guide's Done failed in that test, for three reasons: no guide screen during a call, no printed marker, and an
+    invisible relay refusal. Fixes on `salman-ios-guide` (PR to follow).
+  - Not yet tried with Max's relay or dashboard.
 - 2026-11-14 23:25 (logged by @ahmed from your `salman-board` entry): on `salman-ios`, PR #4: the live call (the expert
   calls; AR camera and two-way audio) with `ios/expert-call/`, the guide on a world anchor, the six USDZ models with
   their actions, the rig's verdict on the step card, `expect` mirrored, the optional Gemini assistant and ElevenLabs
@@ -239,7 +245,7 @@ rung 2 a guide built in the scan lines up on the phone; rung 3 the extras. Decis
   picked.
 
 ## 5. Waiting on / owed to others
-- 📥 **Waiting on:** nothing. The marker and models are on `main` (Laura); the contract, relay, fakes and sample guide
+- 📥 **Waiting on:** @ahmed's OK that #11 (merged) replaces #8 as the demo build. Before that, nothing. The marker and models are on `main` (Laura); the contract, relay, fakes and sample guide
   are on `main` (Ahmed).
 - 📤 **Owed to @ahmed:** the +X/+Z printed edges and the offset in mm (item D).
 - 📤 **Owed to @laura:** the models' size and up-direction as the phone shows them; `ios/expert-call/` as the base for

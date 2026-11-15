@@ -27,6 +27,7 @@ The one research file for this project (`research-ledger` skill). Every source g
 | 17 | Swapping the SSD on a Dell Latitude 5530 (2026-11-15) | The demo guide's real steps, screw counts and tools |
 | 18 | One photo of an object → AI-made 3D model on the DGX Spark (2026-11-15) | TRELLIS.2 / Hunyuan3D / SAM 3D vs the scan routes; props like the SSD or screwdriver |
 | 19 | Which image-to-3D model, now that Hunyuan's licence excludes the UK (2026-11-15) | Pixal3D vs TRELLIS.2 vs Step1X-3D; licences, gated models, the Spark run |
+| 20 | The phone's live camera freeze, the live call, what Done needs, distance and markers (2026-11-15) | Why the camera froze and the measured fix; what the call MVP does; why Done can look broken; whether the marker and scans are still needed |
 
 ---
 
@@ -1381,3 +1382,67 @@ rests on the authors' own numbers; keep it out of the pitch.
   [W1] only.
 - Pixazo's "Hunyuan3D-2.5 is the strongest open-weight model": 2.5 isn't a public download, and the page denies a
   public arena exists, which [13] contradicts. https://www.pixazo.ai/leaderboard/ai-3d-model-generation
+
+# § 20 The phone's live camera, the live call, and what the guide needs (2026-11-15)
+*Salman's agent, first-hand: device logs from one iPhone 16 (iOS 26.3.1, Xcode 26.0.1) over `devicectl`, 45–60 s per
+run, one change at a time. These are our numbers on one phone, not general claims.*
+
+### The camera freeze: the cause, measured
+- **Symptom:** `[CAMetalLayer nextDrawable] returning nil because allocation failed` about 56 times a second.
+  RealityKit put about 17 of 60 frames on screen (sometimes 0) while ARKit kept sending 58–60 camera frames a second.
+- **A/B on one build:**
+
+  | Setup | Drawable failures per run | On screen |
+  |---|---|---|
+  | Spotlight on a `CADisplayLink` asking for 10–20 fps, ARKit delegate on main (the old build) | 600–2,500 | 0–17 fps |
+  | Same, spotlight on a 15 Hz `Timer` | 0 | 60 fps |
+  | Display link kept, ARKit delegate off main | 0 | 60 fps |
+  | A stock `ARView` alone; the app's AR controller alone | 0 | n/a |
+
+- **Measured not to be the cause:**
+  - the post-process "did it draw" probe (failures stayed at about 56/s with it off);
+  - the three camera-lab switches (all off still failed);
+  - session re-runs (none happened in failing runs);
+  - swapping the AR view (failures came before any swap).
+- **Unconfirmed:** a later failure 25–30 s into some untouched runs, as the screen dimmed before auto-lock.
+- **Fix, on `main` via #11:**
+  - the timer and the delegate off main;
+  - a plain video layer (ARKit's frames, no Metal drawable) that covers the AR view within 0.25 s if it ever stops
+    drawing, so the camera stays live and only the 3D drops out.
+- **After the fix:** 0 failures and 60 fps on screen in every run, before and after the call features.
+
+### The live call (Salman's test, about 05:10)
+- **Setup:** a relay on his Mac, the `ios/expert-call/` console in Chrome, phone and Mac on the same Wi-Fi.
+- **Worked:** the call, the video, both voices, point (a pin), area (a box: lit on the surface, the rest dimmed), and
+  the expert's spoken commands (next step, go back, look left/right/up/down, clear the marks).
+- **Not tried:** Max's relay and the dashboard's Call button.
+- **Didn't work in that test:** a guide with Done and its receipt. Causes are in the next part.
+
+### What Done needs (no protocol bug: the shapes match `relay/validate.ts`)
+1. **The guide screen, not the live-call screen.** That screen had no step card. Fix on `salman-ios-guide`: an
+   "Open the guide" button there.
+2. **In a marker guide, the printed marker seen once.** Done stays disabled until then. Print
+   `assets/marker/marker-print-A4.pdf` at 100%.
+3. **The relay holds the same guide id as the phone.** Otherwise it refuses the tap ("the relay has no guide …") and
+   the phone drops it. That refusal used to be invisible, and showed a false "synced" toast. Fix on
+   `salman-ios-guide`: the reason shows on the step card, and "synced" means a real receipt.
+   - A relay started with `--fresh` holds no guide: send one with `node fixtures/fake-expert.ts ws://<relay>`.
+4. **The laptop guide sends nothing, by design.** The relay doesn't hold that guide. Taps from it need a contract
+   decision (Ahmed). Also fixed on `salman-ios-guide`: a relay reconnect no longer pulls the user out of it.
+
+### Distance, markers and scans: answers from the code and docs
+- **Distance:** ARKit is metric, and the marker's printed width (0.18 m, `ios/RemoteAssist/AR/MarkerSpec.swift`) sets
+  the scale, so the phone knows its distance to the marker in metres. The laptop itself is located only by the two
+  corner taps of the laptop guide (`AR/LaptopFrame.swift`, Dell's footprint from `AI/LaptopLayout.swift`).
+- **Markers:** one is enough, and no tape-measure calibration is needed.
+  - It's required when a guide is built on the scan or measured from the marker.
+  - The laptop guide needs none.
+  - A ruler is only for re-measuring a reprinted marker and replacing `fixtures/ssd-swap-guide.json`'s draft
+    positions.
+- **Scans:** the plan needs two Scaniverse scans, each with the marker fully in view, each calibrated by 4 clicks on
+  the dashboard. One with the laptop closed (cover screws), one with the cover off (SSD). "SSD out" photos aren't in
+  any plan.
+- **Accurate screws today:** the laptop frame plus positions taught by tapping the real screws, or the expert's live
+  point/area. Nothing has been taught or measured yet, so no accuracy number can be claimed (§ 3, § 5).
+- **Still open:** which printed edges the marker's +X/+Z follow (Salman's item 4). The dashboard assumes +X along the
+  top edge and +Z down the print.
