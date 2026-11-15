@@ -184,6 +184,13 @@ final class RelayClient {
     // The relay sends our own tap back once it's saved: that's the receipt, and only then does it leave the queue.
     case .stepDone(let m): outbox.receipt(m.doneId)
     case .presence(let m): expertOnline = m.clients.contains { $0.role == .expert }
+    case .error(let m) where m.about == "step.done":
+      // `the relay has no guide "<id>"`: those taps will never get a receipt, so stop resending them.
+      if let range = m.message.range(of: #"no guide "([^"]+)""#, options: .regularExpression) {
+        let quoted = m.message[range].split(separator: "\"")
+        if quoted.count >= 2 { outbox.drop(guideId: String(quoted[1])) }
+      }
+      lastError = "Relay refused a finished step: \(m.message)"
     case .error(let m): lastError = "Relay refused \(m.about ?? "a message"): \(m.message)"
     default: break
     }

@@ -29,6 +29,11 @@ struct Outbox: Equatable {
     return true
   }
 
+  /// The relay refused taps for a guide it doesn't have: they can never get a receipt, so waiting is pointless.
+  mutating func drop(guideId: String) {
+    items.removeAll { $0.guideId == guideId }
+  }
+
   /// A new connection: nothing written to the old one can be trusted.
   mutating func forgetSends() {
     sentAt = [:]

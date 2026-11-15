@@ -270,7 +270,8 @@ struct ContentView: View {
 
   private func next() {
     guard let step = player.currentStep else { return }
-    relay.sendStepDone(guide: player.guide, stepId: step.id)
+    // An AI guide lives only on this phone; the relay has no copy, so it would refuse the tap.
+    if !isAIGuide { relay.sendStepDone(guide: player.guide, stepId: step.id) }
     player.next()
   }
 

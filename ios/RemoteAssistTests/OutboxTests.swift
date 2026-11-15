@@ -56,4 +56,12 @@ final class OutboxTests: XCTestCase {
     outbox.enqueue(tap("a"))
     XCTAssertEqual(outbox.count, 1)
   }
+
+  func testRefusedGuideIsDropped() {
+    var outbox = Outbox()
+    outbox.enqueue(StepDone(guideId: "old", rev: 1, stepId: "s1", doneId: "a", at: 0))
+    outbox.enqueue(StepDone(guideId: "current", rev: 1, stepId: "s1", doneId: "b", at: 0))
+    outbox.drop(guideId: "old")
+    XCTAssertEqual(outbox.items.map(\.doneId), ["b"])
+  }
 }
