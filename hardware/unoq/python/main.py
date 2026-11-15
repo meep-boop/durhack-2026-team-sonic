@@ -74,6 +74,9 @@ def main() -> None:
     if not args.relay:
         sys.exit("Say where the relay is: --relay ws://<laptop address>:8080, or set RELAY_URL (in App Lab, in this file).")
 
+    # An address typed without its scheme made the websocket library fail in its own thread, with the app left running.
+    if "://" not in args.relay:
+        args.relay = f"ws://{args.relay}"
     print(f"rig starting; relay {args.relay}", flush=True)
     rig = Rig()
     # The relay's thread and the Nicla's thread both change the rig.
