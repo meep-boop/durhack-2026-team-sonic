@@ -45,6 +45,16 @@ export default function TabLayout() {
         }}
       />
       <Tabs.Screen
+        name="ar"
+        options={{
+          title: 'AR',
+          headerShown: false,
+          tabBarIcon: ({ color }) => (
+            <TabIcon name={{ ios: 'arkit', android: 'view_in_ar', web: 'view_in_ar' }} color={color} />
+          ),
+        }}
+      />
+      <Tabs.Screen
         name="profile"
         options={{
           title: 'Profile',
