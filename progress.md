@@ -807,3 +807,20 @@ each builder's brief (`builder-file-<name>.md`, on the `context` branch).
 - 📨 To @ahmed: nothing for you. No relay or contract change; the Spark isn't part of the live demo path.
 - ⚠️ Conflicts: none
 - Conflict status: n/a
+
+### 2026-11-15 04:12 — what's left, and the phone's camera — @ahmed
+- Shipped: no code. A read of `salman-ios-ar` at `fa51e72`: the camera freeze has had five fixes and no confirmed
+  cause, and the phone app is still the one piece not on `main`. Each brief has a new "What's left" block on top.
+  `EVENT.md` has the organisers' rules from Laura's 03:30 entry.
+- Touched: on `context`: all four briefs, `PROJECT.md` (Clock, decisions, pending, F14), `EVENT.md`
+- Decision (Ahmed): the plain build first. PR #8 (`salman-ios-polish`) goes to `main` and is the demo build; the
+  freeze is found by halving the commits between it and `fa51e72`; extras come across one at a time.
+- Decision (Ahmed): Max may build dashboard features until 10:00. The phone, relay, rig and every message shape
+  still freeze at 07:00.
+- 📨 To @salman: merge PR #8 now and smoke-test it on the phone. Then `git bisect` for the freeze (about 5 builds)
+  before any new fix; three suspects from the code are in your brief. Tell Laura whether ElevenLabs is in the demo.
+- 📨 To @max: the rescans with the marker in view are the next blocker; then one object placed in the scan and
+  measured on the real laptop. Features to 10:00 agreed. A `--state` flag for the relay is coming.
+- 📨 To @laura: scan with Max; a timed 5-minute beat sheet in `PROJECT.md` §9; answer Max's restyle ask.
+- ⚠️ Conflicts: @salman — changes which of his branches is the demo build
+- Conflict status: open
