@@ -27,7 +27,7 @@ bottom, pushed to `main` straight away:
    git config user.email "<the email on YOUR GitHub account>"   # judges read who committed
    bash scripts/setup.sh <your key from team.conf>              # who you are, commit hooks, first docs sync
    ```
-   Not in `team.conf` yet? Ask a docs owner (ahmed) to add your key and brief.
+   Not in `team.conf` yet? Ask a docs owner (ahmed, max) to add your key and brief.
 2. **Claude Code:** start it **in the repo root**, so the every-prompt hook in `.claude/settings.json` runs (trust the
    folder when it asks). Then say "fetch the context".
 3. **Optional, but it's what we use:** `gitleaks` (secret scan on every commit), plus the Claude Code plugins listed
@@ -45,7 +45,7 @@ each builder's brief (`builder-file-<name>.md`, on the `context` branch).
 | Who | Role | Branch | Owns (paths / pieces) | How the rest plugs into it |
 |---|---|---|---|---|
 | **Ahmed** `meep-boop` | Docs owner; relay, protocol, sync, UNO Q rig | `ahmed-relay` | `relay/`, `contracts/`, `fixtures/`, `hardware/` (the UNO Q rig), the labelling endpoint; the team kit (`scripts/`, `kit/`, `team.conf`) and the shared docs on `context` | Build against `contracts/protocol.ts` and the fake peers in `fixtures/`. Ask Ahmed for protocol changes |
-| **Max** `xaw1` | Dashboard 3D view and the splats | `max-scene` | `dashboard/src/scene/`, the `dashboard/` shell, `splats/`, `pipeline/`, `docs/remote-assist/` | The guide builder calls `dashboard/src/scene/api.ts` |
+| **Max** `xaw1` | Docs owner; dashboard 3D view and the splats | `max-scene` | `dashboard/src/scene/`, the `dashboard/` shell, `splats/`, `pipeline/`, `docs/remote-assist/` | The guide builder calls `dashboard/src/scene/api.ts` |
 | **Laura** `furtunalaura` | Guide builder, models, demo set, pitch | `laura-guide` | `dashboard/src/guide/`, `assets/` (marker and models), the demo set, the README and video | Both apps load `assets/models/`; don't rename or resize a model without flagging |
 | **Salman** `salman-abdulrazaq-ali` | The iPhone app | `salman-ios` | `ios/` | Speaks `contracts/protocol.ts` to the relay; loads the marker and USDZ models from `assets/` |
 
@@ -432,3 +432,21 @@ each builder's brief (`builder-file-<name>.md`, on the `context` branch).
 - 📨 To @salman: for the walking skeleton, merge `salman-ios-polish` (it carries PR #4), not `salman-ios` on its own.
 - ⚠️ Conflicts: none (Laura's edit to `contracts/protocol.ts` and `relay/validate.ts` was agreed and is fine)
 - Conflict status: resolved by @ahmed 2026-11-15
+
+### 2026-11-15 01:45 — a plan to the deadline, after reading every branch — @ahmed
+- Shipped: no code. The phone is nearly complete but not on `main`; the dashboard is a splat viewer that can't talk
+  to the relay, so the 02:00 walking skeleton was missed. The plan is a ladder: rung 0 the real phone plays a
+  prepared guide, rung 1 the dashboard sends it, rung 2 a guide built in the scan lines up, rung 3 the extras. Each
+  brief has an ordered block at the top of its tasks. Max is now a second docs owner.
+- Touched: `team.conf`; on `context`: all four briefs, `PROJECT.md`, `CLAUDE.md`
+- Decision (Ahmed): taps get a receipt from the relay; two scans with a calibration each; Salman's call page is the
+  call screen; cut-outs and 3D dragging stay, after rung 2; the Clock is unchanged.
+- 📨 To @max: merge PR #6 now. Ahmed asks your OK to build `dashboard/src/relay/client.ts` and
+  `dashboard/src/scene/calibration.ts`; reply here or tell him. You can now publish any shared doc.
+- 📨 To @salman: merge `salman-ios-polish` and run the smoke test in your brief before more extras. The tap receipt
+  needs a small change in `RelayClient`, after the relay side lands. Your `chat` message waits for Ahmed's decision.
+- 📨 To @laura: the board first, with corner stops (the laptop is Ahmed's only machine). Post the real SSD-swap
+  steps. No video panel: Salman's page covers it.
+- ⚠️ Conflicts: @max — two new files proposed in `dashboard/` | @salman — the receipt changes when a tap leaves his
+  outbox | @laura — her task 5 is superseded
+- Conflict status: open
