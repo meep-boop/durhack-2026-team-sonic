@@ -26,6 +26,7 @@ The one research file for this project (`research-ledger` skill). Every source g
 | 16 | App Lab app layout and the UNO Q's LED matrix over the Bridge (2026-11-15) | Packaging the rig; drawing ✓ / ✗ |
 | 17 | Swapping the SSD on a Dell Latitude 5530 (2026-11-15) | The demo guide's real steps, screw counts and tools |
 | 18 | One photo of an object → AI-made 3D model on the DGX Spark (2026-11-15) | TRELLIS.2 / Hunyuan3D / SAM 3D vs the scan routes; props like the SSD or screwdriver |
+| 19 | Which image-to-3D model, now that Hunyuan's licence excludes the UK (2026-11-15) | Pixal3D vs TRELLIS.2 vs Step1X-3D; licences, gated models, the Spark run |
 
 ---
 
@@ -1250,6 +1251,9 @@ the centimetre. It can make clean, textured props (the SSD, the screwdriver) for
 splat cut-outs. Budget about 2 h of unattended setup, then minutes per object; nothing measured on our Spark. Label
 it "AI-generated from a photo" wherever it shows, and scale it from the part's real size.
 
+**Superseded in part (04:45): Hunyuan3D 2.1's licence "does not apply in the European Union, United Kingdom and
+South Korea", and DurHack is in Durham, so we can't use it. Model choice: § 19.**
+
 ## Source ledger
 ### KEEP
 - [1] raziel2001au/dgx-trellis2 README (DGX OS fork of TRELLIS.2), GitHub, https://github.com/raziel2001au/dgx-trellis2:
@@ -1270,3 +1274,90 @@ it "AI-generated from a photo" wherever it shows, and scale it from the part's r
 - [W4] halldm2000/image-to-3d, a multi-backend wrapper said to target the Spark (snippet only), https://github.com/halldm2000/image-to-3d
 ### DO NOT USE
 - Any "seconds per model" claim for the Spark: the second figures are H100 or desktop-card numbers ([1], [W3]).
+
+# § 19 Which image-to-3D model, now that Hunyuan's licence excludes the UK (2026-11-15)
+**Question:** is there a better open image-to-3D model than Hunyuan3D 2.1, one we're licensed to use in the UK, that
+runs on the DGX Spark (GB10, ARM64, CUDA 13) tonight? Asked by Max at 04:30. Builds on § 18.
+
+**How this pass was done:** about 20 minutes by Max's agent: six web searches; Hugging Face model APIs and licence files
+read directly; GitHub code searched. The live 3D Arena leaderboard couldn't be read (its backend needs a token), so
+no independent ranking was checked.
+
+## Findings
+### Hunyuan is out
+- Hunyuan3D 2.1's licence "does not apply in the European Union, United Kingdom and South Korea"; its Territory is
+  the world minus those (sources: [4], [W3]). Hunyuan3D 2.5 and Buffalo aren't public downloads (their model pages
+  ask for a login).
+### The candidates
+- **Pixal3D (Tencent ARC, SIGGRAPH 2026):** MIT for code and weights, not gated, updated 2026-08/09 [1]. Its paper
+  beats Hunyuan3D 2.1 and TRELLIS on every score it reports (authors' own numbers) [2]; a third-party arena page puts
+  it a little above TRELLIS.2 (948 vs 892 ELO, unverified) [W1]. Textured PBR GLB, about 1M faces, 4K texture [3].
+- **TRELLIS.2 (Microsoft):** MIT, not gated [5]. Most-cited open model in 2026 guides [W2]; less robust on complex
+  inputs in one paper [W4]. No timed Spark run (§ 18).
+- **Step1X-3D (StepFun):** Apache 2.0, not gated, textured, no DINOv3 [10]. A 2025 model, Hunyuan-class rather than
+  better (its own paper compared against Hunyuan3D 2.0). No ARM report.
+- **SAM 3D Objects (Meta):** gated by hand [12]. **TripoSG:** MIT, not gated, shape only [W5].
+### The only timed run on a Spark: Pixal3D [3]
+- 169–392 s per model at 1024 (low-VRAM mode); 255–305 s at 1536. Plus 5–6.5 min to load the model once.
+- Setup: a CUDA 12.9 toolkit in the user's own folder (no sudo); flash-attn and natten built from source (about 73
+  min); Triton 3.3.1 crashed at the texture stage, fixed with Triton 3.5.1. Weights 46 GB. About 47 GB of the
+  Spark's memory in use with low-VRAM mode off.
+- Quality on 11 test pictures (paintings, not photos): all gave a mesh; floor or background stuck on as a slab in 5
+  of 7; colour bleed in textures. A clean photo on a plain background matters.
+### The gated pieces, and the ways round them
+- **Pixal3D and TRELLIS.2 both load DINOv3** (code search: `image_feature_extractor.py`, `inference.py`) [5]. Meta's
+  own copy is approved by hand, which can take days (sources: [6], [7], [W6]).
+- **timm's copy of the same DINOv3 ViT-L/16 is not gated** and ships under the DINOv3 licence, which is worldwide and
+  allows redistribution [8]. Using it needs a small loader change (untested).
+- RMBG-2.0 (background removal) is gated with instant approval and non-commercial; BiRefNet, the model it's built on,
+  is MIT and not gated [9].
+
+## Community consensus
+Guides and forums call TRELLIS.2 the quality leader among fully open models and Hunyuan3D 2.1 the best open PBR
+texturer outside the EU, UK and South Korea (sources: [W2], [W3]). Pixal3D is too new for much community view; its one
+hands-on report is mixed on quality but shows it running on a Spark [3]. Contrasting view: one paper finds TRELLIS.2
+fragile on complex inputs [W4].
+
+## Final call (professional + community)
+Pixal3D is the best candidate: newest, MIT, ahead of Hunyuan3D 2.1 and TRELLIS in its paper, and the only model with
+a timed DGX Spark run (3–6 min per model). It needs DINOv3 (use timm's ungated copy with a small patch, or Max's own
+Meta approval) and a background remover (BiRefNet instead of RMBG-2.0). Budget 1.5–2.5 h of setup. Fallback with no
+gated parts and no patching: Step1X-3D (Apache 2.0, Hunyuan-class quality, no ARM report). "Better than Hunyuan"
+rests on the authors' own numbers; keep it out of the pitch.
+
+## Source ledger
+### KEEP
+- [1] TencentARC/Pixal3D, Hugging Face model card (MIT, not gated, 2026-08-31) and GitHub (MIT, 2026-09-01),
+  https://huggingface.co/TencentARC/Pixal3D , https://github.com/TencentARC/Pixal3D
+- [3] MindrLabs, "Pixal3D on NVIDIA RTX 4090, DGX Spark and a 16GB Mac", GitHub, 2026,
+  https://github.com/MindrLabs/image-to-3d-pixal3d: the Spark timings, setup steps and quality notes above
+- [4] Hunyuan3D 2.1 licence (territory excludes EU, UK, South Korea), https://huggingface.co/tencent/Hunyuan3D-2.1/blob/main/LICENSE
+- [5] microsoft/TRELLIS.2 (MIT; DINOv3 in `trellis2/modules/image_feature_extractor.py`), https://github.com/microsoft/TRELLIS.2 ;
+  model https://huggingface.co/microsoft/TRELLIS.2-4B (MIT, not gated)
+- [6] facebook/dinov3-vitl16-pretrain-lvd1689m (gated, manual), https://huggingface.co/facebook/dinov3-vitl16-pretrain-lvd1689m
+- [7] Hugging Face docs, gated models (manual approval takes longer), https://huggingface.co/docs/hub/models-gated
+- [8] timm/vit_large_patch16_dinov3.lvd1689m (not gated; DINOv3 licence: worldwide, redistribution allowed),
+  https://huggingface.co/timm/vit_large_patch16_dinov3.lvd1689m
+- [9] briaai/RMBG-2.0 (gated, auto; non-commercial), https://huggingface.co/briaai/RMBG-2.0 ; ZhengPeng7/BiRefNet (MIT,
+  not gated), https://huggingface.co/ZhengPeng7/BiRefNet
+- [10] stepfun-ai/Step1X-3D (Apache 2.0, not gated), https://huggingface.co/stepfun-ai/Step1X-3D ; paper arXiv 2505.07747,
+  https://arxiv.org/abs/2505.07747
+- [12] facebook/sam-3d-objects (gated, manual), https://huggingface.co/facebook/sam-3d-objects
+- [13] 3D Arena outputs dataset (lists Pixal3D, TRELLIS.2-4B, Hunyuan3D-2.1, SAM-3D-Objects and others; no scores),
+  https://huggingface.co/datasets/3d-arena/3d-arena
+### WEAK
+- [2] Pixal3D paper, arXiv 2605.10922 (authors' own metrics: Toys4K multi-view IoU 93.57 vs 83.33 Hunyuan3D 2.1 vs
+  79.48 TRELLIS), https://arxiv.org/html/2605.10922v1
+- [W1] top3d.ai, Pixal3D arena page (948 vs 892 ELO, source of votes unclear), https://www.top3d.ai/tools/pixal3d
+- [W2] cmarix, "Open Source AI 3D Model Generator: 7 Best Options for 2026", https://www.cmarix.com/blog/top-open-source-ai-models-for-3d-image-generation/
+- [W3] cinevva, "Best AI 3D Model Generators in 2026", https://app.cinevva.com/guides/ai-3d-model-generators
+- [W4] AssetGen, arXiv 2605.26137 (TRELLIS.2 less robust on complex inputs), https://arxiv.org/pdf/2605.26137
+- [W5] VAST-AI/TripoSG (MIT, not gated), https://huggingface.co/VAST-AI/TripoSG
+- [W6] HF forum, "Sam3 and Dino3 approval" (manual queue, days), https://discuss.huggingface.co/t/sam3-and-dino3-approval/180743
+- [W7] photo3d.org, "Pixal3D vs Trellis 2", https://photo3d.org/resources/pixal3d-vs-trellis2
+### DO NOT USE
+- Hunyuan3D 2.1 (or 2.0, 2.5) at DurHack: the licence excludes the UK [4].
+- "Pixal3D is better than Hunyuan / TRELLIS.2" as a pitch claim: authors' numbers [2] and an unverified arena page
+  [W1] only.
+- Pixazo's "Hunyuan3D-2.5 is the strongest open-weight model": 2.5 isn't a public download, and the page denies a
+  public arena exists, which [13] contradicts. https://www.pixazo.ai/leaderboard/ai-3d-model-generation

@@ -51,7 +51,7 @@ Source: `EVENT.md` §1 (one notes file, not yet checked against Devpost). The 02
 |---|---|
 | 2026-11-15 | The phone's demo build is the plain one: PR #8 (`salman-ios-polish`) to `main` first; the camera freeze on `salman-ios-ar` is found by halving the commits; extras come across one at a time (Ahmed, 04:10) |
 | 2026-11-15 | Max may build dashboard features until 10:00; the phone, relay, rig and message shapes still freeze at 07:00 (Ahmed, 04:10) |
-| 2026-11-15 | AI-made props: Hunyuan3D 2.1 runs on the team's DGX Spark (Docker fork), building in the background; one photo of a part (the SSD, the screwdriver) becomes a textured 3D model, scaled by hand to its real size, shown on the dashboard first, the phone only if there's time; labelled "AI-generated from a photo" wherever it shows; dropped if it hasn't built by about 06:30 (Max, 04:05; `research/ledger.md` § 18) |
+| 2026-11-15 | ⏸ **On hold (04:45): Hunyuan3D 2.1's licence excludes the UK, so the model is being re-picked (`research/ledger.md` § 19).** AI-made props: Hunyuan3D 2.1 runs on the team's DGX Spark (Docker fork), building in the background; one photo of a part (the SSD, the screwdriver) becomes a textured 3D model, scaled by hand to its real size, shown on the dashboard first, the phone only if there's time; labelled "AI-generated from a photo" wherever it shows; dropped if it hasn't built by about 06:30 (Max, 04:05; `research/ledger.md` § 18) |
 | 2026-11-15 | The expert's dashboard becomes a finished product screen before cut-outs: a header with relay / phone / rig lights and a Call button that opens Salman's call page in its own window, a live strip that shows the person's step and the offline moment, plain prompts with the debug text behind a key, one calm dark look on both halves (Laura's panel restyled by Max's agent once she agrees, colours and spacing only); cut-outs follow it (Max, 03:40) |
 | 2026-11-15 | Scans are kept in git (`dashboard/public/scans/`), not per machine, so the team and the judges see the same files; a scan's file name is its calibration id, so never overwrite one (Max, 02:39; reverses the git-ignored folder in Ahmed's 01:45 plan) |
 | 2026-11-15 | The dashboard loads both splat and mesh scans from Scaniverse; we demo whichever scan of the set comes out better, and the pitch names the kind honestly (Max, 02:32) |
@@ -348,6 +348,10 @@ The diagram, components, alignment maths and draft protocol are in `docs/remote-
   stays unused).
 - Revisit if: the build hasn't finished by about 06:30, or the first SSD model looks wrong. Then drop it; nothing
   else depends on it.
+- **Update 04:45 (Max's agent): on hold.** Hunyuan3D 2.1's licence "does not apply in the European Union, United
+  Kingdom and South Korea", so we can't use it at DurHack. Also on the Spark: Max's account has no Docker or sudo,
+  and the box is shared (eaby's vLLM holds 41 GB of GPU memory; about 61 GB free). A new model is being picked
+  (`research/ledger.md` § 19); nothing was installed.
 
 ## 2026-11-15 03:40 — The expert's dashboard as a product screen
 - Context: the dashboard did nearly everything the plan asked, but read as a test screen: debug text in the corner,
