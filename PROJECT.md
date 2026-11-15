@@ -49,6 +49,7 @@ Source: `EVENT.md` §1 (one notes file, not yet checked against Devpost). The 02
 
 | Date | Decision |
 |---|---|
+| 2026-11-15 | Scanning inside our own app, as a side route next to Scaniverse: the phone records photos with ARKit's camera poses in the marker's frame (`max-ios-scan`, merged only once Salman agrees and has built it in Xcode); an upload server on the relay laptop (port 8090) receives the zip and Max copies it to the Spark; our own gsplat script trains the splat in `~/scan`. Scaniverse stays the demo's scan; not shown as working until a real run has (Max, 08:00) |
 | 2026-11-15 | The demo opens with Salman's technician console (the expert clicks the live video, the mark lands on the real part), then the guide dashboard for the prepared guide, offline and the rig; replaces "scan first" in the 07:40 order (Ahmed, 08:30) |
 | 2026-11-15 | The demo is "expert builds, user follows": click a screw in the scan, it lands on the real screw, taps and ticks, offline and sync, the rig's ✓; extras last, only if they work (Ahmed, 07:40) |
 | 2026-11-15 | Guide positions come from two rescans with the marker in view, placed by clicking in the scan; a top-down ruler photo is the fallback (Ahmed, 07:40) |
@@ -178,13 +179,15 @@ SSD-swap demo (23:03).
   Ahmed. **Not decided.**
 - **The phone scales the guide by ARKit's size estimate.** Measure alignment with and without. Owner: Salman.
   **Not decided.**
+- **Does the in-app scan show in the demo or the pitch?** Waits on Salman's yes, an Xcode build, and one real scan
+  trained and lined up. Owner: Max + Ahmed. **Not decided**; until then it's "built, not shown".
 
 ### Active tasks (details in each brief)
 | Who | Now |
 |---|---|
 | Ahmed | The tap receipt and a calibration per scan in the relay; the dashboard's relay connection and calibration maths; the rung-0 guide file; the rig on its hardware |
 | Salman | Merge `salman-ios-polish`; the smoke test on the real phone; post the +X/+Z edges; the tap receipt; measure alignment |
-| Max | The dashboard as a product screen (header and lights, live strip, one look) ✅ 03:55; then cut-outs; AI-made props with Pixal3D building on the DGX Spark in the background (ledger § 19; cut-off 07:30); the two rescans once Laura's board is ready |
+| Max | The dashboard as a product screen (header and lights, live strip, one look) ✅ 03:55; then cut-outs; AI-made props with Pixal3D building on the DGX Spark in the background (ledger § 19; cut-off 07:30); the two rescans once Laura's board is ready; side route: scanning in our own app (`max-ios-scan`, waits on Salman's Xcode build) |
 | Laura | The board with corner stops; the real SSD-swap steps; the guide panel; README, video, Devpost |
 
 Asked for by Max (19:40 board entry): "Pick and get the demo objects" is Laura's task 3. "Check we have a Mac with
@@ -335,6 +338,30 @@ The diagram, components, alignment maths and draft protocol are in `docs/remote-
 
 ## Decision log
 *Full records, newest first. NOW → Decisions in force holds the one-line versions.*
+
+## 2026-11-15 08:00 — Scanning inside our own app (side route)
+- Context: Max asked whether the phone app could scan the room like Scaniverse, and beat it. Scaniverse builds a
+  splat on the phone in about 2 minutes (ledger § 11). Our one real edge: the app already tracks the marker and every
+  camera pose, so its scan can arrive already in the marker's frame, in metres, with no corner clicks and no doubt
+  about scale (ledger § 15). Recommended at 07:50: pitch it, don't build it before 10:00. Max chose to build it.
+- Chose (Max): **its own branch, `max-ios-scan`, and ask Salman.** `ios/` is Salman's and froze at 07:00, and Max's
+  laptop can't compile Swift, so it merges only once Salman agrees and has built it in Xcode. The demo build (#11)
+  is untouched.
+- Chose (Max): **our own training script on gsplat** (`pipeline/train_scan.py`, gsplat 1.5.3, Apache 2.0), not
+  nerfstudio: fewer installs, and the scan's coordinates stay exactly in the marker's frame.
+- Chose (Max): **an upload server on the relay laptop** (`pipeline/scan-inbox.ts`, port 8090, plain Node); the phone
+  finds it from the relay's address, and Max copies the zip to the Spark by FTP. As with the relay, anyone on the
+  hotspot can post to it; it only writes new zips into `pipeline/inbox/` (git-ignored), up to 1 GB each.
+- How: a photo each time the phone moves 4 cm or turns 8°, none while it moves fast, at most 400; poses written
+  camera-to-marker with ARKit's latest marker pose for the whole scan; ARKit's feature points as the starting cloud.
+  On the Spark in `~/scan`: its own venv, torch 2.9.1 for CUDA 13, gsplat 1.5.3, plus `packaging`, which gsplat
+  needs but doesn't declare.
+- Rejected: nerfstudio splatfacto (many installs; its defaults move and rescale the scan); the share sheet (Max
+  preferred the upload); pitching it only.
+- Honesty: not in the demo or the pitch as working until a real phone scan has been trained and lined up. Only
+  measured times. If shown: "scanned in our app, trained on our Spark".
+- Revisit if: Salman says no or has no time; or the first real scan comes out soft (then refine the ARKit poses with
+  COLMAP's known-poses recipe, ledger § 15).
 
 ## 2026-11-15 04:32 — Pixal3D replaces Hunyuan for the AI-made props
 - Context: Hunyuan3D 2.1's licence excludes the UK (04:30 update below). Max asked for a better model; the research is

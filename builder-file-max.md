@@ -102,6 +102,15 @@ marker in it, then clicking each part in that scan.
 5. UNO Q: press Run in App Lab. The console must say `connected to ws://…` and `nicla sees the part in: …`.
 6. Dashboard header: the Relay, Phone and Rig lights are all green. If one is grey, fix that one before going on.
 
+**▶ Side route (Max's call, 2026-11-15 08:00; `PROJECT.md` → Decision log): scanning inside our own app.** After the
+checklist above, never ahead of it.
+- D. 🟡 (08:35: phone side, inbox and trainer on `max-ios-scan` at `c6d4014`; inbox 6/6 and trainer 5/5 tests pass;
+  `~/scan` set up on the Spark; Swift never compiled) **Scan the room in the phone app** → `pipeline/inbox/` on the
+  relay laptop → `pipeline/train_scan.py` on the Spark → a splat already in the marker frame. *Done when:* one real
+  phone scan, trained on the Spark, calibrates on the dashboard with the corners landing on the print, and the
+  training time is measured. Waits on Salman's yes and Xcode build (his brief, last block).
+  `[⚠ conflicts with @salman: three small hooks in his app]`
+
 **▶ What's left (from @ahmed, 2026-11-15 04:12), ahead of the 01:45 block below.** 
 1. ⬜ P0 **Rescan both (closed, cover off) with the marker in view**, at Laura's taped table, then calibrate each.
    Nothing built in a scan can line up on the phone until this is done. *Done when:* both calibrate under 5 mm.

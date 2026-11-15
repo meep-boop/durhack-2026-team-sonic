@@ -97,6 +97,17 @@ marker in it, then clicking each part in that scan.
 5. UNO Q: press Run in App Lab. The console must say `connected to ws://…` and `nicla sees the part in: …`.
 6. Dashboard header: the Relay, Phone and Rig lights are all green. If one is grey, fix that one before going on.
 
+**▶ OPTIONAL, LAST (from @max, 2026-11-15 08:35): only after everything above and the demo run-through.** Max built a
+"Scan the room" mode in your app on the branch `max-ios-scan` (`PROJECT.md` → Decision log, 08:00). It records
+photos with ARKit's camera poses in the marker's frame and posts them to an upload server on Max's laptop, and the
+Spark trains a splat from them. New folder `ios/RemoteAssist/Scan/`, plus small hooks in `ARSessionController.swift`
+(a `scanRecorder` that sees each frame), `ContentView.swift` and `HomeView.swift` (a third choice). **It has never
+been compiled:** Max's laptop has no Xcode. Nothing goes to `main` unless you say yes.
+1. ⬜ Say yes or no on the board.
+2. ⬜ If yes and there's time: check out `max-ios-scan`, run `xcodegen generate`, build, run `ScanKeyframePolicyTests`,
+   fix what doesn't compile, then try one scan (Home → Scan the room). *Done when:* a scan of 50+ photos lands in
+   `pipeline/inbox/` on Max's laptop (`node pipeline/scan-inbox.ts` running there). `[⚠ with @max: his code in your app]`
+
 **▶ What's left (from @ahmed, 2026-11-15 04:12), ahead of the 01:45 block below.** The phone is the one piece not on `main`, and the
 camera freeze on `salman-ios-ar` has no confirmed cause after five fixes. Ahmed's decision: **the plain build first.**
 1. ✅ P0 *(05:18: #11 merged instead of #8, the newer build; waits on Ahmed's OK)* **Merge PR #8 (`salman-ios-polish`) to `main` now** and run the six-point smoke test (item 2 in the block
