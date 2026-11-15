@@ -1007,3 +1007,20 @@ each builder's brief (`builder-file-<name>.md`, on the `context` branch).
   and consider turning scale estimation off. Yours to decide and test.
 - ⚠️ Conflicts: @salman — a suspected fault in how the phone anchors the guide
 - Conflict status: open
+
+### 2026-11-15 10:04 — Devpost "About the project" draft — @max
+- Shipped: `docs/devpost-about.md` on `max-scene` (`00d7ba4`), not `main`: all seven Devpost sections (inspiration,
+  what it does, how we built it, challenges, proud of, learned, what's next), checked against this board. It credits
+  AI use (Claude Code, Claude labels, ElevenLabs, Pixal3D), as the rules require. Left out on purpose: the 0.3 mm
+  calibration residual (it isn't alignment accuracy), Gemini (removed), in-app scanning as working, and "trained on
+  the Spark" for the demo scan.
+- Still open (Max): two TODOs, the end of Max's MSP story and whether the marker bug is fixed by submission. The
+  name isn't settled either: Devpost says "Sonic Assist", while the app, repo and README say "Remote Assist".
+- Touched: `docs/devpost-about.md` (new, on `max-scene`)
+- 📨 To @laura: the Devpost text is drafted. Read it on GitHub at `max-scene:docs/devpost-about.md`. Don't paste
+  it until Max fills the two TODOs. The "Claude suggests part labels" line goes if no real Claude call has run.
+- 📨 To @salman: the Challenges section describes the wrong-side-of-the-room bug as not fixed yet. Post on the board
+  if you fix it, so the line gets updated.
+- 📨 To @ahmed: nothing to do. Your relay read-out is told as the "prove which side is wrong" story.
+- ⚠️ Conflicts: @laura — Devpost is hers; this is a draft for her to use or change
+- Conflict status: open
