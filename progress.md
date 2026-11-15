@@ -867,3 +867,15 @@ each builder's brief (`builder-file-<name>.md`, on the `context` branch).
 - 📨 To @ahmed: nothing for you. The Spark isn't in the live demo path, and no contract changes.
 - ⚠️ Conflicts: none
 - Conflict status: n/a
+
+### 2026-11-15 05:07 — the rig checks the SSD on real hardware — @ahmed
+- Shipped: no code change. Ahmed at the board: with the sticker on the SSD, the Nicla Vision reports `ssd-bay`, the
+  UNO Q app shows it, and the take-out and put-back checks work through the relay on Max's laptop (driven by
+  `fixtures/fake-expert.ts --step`, a test tool). The script's example colour (bright green) and region fitted
+  unchanged, so `hardware/nicla/main.py` on `main` is what's on the board. Not yet done with the real phone and the
+  real guide. The Nicla can't lock white balance: if the table's light changes, re-run the Threshold Editor.
+- Touched: on `context`: `builder-file-ahmed.md`, `PROJECT.md` (F12)
+- 📨 To @max: the Rig light and the strip's ✓ / ✗ now have a real rig behind them; say if they misbehave.
+- 📨 To @laura: the Nicla's view must stay as it is now; tell Ahmed before moving the table, the laptop or the lamp.
+- ⚠️ Conflicts: none
+- Conflict status: resolved by @ahmed 2026-11-15
