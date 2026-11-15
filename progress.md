@@ -1066,3 +1066,11 @@ each builder's brief (`builder-file-<name>.md`, on the `context` branch).
 - 📨 To @max: rename the dashboard header and tab. 📨 To @salman: rename the app's visible text, if there's time.
 - ⚠️ Conflicts: @ahmed @max @salman — reported in their files; I changed none of them
 - Conflict status: open
+
+### 2026-11-15 11:28 — the rig no longer counts replayed taps (Laura's problem 1) — @ahmed
+- Shipped: `e8c8a9d` on `main`. A rig that connects, or reconnects, after steps were tapped now ignores the
+  `step.done` messages the relay replays, and stays on the relay's current step. 14 rig tests pass, one new for
+  exactly Laura's case. **The UNO Q runs the old file until `rig.py` is copied into App Lab again.**
+- Touched: `hardware/unoq/python/rig.py`, `test_rig.py`
+- ⚠️ Conflicts: none
+- Conflict status: resolved by @ahmed 2026-11-15
