@@ -64,10 +64,10 @@ each builder's brief (`builder-file-<name>.md`, on the `context` branch).
 ## Latest
 - **The volatile facts live here only:** the current commit, test counts, what's merged vs. local-only, and deploy
   status.
-- **As of 2026-11-15 03:15:** `main` has the contract, fixtures and fakes, the relay (41 tests, type-check clean), the
-  UNO Q rig and Nicla code, Laura's marker and seven models, the dashboard (46 tests, type-check and build clean:
-  Max's scene with splat and mesh scans, calibration, steps, the phone's position, AI labels, dragging; Laura's
-  guide panel; Ahmed's relay client), and the first scan (`dashboard/public/scans/`, no marker: reference only).
+- **As of 2026-11-15 03:55:** `main` (`aa6d177`) has the contract, fixtures and fakes, the relay (41 tests, type-check clean), the
+  UNO Q rig and Nicla code, Laura's marker and seven models, the dashboard (54 tests, type-check and build clean:
+  Max's scene with splat and mesh scans, calibration, steps, the phone's position, AI labels, dragging, the header
+  with relay / phone / rig lights and the live strip; Laura's guide panel; Ahmed's relay client), and the first scan (`dashboard/public/scans/`, no marker: reference only).
   **Not on `main` yet:** the iPhone app (`salman-ios-polish`, `salman-ios-ar`), Max's research answers (PR #1),
   Salman's board entries (PR #5). Relay deploy: Max's laptop, port 8080.
 
@@ -762,3 +762,28 @@ each builder's brief (`builder-file-<name>.md`, on the `context` branch).
   07:00 freeze that you set; the Clock is unchanged until you two agree.
 - ⚠️ Conflicts: @laura — `GuidePanel.css` restyle waits on her yes
 - Conflict status: open
+
+### 2026-11-15 03:55 — the dashboard's header and live strip — @max
+- Shipped: `aa6d177` on `main`. The expert's screen now has a **header** (Closed / Open switch, scan name and kind,
+  a calibration chip with the residual in mm, relay / phone / rig lights from `presence`, **Call the phone**) and a
+  **live strip** under it that says what's happening: Set up (calibrate) → Build → "Step 2 of 4" with a dot per step
+  and the rig's last ✓ / ✗ → amber **Offline 0:42** when the phone drops off the relay → green **Back online**, with
+  how many steps were done offline → **Done**. The debug text (fps, scan size) is behind the backquote key or
+  `?debug`. One calm dark look on Max's half. Tried end to end with a memory-only relay, the fake expert and the fake
+  phone dropping off for 5 and 15 s (the phone and rig parts are SIMULATED until the real ones connect). Dashboard
+  54 tests (8 new for the live logic), type-check and build clean. Vault: `dashboard.md`, `running-the-demo.md`.
+- Touched: `dashboard/src/App.tsx`, `styles.css`, `index.html`; `dashboard/src/shell/` (new); `dashboard/src/scene/`
+  (`useScan`, `useCalibration`, `usePhonePose` replace the corner panel's `Calibrate` and `PhoneStatus`;
+  `Viewport`); `docs/vault/`
+- 📨 To @laura: your panel and `GuidePanel.css` are unchanged; it now sits on the new dark surface and keeps its own
+  13 px text. Your ticks and the strip's dots come from the same `progress.ts` functions (imported, not edited).
+  The restyle ask (03:40) still stands: reply "yes" / "no" / "I'll do it".
+- 📨 To @salman: **Call the phone** opens `http://<dashboard host>:8000/?relay=<relay>`: serve `ios/expert-call/` on
+  8000 before the demo. The Phone light shows your app's `client` name from `hello` as a tooltip, and says
+  "tracking" / "marker out of view" from `pose.markerTracked`.
+- 📨 To @ahmed: the Rig light turns green when the UNO Q says hello as `rig`, and the strip shows its last
+  `step.verified` (✓ / ✗ with `detail`). Nothing in the relay or contract changed. The offline timer starts when
+  `presence` drops the phone, so it lags a real drop by up to your 5 s heartbeat.
+- ⚠️ Conflicts: @laura — her panel's container (`.guide` in `styles.css`) changed background and padding; her
+  panel itself is untouched | none for @salman, @ahmed
+- Conflict status: open (Laura's restyle answer)
