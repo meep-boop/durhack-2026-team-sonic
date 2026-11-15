@@ -13,9 +13,10 @@ final class VerifiedProcedureTests: XCTestCase {
     XCTAssertTrue(procedure.captiveScrews)
     let text = procedure.steps.map { "\($0.title) \($0.detail)" }.joined(separator: " ")
     XCTAssertTrue(text.contains("Service Mode"))
-    XCTAssertTrue(text.contains("eight"))
+    XCTAssertTrue(text.contains("8 screws"))
     XCTAssertTrue(text.contains("#0 Phillips"))
-    XCTAssertTrue(text.contains("M2x4") && text.contains("M2x3"))
+    XCTAssertEqual(procedure.steps.count, 12, "Laura's checked list (progress.md 02:11)")
+    XCTAssertTrue(text.contains("one screw that holds the SSD"), "no bracket on the demo laptop")
     // Every remove group comes back on a refit step, so screw memory can pair them.
     let removed = Set(procedure.steps.filter { $0.phase == "remove" }.map(\.lookFor))
     let refitted = Set(procedure.steps.filter { $0.phase == "refit" }.map(\.lookFor))
