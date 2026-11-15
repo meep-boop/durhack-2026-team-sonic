@@ -104,8 +104,9 @@ marker in it, then clicking each part in that scan.
 
 **▶ Side route (Max's call, 2026-11-15 08:00; `PROJECT.md` → Decision log): scanning inside our own app.** After the
 checklist above, never ahead of it.
-- D. 🟡 (08:35: phone side, inbox and trainer on `max-ios-scan` at `c6d4014`; inbox 6/6 and trainer 5/5 tests pass;
-  `~/scan` set up on the Spark; Swift never compiled) **Scan the room in the phone app** → `pipeline/inbox/` on the
+- D. 🟡 (08:50: phone side, inbox and trainer on `max-ios-scan` at `1576570`; inbox 6/6 and trainer 5/5 tests pass;
+  on the Spark a made-up 60-photo scan trained in 168 s for 3,000 steps and opens in the dashboard; Swift never
+  compiled; no real phone scan yet) **Scan the room in the phone app** → `pipeline/inbox/` on the
   relay laptop → `pipeline/train_scan.py` on the Spark → a splat already in the marker frame. *Done when:* one real
   phone scan, trained on the Spark, calibrates on the dashboard with the corners landing on the print, and the
   training time is measured. Waits on Salman's yes and Xcode build (his brief, last block).
