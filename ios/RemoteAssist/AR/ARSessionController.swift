@@ -193,10 +193,10 @@ final class ARSessionController: NSObject, ARSessionDelegate {
     let config = ARWorldTrackingConfiguration()
     config.detectionImages = [reference]
     config.maximumNumberOfTrackedImages = 1
-    // No plane detection: every raycast uses ARKit's estimated planes. Turning it on later meant re-running a live
-    // session, and every re-run made RealityKit rebuild its render graph and then fail every drawable (the frozen
-    // camera). The session is configured once, here.
-    config.planeDetection = []
+    // Tables (horizontal planes) from the start, so marks land on a measured surface instead of ARKit's guess, which
+    // slid when the phone moved. Set once here and never changed: re-running a live session is what used to make
+    // RealityKit rebuild its renderer and fail every drawable. The freeze itself was a display link (research § 20).
+    config.planeDetection = [.horizontal]
     config.automaticImageScaleEstimationEnabled = true
     configuration = config
     applyThermalLimits(to: config)
@@ -580,14 +580,18 @@ final class ARSessionController: NSObject, ARSessionDelegate {
 
   /// The expert tapped the live video: a pin where they tapped, through the camera that filmed that frame. One thing
   /// at a time: a pin replaces the expert's marked area.
-  func placeExpertPin(at point: UprightPoint, label: String, secondsAgo: Double) -> Bool {
+  func placeExpertPin(at point: UprightPoint, label: String, secondsAgo: Double, turn anticlockwise: Bool? = nil) -> Bool {
     guard let camera = cameraContext(secondsAgo: secondsAgo) else { return false }
     guard let surface = surfacePoint(for: point, camera: camera)
       ?? fallbackSurfacePoint(for: point, camera: camera, reference: lastSurface) else { return false }
     lastSurface = surface
     clearExpertArea()
     let number = (pins.filter { $0.kind == .expert }.map(\.number).max() ?? 0) + 1
-    addPin(number: number, label: label, kind: .expert, transform: PinMath.standing(at: surface.position, normal: surface.normal), photoPoint: nil)
+    let id = addPin(number: number, label: label, kind: .expert, transform: PinMath.standing(at: surface.position, normal: surface.normal), photoPoint: nil)
+    // "Unscrew this": the turning arrow and the see-through screwdriver, on the pin itself so they follow it.
+    if let anticlockwise, let entity = pinEntities[id]?.entity {
+      entity.addChild(Shapes.turnCue(anticlockwise: anticlockwise))
+    }
     return true
   }
 
@@ -602,6 +606,9 @@ final class ARSessionController: NSObject, ARSessionDelegate {
       ?? lastSurface else { return false }
     let corners = points.compactMap { fallbackSurfacePoint(for: $0, camera: camera, reference: plane)?.position }
     guard corners.count == 4 else { return false }
+    // A side longer than a laptop means the box met the surface at a grazing angle: a giant shape over the whole
+    // screen. Better to say missed.
+    for i in 0..<4 where simd_distance(corners[i], corners[(i + 1) % 4]) > 0.6 { return false }
     lastSurface = plane
 
     clearPins(kinds: [.expert])
@@ -648,22 +655,31 @@ final class ARSessionController: NSObject, ARSessionDelegate {
     return info.id
   }
 
+  /// Farther than this from the camera, a hit is a guess through a gap, not the laptop in front of the user: a missed
+  /// mark (red on the console, try again) beats a wrong one.
+  static let maxReach: Float = 1.5
+
   private func surfacePoint(for point: UprightPoint, camera: CameraContext) -> SurfacePoint? {
     let ray = PinMath.ray(for: point, in: camera)
-    // Real detected planes first: they're measured. Estimated planes are ARKit's guess from feature points.
-    for target in [ARRaycastQuery.Target.existingPlaneGeometry, .estimatedPlane] {
-      let query = ARRaycastQuery(origin: ray.origin, direction: ray.direction, allowing: target, alignment: .any)
-      if let hit = arView.session.raycast(query).first {
-        let t = hit.worldTransform
-        return SurfacePoint(position: SIMD3(t.columns.3.x, t.columns.3.y, t.columns.3.z), normal: SIMD3(t.columns.1.x, t.columns.1.y, t.columns.1.z))
-      }
+    // Measured planes first, then ARKit's guess from feature points, then the table extended past its measured edge.
+    let targets: [(ARRaycastQuery.Target, ARRaycastQuery.TargetAlignment)] = [
+      (.existingPlaneGeometry, .any), (.estimatedPlane, .any), (.existingPlaneInfinite, .horizontal),
+    ]
+    for (target, alignment) in targets {
+      let query = ARRaycastQuery(origin: ray.origin, direction: ray.direction, allowing: target, alignment: alignment)
+      guard let hit = arView.session.raycast(query).first else { continue }
+      let t = hit.worldTransform
+      let position = SIMD3(t.columns.3.x, t.columns.3.y, t.columns.3.z)
+      guard simd_distance(position, ray.origin) <= Self.maxReach else { continue }
+      return SurfacePoint(position: position, normal: SIMD3(t.columns.1.x, t.columns.1.y, t.columns.1.z))
     }
     return nil
   }
 
   private func fallbackSurfacePoint(for point: UprightPoint, camera: CameraContext, reference: SurfacePoint?) -> SurfacePoint? {
     let ray = PinMath.ray(for: point, in: camera)
-    if let reference, let hit = PinMath.intersect(origin: ray.origin, direction: ray.direction, planePoint: reference.position, planeNormal: reference.normal) {
+    if let reference, let hit = PinMath.intersect(origin: ray.origin, direction: ray.direction, planePoint: reference.position, planeNormal: reference.normal),
+       simd_distance(hit, ray.origin) <= Self.maxReach {
       return SurfacePoint(position: hit, normal: reference.normal)
     }
     // Otherwise the nearest detected horizontal plane, extended past its measured edges.
@@ -740,6 +756,10 @@ final class ARSessionController: NSObject, ARSessionDelegate {
   func spotlightTarget() -> SpotlightTarget? {
     if !expertAreaCorners.isEmpty {
       return SpotlightTarget(points: expertAreaCorners, label: expertAreaLabel)
+    }
+    // The expert's newest mark alone, not a box round all of them: one thing to look at.
+    if let newest = pins.last(where: { $0.kind == .expert && !$0.done }) {
+      return SpotlightTarget(points: [newest.position], label: "\(newest.number) · \(newest.label)")
     }
     let pending = pins.filter { !$0.done }
     if !pending.isEmpty {

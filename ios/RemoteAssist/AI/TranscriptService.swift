@@ -19,12 +19,23 @@ enum TranscriptService {
     }
   }
 
+  /// One retry: on the venue's network the first request sometimes timed out and the whole call had no transcript.
   static func mintToken() async throws -> String {
+    do {
+      return try await mintTokenOnce()
+    } catch Failure.noKey {
+      throw Failure.noKey
+    } catch {
+      return try await mintTokenOnce()
+    }
+  }
+
+  private static func mintTokenOnce() async throws -> String {
     guard let apiKey else { throw Failure.noKey }
     var request = URLRequest(url: URL(string: "https://api.elevenlabs.io/v1/single-use-token/realtime_scribe")!)
     request.httpMethod = "POST"
     request.setValue(apiKey, forHTTPHeaderField: "xi-api-key")
-    request.timeoutInterval = 10
+    request.timeoutInterval = 20
     let (data, response) = try await URLSession.shared.data(for: request)
     let status = (response as? HTTPURLResponse)?.statusCode ?? 0
     guard status == 200, let token = (try? JSONDecoder().decode(TokenResponse.self, from: data))?.token else {

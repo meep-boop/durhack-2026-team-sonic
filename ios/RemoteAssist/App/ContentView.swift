@@ -38,6 +38,8 @@ struct ContentView: View {
   @State private var expertHeard: String?
   /// A big "Look left" arrow, from the expert's voice, for a few seconds.
   @State private var lookCue: ExpertSpeech.Direction?
+  /// Why the relay just refused a finished step, for a few seconds on the step card.
+  @State private var refusalNote: String?
   @AppStorage("ghostToolOn") private var ghostToolOn = true
   @AppStorage("onboarded") private var onboarded = false
   @AppStorage("voiceOn") private var voiceOn = true
@@ -47,7 +49,7 @@ struct ContentView: View {
   private var inCall: Bool { call.state == .connecting || call.state == .live || call.state == .reconnecting }
 
   var body: some View {
-    lifecycle(presentations(layers))
+    lifecycle(relayFeedback(presentations(layers)))
   }
 
   private var layers: some View {
@@ -94,12 +96,13 @@ struct ContentView: View {
 
       // Out of the view tree entirely when the app isn't on screen, so its Metal layer can't ask for drawables.
       if let face = call.remoteVideoTrack, call.state == .live, scenePhase == .active {
+        // A small picture-in-picture under the call bar (48 pt plus the screen's top padding), never over a button.
         RemoteVideoView(track: face)
-          .frame(width: 96, height: 128)
-          .clipShape(RoundedRectangle(cornerRadius: 18, style: .continuous))
-          .overlay(RoundedRectangle(cornerRadius: 18, style: .continuous).stroke(.white.opacity(0.4), lineWidth: 1))
+          .frame(width: 76, height: 100)
+          .clipShape(RoundedRectangle(cornerRadius: 16, style: .continuous))
+          .overlay(RoundedRectangle(cornerRadius: 16, style: .continuous).stroke(.white.opacity(0.35), lineWidth: 1))
           .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topTrailing)
-          .padding(.top, 70)
+          .padding(.top, 64)
           .padding(.trailing)
       }
     }
@@ -112,9 +115,27 @@ struct ContentView: View {
     ZStack {
       SpotlightOverlay(tracker: spotlight)
       VStack(spacing: 10) {
-        InCallBar(call: call) { showingTranscript = true }
-        CaptionStrip(call: call)
+        HStack(spacing: 10) {
+          CallBar(call: call)
+          Button { showingTranscript = true } label: {
+            Image(systemName: "captions.bubble")
+              .font(.headline)
+              .frame(width: 44, height: 44)
+              .glassBackground(in: Circle())
+          }
+          .buttonStyle(.plain)
+          .accessibilityLabel("Call transcript")
+        }
         Spacer()
+        CaptionStrip(call: call)
+        // The steps are one tap away: the guide screen keeps the call bar, so the call carries on.
+        Button(action: enterGuide) {
+          Label("Open the guide", systemImage: "list.number")
+            .font(.headline)
+            .frame(maxWidth: .infinity)
+            .padding(.vertical, 6)
+        }
+        .buttonStyle(.borderedProminent)
         Label(expertHeard.map { "Heard “\($0)”" } ?? pinMessage ?? "The expert can see your camera and is guiding you",
               systemImage: expertHeard != nil ? "ear.fill" : "hand.point.up.left.fill")
           .font(.subheadline.weight(.semibold))
@@ -135,21 +156,21 @@ struct ContentView: View {
     ZStack {
       SpotlightOverlay(tracker: spotlight)
 
-      if !ar.markerSeen && !isLaptopGuide && player.currentStep != nil {
+      // Not during a call: the expert is pointing at things, and the step card still says to find the marker.
+      if !ar.markerSeen && !isLaptopGuide && player.currentStep != nil && !inCall {
         FindMarkerHint().transition(.opacity)
       }
 
       VStack(spacing: 10) {
+        // In a call the call bar takes the status pill's place: one row, never wrapped.
         HStack(spacing: 10) {
-          StatusCapsule(ar: ar, relay: relay, call: call, laptopLocked: isLaptopGuide ? laptopFrame != nil : nil) { showingConnection = true }
-          Spacer(minLength: 0)
+          if inCall {
+            CallBar(call: call).transition(.opacity)
+          } else {
+            StatusCapsule(ar: ar, relay: relay, call: call, laptopLocked: isLaptopGuide ? laptopFrame != nil : nil) { showingConnection = true }
+            Spacer(minLength: 0)
+          }
           guideMenu
-        }
-
-        if call.state != .idle && call.state != .ringing {
-          InCallBar(call: call) { showingTranscript = true }
-            .transition(.move(edge: .top).combined(with: .opacity))
-          CaptionStrip(call: call)
         }
 
         if ar.cameraStalled {
@@ -171,6 +192,8 @@ struct ContentView: View {
         }
 
         Spacer()
+
+        if inCall { CaptionStrip(call: call) }
 
         if let setup {
           LaptopSetupCoach(stage: setup, problem: setupProblem, onCancel: cancelSetup)
@@ -216,6 +239,7 @@ struct ContentView: View {
       return .init(text: "Teaching: tap each part on the laptop · \(count) marked", symbol: "hand.point.up.left.fill")
     }
     if let problem = commands.problem { return .init(text: problem, symbol: "mic.badge.xmark", tint: .orange) }
+    if let refusalNote { return .init(text: "The relay refused that step: \(refusalNote)", symbol: "exclamationmark.triangle.fill", tint: .orange) }
     if let expertHeard { return .init(text: "Expert: “\(expertHeard)”", symbol: "ear.fill") }
     if let heard = commands.heard { return .init(text: "Heard “\(heard)”", symbol: "mic.fill") }
     if let pinMessage { return .init(text: pinMessage, symbol: "info.circle.fill") }
@@ -254,6 +278,32 @@ struct ContentView: View {
     }
   }
 
+  /// What the relay and the expert's voice say back: receipts, refusals, heard commands. Apart from `lifecycle` so
+  /// the type checker can cope with the screen.
+  private func relayFeedback(_ content: some View) -> some View {
+    content
+    .animation(.snappy, value: lookCue)
+    .animation(.easeInOut, value: expertHeard)
+    .animation(.easeInOut, value: refusalNote)
+    .onChange(of: relay.receipts) { old, new in
+      // Only real receipts: a tap the relay refused also leaves the queue, and must never read as synced.
+      guard new > old else { return }
+      syncedToast = "\(new - old) step\(new - old == 1 ? "" : "s") synced to the expert"
+      Task {
+        try? await Task.sleep(for: .seconds(2.5))
+        syncedToast = nil
+      }
+    }
+    .onChange(of: relay.refusals) {
+      let reason = relay.lastRefusal
+      refusalNote = reason
+      Task {
+        try? await Task.sleep(for: .seconds(4))
+        if refusalNote == reason { refusalNote = nil }
+      }
+    }
+  }
+
   private func lifecycle(_ content: some View) -> some View {
     content
     .animation(.snappy, value: call.state)
@@ -268,18 +318,7 @@ struct ContentView: View {
     .animation(.easeInOut, value: ar.markerSeen)
     .animation(.easeInOut, value: ar.markerLostForAWhile)
     .animation(.easeInOut, value: pinMessage)
-    .animation(.snappy, value: lookCue)
-    .animation(.easeInOut, value: expertHeard)
     .animation(.snappy, value: syncedToast)
-    .onChange(of: relay.outboxCount) { old, new in
-      // The offline queue just drained into the expert's view: say so, as in the explainer video.
-      guard new < old, relay.state == .connected else { return }
-      syncedToast = "\(old - new) step\(old - new == 1 ? "" : "s") synced to the expert"
-      Task {
-        try? await Task.sleep(for: .seconds(2.5))
-        syncedToast = nil
-      }
-    }
     .onAppear(perform: wire)
     .onChange(of: onboarded) { if onboarded { ar.start() } }
     .onChange(of: scenePhase) { _, phase in handle(phase) }
@@ -342,6 +381,9 @@ struct ContentView: View {
     }
     relay.onGuide = { [player] guide in
       relayGuide = guide
+      // The relay replays its guide on every reconnect. The laptop guide lives only on this phone, so that must not
+      // pull the user out of it; leaving the laptop guide goes back to this one.
+      guard player.guide.id != LaptopGuide.guideId else { return }
       player.replace(with: guide)
     }
     relay.onStepSet = { [player] message in
@@ -353,17 +395,17 @@ struct ContentView: View {
     }
     call.sendSignal = { [relay] signal in relay.sendSignal(signal) }
     call.onExpertTap = { tap in
-      guard ar.placeExpertPin(at: CGPoint(x: tap.x, y: tap.y), label: tap.label, secondsAgo: tap.secondsAgo) else { return false }
+      guard ar.placeExpertPin(at: CGPoint(x: tap.x, y: tap.y), label: tap.label, secondsAgo: tap.secondsAgo, turn: tap.turn) else { return false }
       spotlight.enabled = true
       pinTicks += 1
-      pinMessage = "The expert marked: \(tap.label)"
+      flashPinMessage("The expert marked: \(tap.label)")
       return true
     }
     call.onExpertArea = { area in
       guard ar.placeExpertArea(corners: area.corners, label: area.label, secondsAgo: area.secondsAgo) else { return false }
       spotlight.enabled = true
       pinTicks += 1
-      pinMessage = "The expert marked: \(area.label)"
+      flashPinMessage("The expert marked: \(area.label)")
       return true
     }
     call.onExpertClear = {
@@ -437,6 +479,16 @@ struct ContentView: View {
     commands.setSuspended(appSpeaking || call.state != .idle || scenePhase == .background)
   }
 
+  /// A note about the expert's mark that clears itself, so the step's own note (find the marker, pins left) comes
+  /// back instead of staying hidden for the rest of the step.
+  private func flashPinMessage(_ text: String) {
+    pinMessage = text
+    Task {
+      try? await Task.sleep(for: .seconds(4))
+      if pinMessage == text { pinMessage = nil }
+    }
+  }
+
   /// The expert's finished lines drive the screen when they're a clear command (`ExpertSpeech`), so the user can
   /// keep both hands on the laptop. Each one says what it did, so a wrong guess is visible at once.
   private func heardFromExpert(_ text: String) {
@@ -444,11 +496,13 @@ struct ContentView: View {
     let note: String
     switch command {
     case .next:
-      guard !showingHome, player.currentStep != nil, ar.markerSeen || isLaptopGuide else { return }
+      guard !showingHome else { note = "Next step: tap Open the guide first"; break }
+      guard player.currentStep != nil else { return }
+      guard ar.markerSeen || isLaptopGuide else { note = "Next step: point the camera at the printed marker first"; break }
       next()
       note = "Next step"
     case .back:
-      guard !showingHome else { return }
+      guard !showingHome else { note = "Go back: tap Open the guide first"; break }
       player.back()
       note = "Go back"
     case .look(let direction):

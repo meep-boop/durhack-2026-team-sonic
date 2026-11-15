@@ -38,4 +38,12 @@ final class ExpertSpeechTests: XCTestCase {
       XCTAssertTrue(cue.symbol.hasSuffix(direction.rawValue))
     }
   }
+
+  func testTheConsolesTurnActionsBecomeTheRightWayToTurn() {
+    XCTAssertEqual(CallManager.ExpertTap.turn(forAction: "unscrew"), true, "unscrewing turns anticlockwise")
+    XCTAssertEqual(CallManager.ExpertTap.turn(forAction: "screw-in"), false)
+    XCTAssertNil(CallManager.ExpertTap.turn(forAction: nil))
+    XCTAssertNil(CallManager.ExpertTap.turn(forAction: "twist"))
+    XCTAssertNil(CallManager.ExpertTap.turn(forAction: 3))
+  }
 }

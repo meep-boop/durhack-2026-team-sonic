@@ -13,6 +13,8 @@ final class CallManager: NSObject {
   private(set) var state: State = .idle {
     didSet { updateVideoFlow() }
   }
+  /// When this call first connected, for the call bar's clock. Nil until then, and after the call.
+  private(set) var connectedAt: Date?
   private(set) var isMuted = false
   private(set) var isSpeakerOn = true
   /// Set when the expert sends their webcam, so the phone can show a face bubble.
@@ -34,6 +36,17 @@ final class CallManager: NSObject {
     var y: Double
     var label: String
     var secondsAgo: Double
+    /// "Unscrew this" (true, anticlockwise) or "screw this in" (false); nil for a plain point.
+    var turn: Bool? = nil
+
+    /// The console's optional `action` on a tap. Anything else is a plain point.
+    static func turn(forAction action: Any?) -> Bool? {
+      switch action as? String {
+      case "unscrew": true
+      case "screw-in": false
+      default: nil
+      }
+    }
   }
   /// Called on main; returns whether the tap landed on a surface, which goes back to the expert as ✓ or "missed".
   @ObservationIgnored var onExpertTap: ((ExpertTap) -> Bool)?
@@ -234,6 +247,7 @@ final class CallManager: NSObject {
     caption = nil
     pendingOffer = nil
     pendingCandidates = []
+    connectedAt = nil
     state = .idle
     audioSession.endCall()
   }
@@ -255,7 +269,9 @@ extension CallManager: RTCPeerConnectionDelegate {
     onMain { [weak self] in
       guard let self, peerConnection === self.peer else { return }
       switch newState {
-      case .connected, .completed: self.state = .live
+      case .connected, .completed:
+        if self.connectedAt == nil { self.connectedAt = Date() }
+        self.state = .live
       case .disconnected: self.state = .reconnecting
       case .failed, .closed: self.tearDown()
       default: break
@@ -336,7 +352,8 @@ extension CallManager: RTCDataChannelDelegate {
         id: id, x: x, y: y,
         label: (message["label"] as? String).flatMap { $0.isEmpty ? nil : String($0.prefix(40)) } ?? "here",
         // Clamped: the camera history only goes back about 2.5 s.
-        secondsAgo: min(max(message["latency"] as? Double ?? 0.15, 0), 2)
+        secondsAgo: min(max(message["latency"] as? Double ?? 0.15, 0), 2),
+        turn: ExpertTap.turn(forAction: message["action"])
       )
       onMain { [weak self] in
         let ok = self?.onExpertTap?(tap) ?? false

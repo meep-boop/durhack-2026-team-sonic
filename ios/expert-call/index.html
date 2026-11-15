@@ -19,7 +19,7 @@
   .spacer { flex: 1; }
   main { display: grid; grid-template-columns: 1fr 340px; gap: 20px; padding: 20px; height: calc(100vh - 60px); }
   .stage { position: relative; background: #000; border-radius: 18px; overflow: hidden; border: 1px solid var(--line); display: grid; place-items: center; }
-  .stage video { width: 100%; height: 100%; object-fit: contain; background: #000; }
+  .stage video#remote { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: contain; background: #000; }
   .stage .empty { position: absolute; text-align: center; color: var(--muted); padding: 24px; }
   .stage .empty strong { display: block; color: var(--text); font-size: 18px; margin-bottom: 6px; }
   .badge { position: absolute; top: 14px; left: 14px; display: none; align-items: center; gap: 8px; background: rgba(0,0,0,.55); backdrop-filter: blur(10px); padding: 6px 12px; border-radius: 999px; font-size: 13px; }
@@ -40,7 +40,7 @@
   .tools button.on { background: var(--accent); }
   details summary { cursor: pointer; font-size: 12px; text-transform: uppercase; letter-spacing: .08em; color: var(--muted); font-weight: 600; }
   details[open] summary { margin-bottom: 10px; }
-  #selfView { position: absolute; right: 14px; bottom: 14px; width: 180px; border-radius: 12px; border: 1px solid var(--line); display: none; }
+  #selfView { position: absolute; right: 16px; bottom: 16px; width: 200px; height: auto; aspect-ratio: 4 / 3; object-fit: cover; border-radius: 14px; border: 1px solid rgba(255,255,255,.18); box-shadow: 0 8px 24px rgba(0,0,0,.45); display: none; z-index: 2; }
   aside { display: flex; flex-direction: column; gap: 14px; overflow: auto; }
   .card { background: var(--panel); border: 1px solid var(--line); border-radius: 16px; padding: 16px; }
   .card h2 { font-size: 12px; text-transform: uppercase; letter-spacing: .08em; color: var(--muted); margin: 0 0 10px; font-weight: 600; }
@@ -61,7 +61,29 @@
   #log { list-style: none; margin: 0; padding: 0; font-size: 13px; max-height: 220px; overflow: auto; }
   #log li { padding: 6px 0; border-bottom: 1px solid var(--line); color: var(--muted); }
   #log li b { color: var(--text); font-weight: 600; }
-  @media (max-width: 900px) { main { grid-template-columns: 1fr; height: auto; } .stage { min-height: 50vh; } }
+  ::selection { background: rgba(139,92,246,.45); }
+  :root { accent-color: var(--accent); color-scheme: dark; }
+  button:focus-visible, input:focus-visible, summary:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+  button:not(:disabled):hover { filter: brightness(1.12); }
+  aside .card.grow { flex: 1; display: flex; flex-direction: column; min-height: 220px; }
+  aside .card.grow #transcript { flex: 1; max-height: none; }
+  #transcript li.user b { color: #cbd5e1; }
+  /* The guiding tools float on the video, where the technician's eyes already are. Only shown in a call. */
+  .toolbar { position: absolute; left: 50%; bottom: 18px; transform: translateX(-50%); display: none; align-items: center; gap: 8px;
+    padding: 8px; border-radius: 16px; background: rgba(12,14,20,.82); border: 1px solid rgba(255,255,255,.12); box-shadow: 0 10px 30px rgba(0,0,0,.45); z-index: 3; }
+  .stage.live .toolbar { display: flex; }
+  .toolbar .tools { margin: 0; }
+  .toolbar .tools button { flex: none; padding: 9px 16px; }
+  .toolbar input { width: 220px; padding: 9px 12px; }
+  .toolbar #clearPins { flex: none; padding: 9px 14px; }
+  .toolbar .sep { width: 1px; align-self: stretch; background: rgba(255,255,255,.12); }
+  .toolhint { position: absolute; left: 50%; bottom: 76px; transform: translateX(-50%); display: none; font-size: 12px; color: #cbd5e1;
+    background: rgba(0,0,0,.55); padding: 4px 10px; border-radius: 999px; white-space: nowrap; z-index: 3; }
+  .stage.live .toolhint { display: block; }
+  .callrow { display: flex; gap: 8px; }
+  .callrow > * { flex: 1; }
+  #callBtn { padding: 14px; font-size: 16px; }
+  @media (max-width: 900px) { main { grid-template-columns: 1fr; height: auto; } .stage { min-height: 50vh; } .toolbar input { width: 140px; } }
 </style>
 </head>
 <body>
@@ -79,37 +101,37 @@
     <div class="empty" id="empty"><strong>No live view yet</strong>When the phone shows as online, press Call. They tap Accept and you see their camera, live.</div>
     <div class="badge" id="liveBadge"><span class="dot"></span>Live from the phone</div>
     <video id="selfView" autoplay playsinline muted></video>
+    <div class="toolhint" id="toolHint">Click the video: a pin appears on that spot on the phone.</div>
+    <div class="toolbar" role="toolbar" aria-label="Guide them">
+      <div class="tools">
+        <button id="toolPoint" class="on" title="Click the video to drop a pin">Point</button>
+        <button id="toolUnscrew" title="Click a screw: the phone shows it turning anticlockwise">Unscrew ↺</button>
+        <button id="toolScrewIn" title="Click a hole: the phone shows a screw turning clockwise">Screw in ↻</button>
+        <button id="toolArea" title="Drag a box around what they should look at">Area</button>
+      </div>
+      <span class="sep"></span>
+      <input id="tapLabel" placeholder="Label, e.g. this screw" maxlength="40" aria-label="Label for the next mark">
+      <button id="clearPins" class="secondary" disabled>Clear</button>
+    </div>
   </section>
 
   <aside>
     <div class="card">
       <h2>Call</h2>
-      <p class="hint" id="callState" style="margin-top:0">Waiting for a phone to come online.</p>
-      <div class="row">
+      <p class="hint" id="callState" style="margin:0 0 10px">Waiting for a phone to come online.</p>
+      <div class="callrow">
         <button id="callBtn" disabled>Call the phone</button>
-        <button id="endBtn" class="danger" disabled>End</button>
+        <button id="endBtn" class="danger" disabled style="flex:0 0 96px">End</button>
       </div>
       <div class="row"><button id="muteBtn" class="secondary" disabled>Mute mic</button></div>
-      <label class="hint"><input type="checkbox" id="sendCam" style="width:auto"> Send my webcam too</label>
+      <label class="hint" style="display:flex;gap:8px;align-items:center"><input type="checkbox" id="sendCam" style="width:auto;margin:0"> Send my webcam too</label>
       <meter id="level" min="0" max="1" value="0" title="Phone audio level"></meter>
     </div>
 
-    <div class="card">
-      <h2>Guide them</h2>
-      <div class="tools">
-        <button id="toolPoint" class="on">Point</button>
-        <button id="toolArea">Area</button>
-      </div>
-      <p class="hint" id="toolHint">Click the live video: a pin appears on that spot in the phone's AR view.</p>
-      <input id="tapLabel" placeholder="Label, e.g. this screw" maxlength="40" style="margin-top:10px">
-      <div class="row"><button id="clearPins" class="secondary" disabled>Clear marks</button></div>
-      <p class="hint">On the phone, what you mark is lit and the rest goes dark; if it's off screen, they're told which way to turn.</p>
-    </div>
-
-    <div class="card">
+    <div class="card grow">
       <h2>Live transcript</h2>
       <ul id="transcript"></ul>
-      <p class="hint" id="transcriptNote">Starts when the call connects. ElevenLabs Scribe (live); the key stays on the phone.</p>
+      <p class="hint" id="transcriptNote">Starts when the call connects. ElevenLabs Scribe (live, English); the key stays on the phone.</p>
       <p class="hint">Say it and the phone acts: <b>next step</b> · <b>go back</b> · <b>look left / right / up / down</b> · <b>clear the marks</b>.</p>
     </div>
 
@@ -137,7 +159,7 @@
 // offers, the phone rings and answers. Relay messages follow contracts/protocol.ts (hello, rtc.signal, presence,
 // step.done, pose). Pointing and the transcript ride the call's own "control" data channel, peer to peer, so they
 // need no relay or contract change. Its messages (x, y are 0..1 of the upright video; latency in seconds):
-//   page → phone: {kind:"ping", t} · {kind:"tap", id, x, y, label, latency}
+//   page → phone: {kind:"ping", t} · {kind:"tap", id, x, y, label, latency, action?:"unscrew"|"screw-in"}
 //                 {kind:"area", id, x0, y0, x1, y1, label, latency} · {kind:"clear"}
 //                 {kind:"caption"|"transcript", id?, speaker:"expert"|"user", text} · {kind:"stt-token-request", which}
 //   phone → page: {kind:"pong", t} · {kind:"pinned", id, ok} (for a tap or an area)
@@ -337,7 +359,8 @@ function startScribe(which, token) {
   const tracks = stream?.getAudioTracks() ?? [];
   if (!tracks.length) return log(`No ${which === "expert" ? "microphone" : "phone"} audio to transcribe yet`);
   const speaker = which === "expert" ? "expert" : "user";
-  const url = "wss://api.elevenlabs.io/v1/speech-to-text/realtime?model_id=scribe_v2_realtime&audio_format=pcm_16000&commit_strategy=vad&token=" + encodeURIComponent(token);
+  // English only: auto-detect turned room chatter into Russian captions on the phone (ISO 639-1, per the API docs).
+  const url = "wss://api.elevenlabs.io/v1/speech-to-text/realtime?model_id=scribe_v2_realtime&audio_format=pcm_16000&commit_strategy=vad&language_code=en&token=" + encodeURIComponent(token);
   const ws = new WebSocket(url);
   const ctx = new AudioContext({ sampleRate: 16000 });
   let node, pending = [], pendingSamples = 0, stopped = false;
@@ -399,7 +422,7 @@ function stopScribes() {
 function showPartial(speaker, text) {
   let li = document.querySelector(`#transcript li.partial.${speaker}`);
   if (!li) { li = document.createElement("li"); li.className = `partial ${speaker}`; $("transcript").append(li); }
-  li.replaceChildren(Object.assign(document.createElement("b"), { textContent: speaker === "expert" ? "You" : "On-site" }), text);
+  li.replaceChildren(Object.assign(document.createElement("b"), { textContent: speaker === "expert" ? "Technician" : "On-site" }), text);
   $("transcript").scrollTop = $("transcript").scrollHeight;
 }
 
@@ -407,7 +430,7 @@ function showLine(line) {
   document.querySelector(`#transcript li.partial.${line.speaker}`)?.remove();
   const li = document.createElement("li");
   li.className = line.speaker;
-  li.append(Object.assign(document.createElement("b"), { textContent: line.speaker === "expert" ? "You" : "On-site" }), line.text);
+  li.append(Object.assign(document.createElement("b"), { textContent: line.speaker === "expert" ? "Technician" : "On-site" }), line.text);
   $("transcript").append(li);
   $("transcript").scrollTop = $("transcript").scrollHeight;
 }
@@ -456,36 +479,46 @@ function inPicture(e) {
   return { x, y, inside: x >= 0 && x <= 1 && y >= 0 && y <= 1, px: e.clientX - stage.left, py: e.clientY - stage.top };
 }
 const callReady = () => pc && control?.readyState === "open";
-const label = () => $("tapLabel").value.trim() || "here";
+// The turning tools send a plain tap plus an action, so the phone animates it; their mark is named after the action
+// unless the technician typed a label.
+const TURNS = { unscrew: { action: "unscrew", name: "Unscrew", glyph: "↺" }, screwIn: { action: "screw-in", name: "Screw in", glyph: "↻" } };
+const label = () => $("tapLabel").value.trim() || (TURNS[tool] ? TURNS[tool].name : "here");
 const newId = () => Math.random().toString(36).slice(2, 10);
 
+const TOOL_HINTS = {
+  point: "Click the video: a pin appears on that spot on the phone.",
+  unscrew: "Click a screw: the phone shows it turning anticlockwise, to undo it.",
+  screwIn: "Click a hole: the phone shows a screw turning clockwise, to tighten it.",
+  area: "Drag a box around what they should look at: it's framed on the phone.",
+};
 function setTool(name) {
   tool = name;
-  $("toolPoint").classList.toggle("on", name === "point");
-  $("toolArea").classList.toggle("on", name === "area");
+  for (const [id, key] of [["toolPoint", "point"], ["toolUnscrew", "unscrew"], ["toolScrewIn", "screwIn"], ["toolArea", "area"]]) {
+    $(id).classList.toggle("on", name === key);
+  }
   document.querySelector(".stage").classList.toggle("area", name === "area");
-  $("toolHint").textContent = name === "point"
-    ? "Click the live video: a pin appears on that spot in the phone's AR view."
-    : "Drag a box on the live video around what they should look at (the laptop, a part).";
+  $("toolHint").textContent = TOOL_HINTS[name];
 }
 $("toolPoint").onclick = () => setTool("point");
+$("toolUnscrew").onclick = () => setTool("unscrew");
+$("toolScrewIn").onclick = () => setTool("screwIn");
 $("toolArea").onclick = () => setTool("area");
 
 $("remote").addEventListener("click", async (e) => {
-  if (tool !== "point" || !callReady()) return;
+  if (tool === "area" || !callReady()) return;
   const at = inPicture(e);
   if (!at?.inside) return;
-  const id = newId(), text = label();
-  sendControl({ kind: "tap", id, x: at.x, y: at.y, label: text, latency: await frameAgeSeconds() });
+  const id = newId(), text = label(), turn = TURNS[tool];
+  sendControl({ kind: "tap", id, x: at.x, y: at.y, label: text, latency: await frameAgeSeconds(), ...(turn ? { action: turn.action } : {}) });
   const dot = document.createElement("div");
   dot.className = "tapdot";
   dot.id = "mark-" + id;
   dot.style.left = at.px + "px";
   dot.style.top = at.py + "px";
-  dot.append(Object.assign(document.createElement("span"), { textContent: text }));
+  dot.append(Object.assign(document.createElement("span"), { textContent: turn ? `${turn.glyph} ${text}` : text }));
   $("remote").parentElement.append(dot);
   setTimeout(() => dot.remove(), 6000);
-  log(`Pointed at “${text}”`);
+  log(turn ? `Showed “${text}” ${turn.glyph}` : `Pointed at “${text}”`);
 });
 
 // Area: press, drag, release. The latency is taken at the press, when the technician saw what they're boxing.
