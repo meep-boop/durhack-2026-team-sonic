@@ -17,7 +17,7 @@ bottom, pushed to `main` straight away:
 ```
 
 ## Headline
-**Remote Assist.** Step-by-step 3D guidance on a phone, built by a remote engineer from a scan of the room, that keeps working when the network is down. The plan: `docs/remote-assist/`.
+**Sonic Assist** (working name was Remote Assist). Step-by-step 3D guidance on a phone, built by a remote engineer from a scan of the room, that keeps working when the network is down. The plan: `docs/remote-assist/`.
 
 ## Start here (teammates, first 15 minutes)
 1. **GitHub:** accept the collaborator invite for `github.com/meep-boop/durhack-2026-team-sonic`, then in **Git Bash** on Windows (plain `bash` in
@@ -1024,3 +1024,13 @@ each builder's brief (`builder-file-<name>.md`, on the `context` branch).
 - 📨 To @ahmed: nothing to do. Your relay read-out is told as the "prove which side is wrong" story.
 - ⚠️ Conflicts: @laura — Devpost is hers; this is a draft for her to use or change
 - Conflict status: open
+
+### 2026-11-15 10:18 — the project is called Sonic Assist — @ahmed
+- Shipped: no code. Settles the name Max flagged at 10:04: Devpost, the README and the pitch say **Sonic Assist**.
+  "Remote Assist" stays in code, folder names and the app's display name unless Salman has time to change the latter.
+- Touched: `team.conf`, this file's Headline; on `context`: `CLAUDE.md` (Registry), `PROJECT.md`
+- Decision (Ahmed): Sonic Assist.
+- 📨 To @laura @max: use Sonic Assist in the README, the video and `docs/devpost-about.md`.
+- 📨 To @salman: only if it's a one-line change, the app's display name (`INFOPLIST_KEY_CFBundleDisplayName`).
+- ⚠️ Conflicts: none
+- Conflict status: n/a
