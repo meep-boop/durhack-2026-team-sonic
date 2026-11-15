@@ -23,6 +23,7 @@ The one research file for this project (`research-ledger` skill). Every source g
 | 13 | Meshes: from video, and from a splat (2026-11-14) | Whether to make meshes; textured parts for the phone |
 | 14 | Video to a textured mesh on the DGX Spark (2026-11-14) | Mesh routes ranked for tonight; open3d and COLMAP on ARM |
 | 15 | Phone → DGX Spark → mesh back on the phone (2026-11-14) | ARKit camera positions, upload, USDZ/GLB conversion |
+| 16 | App Lab app layout and the UNO Q's LED matrix over the Bridge (2026-11-15) | Packaging the rig; drawing ✓ / ✗ |
 
 ---
 
@@ -1107,3 +1108,43 @@ few minutes later" is only honest if a full run has been timed on the Spark firs
 - "ARKit relative pose error under 5 cm" (MobileEgo, arXiv 2605.05945): snippet only.
 - Record3D or Polycam nerfstudio paths on our non-LiDAR phones: refuted by [P4].
 - "Official Blender ARM64 builds since 4.3" (Linaro): no release listing found.
+
+# § 16 App Lab app layout and the UNO Q's LED matrix over the Bridge (2026-11-15)
+**Question:** how should the rig be packaged so it runs as an App Lab app, and how does Python get a tick or a cross
+onto the UNO Q's own LED matrix?
+
+**How this pass was done:** about 10 minutes by Ahmed's agent. The library header [1] and three files of Arduino's
+LED Matrix Painter example [2] were opened; the rest came through search summaries.
+
+## Findings
+- The matrix is 13 × 8. `Arduino_LED_Matrix` has `begin()`, `setGrayscaleBits(bits)`, `clear()` and
+  `draw(const uint8_t *buf)`, one byte per pixel (source: [1]).
+- Arduino's Painter example: the sketch includes `Arduino_RouterBridge.h` and `Arduino_LED_Matrix.h`, calls
+  `matrix.begin()`, `setGrayscaleBits(8)`, `clear()`, `Bridge.begin()`, and `Bridge.provide("draw", ...)`, which calls
+  `matrix.draw(...)`; Python imports `App, Bridge` from `arduino.app_utils`, calls `Bridge.call("draw", ...)` and ends
+  with `App.run()` (source: [2]).
+- An app is a folder with `app.yaml`, `python/main.py` and `sketch/` (`sketch.ino`, `sketch.yaml`); App Lab keeps
+  `app.yaml` itself (sources: [2], [3]). `requirements.txt` beside `main.py` matches § 10's [7] and the failed first
+  access test, where App Lab installed nothing.
+- `App.run(user_loop=...)` calls a function over and over (source: [4], community only).
+- Don't call `Bridge.call()` inside a function the sketch provides: starting one exchange while answering another can
+  deadlock (seen in a search summary of an Arduino forum thread; the thread wasn't pinned down).
+- **Not found:** whether `draw()` lays pixels out row by row or column by column. Check on the board.
+
+## Final call
+The rig ships as `hardware/unoq/python/` plus `hardware/unoq/sketch/sketch.ino`, following the Painter example;
+`main.py` falls back to running without the matrix when `arduino.app_utils` isn't there.
+
+## Source ledger
+### KEEP
+- [1] `Arduino_LED_Matrix.h`, ArduinoCore-zephyr,
+  https://github.com/arduino/ArduinoCore-zephyr/blob/main/libraries/Arduino_LED_Matrix/src/Arduino_LED_Matrix.h
+- [2] LED Matrix Painter example, arduino/app-bricks-examples PR #5, https://github.com/arduino/app-bricks-examples/pull/5
+  (files read at `beanrepo/app-bricks-examples@800db05`)
+### WEAK
+- [3] "Arduino App Lab", DroneBot Workshop, https://dronebotworkshop.com/arduino-app-lab/ : the app folder layout.
+- [4] "Arduino UNO Q App Lab Bridge RPC guide", esp32.co.uk, https://esp32.co.uk/arduino-uno-q-app-lab-bridge-rpc-guide/ :
+  `App.run(user_loop=...)`.
+### DO NOT USE
+- _(none)_
+

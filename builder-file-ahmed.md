@@ -123,12 +123,14 @@ but all three teammates build on them, so every change after the first version i
    - 9b 🟡 (22:27: written as `hardware/nicla/main.py`, not yet run on a Nicla; regions and colour are examples)
      The Nicla script: one region per place (the SSD bay), the colour threshold from OpenMV's Threshold Editor, one
      printed line per change, e.g. `seen=ssd-bay`.
-   - 9c 🟡 (22:27: `hardware/unoq/`, tested end to end against the relay with typed-in Nicla lines; not yet on the
-     board)
+   - 9c 🟡 (22:27: `hardware/unoq/`, tested end to end against the relay with typed-in Nicla lines. 2026-11-15 00:51: packaged as
+     an App Lab app, `python/` and `sketch/`, `3b4fd51`; the relay address is a setting at the top of `main.py`. Not yet
+     on the board)
      The UNO Q app: read the lines, follow the guide and step from the relay, compare with `expect`, send
      `step.verified`, light the LED matrix.
-   - 9d ⬜ The ✓ / ✗ on the UNO Q's LED matrix through the Bridge: a small sketch plus one call from the app. Use
-     App Lab's own LED matrix example as the reference once the board is in hand.
+   - 9d 🟡 (2026-11-15 00:51: written, `hardware/unoq/sketch/sketch.ino` and `show()` in `main.py`, following Arduino's LED
+     Matrix Painter example; checked against a stand-in for App Lab's module, not yet on the board) The ✓ / ✗ on
+     the UNO Q's LED matrix through the Bridge.
    - *Done when:* taking the SSD out ticks "take it out" and putting it back ticks "put it back", on the dashboard and
      the phone.
    - `[⚠ conflicts with @laura: the rig mounts on her demo set, before it's scanned]`
@@ -149,6 +151,7 @@ but all three teammates build on them, so every change after the first version i
     - *Done when:* a backup exists and you've checked it opens.
 
 ## 4. Done log (newest first)
+- 2026-11-15 00:51: 9c packaged as an App Lab app and 9d written (`3b4fd51`); 13 rig tests, the chain end to end.
 - 2026-11-14 23:40: the task sweep (every brief, five decisions). Code since 22:27, all on `main`: offline resync (`32ff3e8`),
   the video test page (`03827d1`, then the dashboard calls, `6afbfa5`), Claude labelling (`63b4be1`), the rig and the
   sample guide reworked for the SSD swap (`b3a2d0f`). 41 relay tests, 13 rig tests.
