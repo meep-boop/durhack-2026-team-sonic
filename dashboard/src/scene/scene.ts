@@ -1,8 +1,9 @@
 import { SparkRenderer } from "@sparkjsdev/spark";
 import * as THREE from "three";
 import { OrbitControls } from "three/addons/controls/OrbitControls.js";
+import { TransformControls } from "three/addons/controls/TransformControls.js";
 import { CSS2DObject, CSS2DRenderer } from "three/addons/renderers/CSS2DRenderer.js";
-import type { LabelsRequest, Marker, Pose, Vec3 } from "../../../contracts/protocol.ts";
+import type { LabelsRequest, Marker, Pose, Quat, Vec3 } from "../../../contracts/protocol.ts";
 import type { SceneApi } from "./api.ts";
 import { type Calibration, solveCalibration } from "./calibration.ts";
 import { createFrameMeter } from "./frameMeter.ts";
@@ -67,6 +68,14 @@ export function createScene(container: HTMLElement, marker: Pick<Marker, "width"
   scene.add(markerGroup);
   markerGroup.add(onTop(markerOutline(marker)), onTop(new THREE.AxesHelper(0.1)));
   const objects = createObjectLayer(markerGroup);
+
+  // Drag handles on the selected object. Its own axes, which are the marker's until it's turned, and turning only
+  // about +Y: objects stand upright on the flat laptop (Laura's ask 2, settled 2026-11-15).
+  const gizmo = new TransformControls(camera, renderer.domElement);
+  gizmo.setSpace("local");
+  gizmo.setSize(0.8);
+  scene.add(gizmo.getHelper());
+  let selectedId: string | null = null;
   const user = onTop(cameraFrustum());
   user.visible = false;
   markerGroup.add(user);
@@ -123,6 +132,7 @@ export function createScene(container: HTMLElement, marker: Pick<Marker, "width"
     if (calibration) markerGroup.matrix.fromArray(calibration.matrix);
     markerGroup.matrixWorldNeedsUpdate = true;
     markerGroup.visible = calibration !== undefined;
+    attachGizmo();
     calibratedListeners.forEach((listener) => listener(calibration !== undefined));
   };
 
@@ -166,8 +176,33 @@ export function createScene(container: HTMLElement, marker: Pick<Marker, "width"
     const id = raycaster.intersectObjects(objects.hitTargets(), false)[0]?.object.userData.objectId as string | undefined;
     if (id) clickedListeners.forEach((listener) => listener(id));
   };
+  const setGizmoMode = (mode: "translate" | "rotate") => {
+    gizmo.setMode(mode);
+    gizmo.showX = gizmo.showZ = mode === "translate";
+  };
+  const attachGizmo = () => {
+    const group = selectedId && markerGroup.visible ? objects.find(selectedId) : undefined;
+    if (group) gizmo.attach(group);
+    else gizmo.detach();
+  };
+  gizmo.addEventListener("dragging-changed", ({ value }) => {
+    controls.enabled = !value;
+    const group = gizmo.object;
+    // Reported once, when the drag ends: the guide builder edits the guide and redraws, and a report on every
+    // frame would make it rebuild the whole step 60 times a second.
+    if (value || !group || !selectedId) return;
+    const id = selectedId;
+    const pos = group.position.toArray() as Vec3;
+    const rot = group.quaternion.toArray() as Quat;
+    movedListeners.forEach((listener) => listener(id, pos, rot));
+  });
+
   const onKeyDown = (event: KeyboardEvent) => {
     if (event.key === "Escape") cancelPick();
+    // R and T are for the gizmo only when the expert isn't typing in the guide panel or the search box.
+    if (event.target instanceof HTMLElement && event.target.closest("input, textarea, select")) return;
+    if (event.key === "r" || event.key === "R") setGizmoMode("rotate");
+    if (event.key === "t" || event.key === "T") setGizmoMode("translate");
   };
   renderer.domElement.addEventListener("pointerdown", onPointerDown);
   renderer.domElement.addEventListener("pointerup", onPointerUp);
@@ -272,8 +307,16 @@ export function createScene(container: HTMLElement, marker: Pick<Marker, "width"
       (user.material as THREE.LineBasicMaterial).color.set(markerTracked ? TRACKED_COLOUR : DRIFTING_COLOUR);
     },
 
-    showStep: (list) => objects.showStep(list),
-    select: (id) => objects.select(id),
+    showStep(list) {
+      objects.showStep(list);
+      // A reshaped object is rebuilt as a new group, so the handles move to whatever now carries the id.
+      attachGizmo();
+    },
+    select(id) {
+      selectedId = id;
+      objects.select(id);
+      attachGizmo();
+    },
     previewAction: (id) => objects.previewAction(id),
     stopPreview: () => objects.stopPreview(),
 
@@ -344,6 +387,8 @@ export function createScene(container: HTMLElement, marker: Pick<Marker, "width"
       renderer.domElement.removeEventListener("pointerup", onPointerUp);
       window.removeEventListener("keydown", onKeyDown);
       controls.dispose();
+      gizmo.detach();
+      gizmo.dispose();
       labelLayer.clear();
       labelRenderer.domElement.remove();
       objects.dispose();

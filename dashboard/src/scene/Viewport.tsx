@@ -88,6 +88,7 @@ export function Viewport({ containerRef, scene, relay, marker }: Props) {
         )}
         {scene && relay && status.state === "ready" && <Calibrate scene={scene} relay={relay} marker={marker} />}
         {scene && relay && <PhoneStatus scene={scene} relay={relay} />}
+        <div className="hint">Selected object: drag its handles · R to turn · T to move</div>
         <div className="hint">Scans go in dashboard/public/scans/: ?closed=&lt;file&gt;&amp;open=&lt;file&gt;, or drop one here</div>
       </div>
       {scene && relay && status.state === "ready" && <Labels scene={scene} relay={relay} scanId={status.info.name} />}
