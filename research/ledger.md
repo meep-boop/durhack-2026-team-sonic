@@ -640,6 +640,9 @@ load, so UNO Q facts come from third-party guides that agree with each other.
 ### The Nicla Vision
 - OpenMV finds coloured blobs with `find_blobs`, limited to a region of interest (`roi`); Arduino's Nicla tutorial
   uses the Threshold Editor to pick the colour (sources: [3], [4]).
+- **Corrected by our own run, 2026-11-15 03:24:** on our Nicla Vision read from the UNO Q, no output arrived with DTR
+  cleared and it flowed as soon as DTR was set. `hardware/unoq/python/main.py` starts with DTR set. The claim below
+  is what the source says, not what we saw.
 - An OpenMV script's printed output can be read over USB serial by a host with pyserial, with DTR disabled or the
   camera suppresses its output (source: [5]). OpenMV's maintainer calls the RPC library "a little finicky" over USB
   (source: [10]), so plain printed lines are the safer protocol.

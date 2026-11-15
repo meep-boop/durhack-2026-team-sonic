@@ -184,6 +184,7 @@ rung 2 a guide built in the scan lines up on the phone; rung 3 the extras. Decis
     - *Done when:* a backup exists and you've checked it opens.
 
 ## 4. Done log (newest first)
+- 2026-11-15 03:24: the rig ran on its hardware for the first time: App Lab app up, relay connected, Nicla lines read on the UNO Q (task 9a ✅, 9b/9c running; left: tune the sticker colour and region on the real SSD, see a tick, 9d the LED matrix).
 - 2026-11-15 01:47: the tap receipt (`8756560`) and one calibration per scan (`b9a5e86`); 41 relay tests. Before that, the plan to the deadline in every brief.
 - 2026-11-15 00:51: 9c packaged as an App Lab app and 9d written (`3b4fd51`); 13 rig tests, the chain end to end.
 - 2026-11-14 23:40: the task sweep (every brief, five decisions). Code since 22:27, all on `main`: offline resync (`32ff3e8`),
