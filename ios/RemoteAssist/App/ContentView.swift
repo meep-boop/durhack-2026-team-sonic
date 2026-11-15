@@ -18,6 +18,7 @@ struct ContentView: View {
   @State private var lastLocate: (snapshot: ARSessionController.Snapshot, located: LaptopAssistant.Located)?
   @State private var screwMemory = ScrewMemory()
   @State private var pinTicks = 0
+  @State private var spotlight = SpotlightTracker()
   @AppStorage("ghostToolOn") private var ghostToolOn = true
   @AppStorage("onboarded") private var onboarded = false
   @AppStorage("voiceOn") private var voiceOn = true
@@ -29,6 +30,8 @@ struct ContentView: View {
     ZStack {
       ARViewContainer(controller: ar)
         .ignoresSafeArea()
+
+      SpotlightOverlay(tracker: spotlight)
 
       if !ar.markerSeen && !isAIGuide {
         FindMarkerHint().transition(.opacity)
@@ -162,6 +165,7 @@ struct ContentView: View {
     }
     .onChange(of: ghostToolOn) { updateGhost() }
     .sensoryFeedback(.success, trigger: pinTicks)
+    .sensoryFeedback(.selection, trigger: spotlight.arrivals)
     .onChange(of: voiceOn) { voiceOn ? speakCurrentStep() : voice.stop() }
     .onChange(of: call.state) { old, new in
       // AI pins are for working alone; when the expert joins they point at things themselves.
@@ -181,6 +185,7 @@ struct ContentView: View {
   private func wire() {
     ar.step = player.currentStep
     ar.onPinToggled = { pin in pinToggled(pin) }
+    spotlight.start(ar)
     ar.onPose = { [relay] pose in relay.sendPose(pose) }
     // Runs on the AR session queue; the source checks its own thread-safe switch, set by CallManager.
     ar.onCameraFrame = { [videoSource = call.videoSource] buffer, time in
@@ -204,10 +209,12 @@ struct ContentView: View {
   private func handle(_ phase: ScenePhase) {
     switch phase {
     case .background:
+      spotlight.stop()
       ar.pause()
       voice.stop()
       call.setBackgrounded(true)
     case .active:
+      spotlight.start(ar)
       call.setBackgrounded(false)
       if onboarded { ar.resume() }
       relay.appBecameActive()
@@ -246,6 +253,7 @@ struct ContentView: View {
     ar.clearPins(kinds: [.ai, .refit], focus: true)
     lastLocate = nil
     pinMessage = nil
+    spotlight.enabled = true
     updateGhost()
     guard isAIGuide, player.currentStep != nil else { return }
 

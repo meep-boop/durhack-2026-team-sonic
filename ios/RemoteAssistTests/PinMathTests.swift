@@ -108,4 +108,12 @@ final class PinMathTests: XCTestCase {
     XCTAssertLessThanOrEqual(crop.maxX, 1440)
     XCTAssertGreaterThanOrEqual(crop.minY, 0)
   }
+
+  func testEdgeGlowSitsWhereTheDirectionLeavesTheScreen() {
+    let size = CGSize(width: 400, height: 800)
+    XCTAssertEqual(SpotlightOverlay.edgePoint(CGVector(dx: 1, dy: 0), in: size), CGPoint(x: 400, y: 400))
+    XCTAssertEqual(SpotlightOverlay.edgePoint(CGVector(dx: 0, dy: -1), in: size), CGPoint(x: 200, y: 0))
+    let corner = SpotlightOverlay.edgePoint(CGVector(dx: -0.6, dy: 0.8), in: size)
+    XCTAssertEqual(corner.x, 0, accuracy: 1e-9)
+  }
 }
