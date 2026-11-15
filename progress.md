@@ -386,3 +386,12 @@ each builder's brief (`builder-file-<name>.md`, on the `context` branch).
   `ModelName` and `relay/validate.ts` to edit with the `ssd` model | @max — the relay moves to the dashboard laptop
 - Conflict status: open
 
+### 2026-11-15 00:51 — the UNO Q rig as an App Lab app, with ✓ / ✗ on its LED matrix — @ahmed
+- Shipped: `hardware/unoq/` now mirrors an App Lab app: `python/` (`main.py`, `rig.py`, and `requirements.txt` beside
+  them, where App Lab looks) and `sketch/sketch.ino`, which draws a tick or a cross for the current step. In App Lab,
+  set `RELAY_URL` at the top of `main.py`. The same file still runs over SSH or on a laptop, without the matrix. 13
+  rig tests; the chain end to end through the relay; the App Lab path checked against a stand-in module. Not yet on
+  the board. Commit `3b4fd51`. Research: `research/ledger.md` § 16.
+- Touched: `hardware/` (Ahmed's); on `context`: `builder-file-ahmed.md`, `CLAUDE.md`, `research/ledger.md`
+- ⚠️ Conflicts: none
+- Conflict status: resolved by @ahmed 2026-11-15
