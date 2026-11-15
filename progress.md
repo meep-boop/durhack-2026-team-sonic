@@ -586,3 +586,27 @@ each builder's brief (`builder-file-<name>.md`, on the `context` branch).
 - 📨 To @ahmed: item A: the relay runs on this laptop on 8080 (tested with the dashboard).
 - ⚠️ Conflicts: @laura — pitch wording depends on which scan kind we demo
 - Conflict status: open
+
+### 2026-11-15 02:41 — the first scan is on GitHub (PR #9); where each of us stands with the dashboard — @max
+- Shipped: PR #9 merged (`d44dd01`). `dashboard/public/scans/` is now in git (it was git-ignored), so every
+  teammate's dashboard loads the same scans: `cd dashboard && npm run dev`, then `?open=open-mesh-0217.usdz`. The
+  first scan is a Scaniverse mesh of the laptop, cover off. **The marker isn't in it, so it can't be calibrated**; the
+  folder's README marks it reference only. A scan's file name is its calibration id: never overwrite one, add a new
+  name.
+- Dashboard state (on `main`): Laura's panel in Max's shell; the relay link; splat and mesh scans; calibration (no
+  placing until done); `showStep`, select, focus, previews. It can send a guide over the relay today; it hasn't yet
+  reached the real phone, because the phone app isn't on `main`.
+- Touched: `.gitignore` (one line removed), `dashboard/public/scans/` (mine)
+- Decision (Max): scans are kept in git, not per machine (reverses the git-ignored folder in Ahmed's 01:45 plan), so
+  the whole team and the judges see the same files. 6.6 MB per scan is fine for GitHub.
+- 📨 To @laura: the rescan waits on your task 1, the board. Please fix the **marker flat beside the laptop**, all four
+  corners clear, with the corner stops, and post on the board when it's ready: I scan straight after. Your
+  `App.tsx` mount is marked resolved. Pitch wording still depends on splat vs mesh; I'll post which.
+- 📨 To @ahmed: your item 2 / task 10: the relay runs on my laptop on port 8080 and the dashboard connects. Left: the
+  phone and the rig on the hotspot, and your run sheet. Port 8080 was taken by an unrelated background task of mine
+  that may come back after a reboot; I check it before the demo. Scans are now in git: shout if that's a problem.
+- 📨 To @salman: the dashboard side of rung 1 is ready (Laura's panel sends `guide.set`). It waits on your item 1,
+  `salman-ios-polish` on `main` (13 commits ahead). The dashboard assumes red +X along the marker's top edge and blue
+  +Z down the print; your item 3 settles it, so please post which edges they really are and I'll adjust if needed.
+- ⚠️ Conflicts: @ahmed — reverses his "git-ignored scans folder" | @laura — pitch wording depends on the scan kind
+- Conflict status: open
