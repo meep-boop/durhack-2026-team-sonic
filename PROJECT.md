@@ -49,6 +49,7 @@ Source: `EVENT.md` §1 (one notes file, not yet checked against Devpost). The 02
 
 | Date | Decision |
 |---|---|
+| 2026-11-15 | The demo opens with Salman's technician console (the expert clicks the live video, the mark lands on the real part), then the guide dashboard for the prepared guide, offline and the rig; replaces "scan first" in the 07:40 order (Ahmed, 08:30) |
 | 2026-11-15 | The demo is "expert builds, user follows": click a screw in the scan, it lands on the real screw, taps and ticks, offline and sync, the rig's ✓; extras last, only if they work (Ahmed, 07:40) |
 | 2026-11-15 | Guide positions come from two rescans with the marker in view, placed by clicking in the scan; a top-down ruler photo is the fallback (Ahmed, 07:40) |
 | 2026-11-15 | Animations get bigger, same five actions, no message change; the one phone change allowed after the freeze (Ahmed, 07:40) |

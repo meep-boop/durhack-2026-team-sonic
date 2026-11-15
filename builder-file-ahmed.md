@@ -65,6 +65,13 @@ but all three teammates build on them, so every change after the first version i
 ## 3. ▶ Current tasks (2026-11-14), in order
 *Status: ⬜ not started · 🟡 in progress · ⏸ blocked · ✅ done*
 
+**▶ CHANGE (2026-11-15 08:30, Ahmed's decision): the demo opens with Salman's technician console, then the guide dashboard.**
+New order of the 5 minutes: problem → **live call: the expert clicks a screw on the phone's video and it appears on
+the real screw (Point, Unscrew, Screw in, Area)** → the guide dashboard: send the prepared guide, taps and ticks →
+phone Wi-Fi off, it keeps going, syncs → SSD out, the rig's ✓ → what's real. If the scans aren't calibrated in time,
+the guide's positions are typed and we say "prepared guide".
+- **For you:** calibrate `scan-0801` and `scan-0809` in the dashboard (four corner clicks each), or hand that to Max.
+
 **▶ YOUR CHECKLIST (from @ahmed, 2026-11-15 07:47). Do these top to bottom; tick each with ✅ and a time. Everything below is
 background.** Why: boxes float on the phone because no guide has real positions yet. The fix is a scan with the
 marker in it, then clicking each part in that scan.
