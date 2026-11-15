@@ -8,7 +8,11 @@
     "scheme": "teamsonic",
     "userInterfaceStyle": "automatic",
     "ios": {
-      "supportsTablet": true
+      "supportsTablet": true,
+      "bundleIdentifier": "com.teamsonic.app",
+      "infoPlist": {
+        "NSCameraUsageDescription": "Team Sonic uses the camera for AR: placing objects, tracking the marker and measuring."
+      }
     },
     "android": {
       "adaptiveIcon": {
@@ -36,7 +40,8 @@
             "backgroundColor": "#0B1120"
           }
         }
-      ]
+      ],
+      "expo-asset"
     ],
     "experiments": {
       "typedRoutes": true
