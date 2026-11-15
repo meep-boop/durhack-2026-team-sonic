@@ -46,4 +46,12 @@ final class ExpertSpeechTests: XCTestCase {
     XCTAssertNil(CallManager.ExpertTap.turn(forAction: "twist"))
     XCTAssertNil(CallManager.ExpertTap.turn(forAction: 3))
   }
+
+  func testAnUnscrewIsTwoTurnsRising15mmIn1point6s() {
+    let steps = Shapes.unscrewSteps()
+    XCTAssertEqual(steps.count, 8, "quarter turns, so no step can go the wrong way round")
+    XCTAssertEqual(steps.map(\.duration).reduce(0, +), 1.6, accuracy: 1e-9)
+    XCTAssertEqual(steps.map(\.rise).reduce(0, +), 0.015, accuracy: 1e-6)
+    XCTAssertEqual(steps.map(\.angle).reduce(0, +), 4 * .pi, accuracy: 1e-5)
+  }
 }
