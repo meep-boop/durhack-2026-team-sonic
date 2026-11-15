@@ -71,7 +71,7 @@ so we climb a ladder: rung 0 the real phone plays a prepared guide; rung 1 the d
 rung 2 a guide built in the scan lines up on the phone; rung 3 the extras. Decisions: `PROJECT.md` → Decision log.
 1. ⬜ P0 **The board** (task 2), first: it blocks both scans and the rig. Add **corner stops** so the laptop lifts
    off and goes back in the same place: it's Ahmed's only machine, so it can't stay fixed down.
-2. ⬜ P0 **The real SSD-swap steps for Ahmed's laptop:** text, model and action per step, power-off first. Post
+2. ✅ P0 **The real SSD-swap steps for Ahmed's laptop** (posted on the board 02:11, checked on the laptop): text, model and action per step, power-off first. Post
    them on the board; Ahmed turns them into `fixtures/ssd-swap-guide.json` with ruler-measured positions (rung 0).
 3. ⬜ P0 **`GuidePanel.tsx`** (task 3) on your `guide.ts` and `progress.ts`: step list, instruction, add object
    (model, action, "place" → `pickPoint()`, typed position as the fallback), Send with `sendBlockers`, ticks from
@@ -134,6 +134,7 @@ rung 2 a guide built in the scan lines up on the phone; rung 3 the extras. Decis
    - *Done when:* `bash scripts/submission-check.sh` passes and the submission is in.
 
 ## 4. Done log (newest first)
+- 2026-11-15 02:11 · ✅ The 12 SSD-swap steps for the Latitude 5530, from Dell's manual (ledger § 17) and checked on the laptop (8 cover screws, no bracket, 1 SSD screw), posted for Ahmed's `ssd-swap-guide.json`.
 - 2026-11-15 00:58 · ✅ `ssd` model (glb + usdz) and `"ssd"` in `ModelName` + `relay/validate.ts`, one commit on main `61a771e`; all tests green. Salman's Swift enum still needs the case.
 - 2026-11-14 22:30 · 🟡 Six built-in models (glb + usdz, one build script, 7 tests) on main. Decided: metres, +Y up, tip at origin, script committed. Closes when @max and @salman see them the right size and way up.
 - 2026-11-14 21:31 · 🟡 Marker printed on matte paper, measured 180 × 180 mm, image + print sheet in `assets/marker/` on main. Closes when @salman confirms Xcode accepts it.
