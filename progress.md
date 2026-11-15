@@ -1034,3 +1034,11 @@ each builder's brief (`builder-file-<name>.md`, on the `context` branch).
 - 📨 To @salman: only if it's a one-line change, the app's display name (`INFOPLIST_KEY_CFBundleDisplayName`).
 - ⚠️ Conflicts: none
 - Conflict status: n/a
+
+### 2026-11-15 10:53 — the judges' README draft is up to date on main — @laura
+- Shipped: `docs/README.judges.draft.md` on `main`: every framework listed per part (DurHack's rule), AI credited
+  explicitly (Claude Code, Claude labels; ElevenLabs only if it's in the demo), Gemini removed. Still a draft: it
+  replaces the root `README.md` just before submitting.
+- Touched: `docs/README.judges.draft.md`
+- ⚠️ Conflicts: none
+- Conflict status: resolved by @laura 2026-11-15
