@@ -6,8 +6,10 @@ import {
   addStep,
   createGuide,
   guideSetMessage,
+  modelUp,
   moveStep,
   PRINTED_MARKER,
+  quarterTurn,
   removeObject,
   removeStep,
   renameGuide,
@@ -136,4 +138,33 @@ test("jumping to a step names the guide and the step", () => {
   const message = stepSetMessage(guide, guide.steps[1]!.id);
   assert.deepEqual(message, { type: "step.set", guideId: guide.id, stepId: guide.steps[1]!.id });
   assert.ok(parseMessage(JSON.stringify(message)).ok);
+});
+
+test("quarter turns compose and the model's up follows them", () => {
+  const upright: [number, number, number, number] = [0, 0, 0, 1];
+  assert.deepEqual(modelUp(upright), [0, 1, 0]);
+  const flat = quarterTurn(upright, "x");
+  assert.deepEqual(modelUp(flat), [0, 0, 1]);
+  assert.deepEqual(modelUp(quarterTurn(upright, "z")), [-1, 0, 0]);
+  assert.deepEqual(modelUp(quarterTurn(flat, "x")), [0, -1, 0]);
+  assert.deepEqual(modelUp(quarterTurn(quarterTurn(flat, "x"), "x")), [0, 0, -1]);
+  // Four quarter turns are a full turn: the up direction comes back.
+  let rot = upright;
+  for (let i = 0; i < 4; i++) rot = quarterTurn(rot, "y");
+  assert.deepEqual(modelUp(rot), [0, 1, 0]);
+  assert.ok(Math.abs(Math.hypot(...rot) - 1) < 1e-9);
+});
+
+test("a turned object still passes the relay's check", () => {
+  let guide = addStep(createGuide("Swap the SSD"), "Slide the SSD out");
+  const step = guide.steps[0]!.id;
+  guide = addObject(guide, step, "ssd", [0, 0, 0.05]);
+  const rot = quarterTurn(guide.steps[0]!.objects[0]!.rot, "x");
+  guide = updateObject(guide, step, guide.steps[0]!.objects[0]!.id, {
+    rot,
+    axis: modelUp(rot),
+    action: "pull",
+    expect: { region: "ssd-bay", present: false },
+  });
+  assert.equal(checkGuide(guide), null);
 });
