@@ -41,17 +41,39 @@ def show(code: int) -> None:
         Bridge.call("show_verdict", code)
 
 
-def nicla_lines(path: str) -> Iterator[str]:
+# How long the Nicla may say nothing before the other DTR setting is tried. It prints at least every 2 s.
+SILENCE_S = 6
+
+
+def nicla_lines(path: str | None) -> Iterator[str]:
+    """Lines from the Nicla for as long as the app runs; an empty string when a second passes with none."""
     if path == "-":
         yield from sys.stdin
         return
-    nicla = serial.Serial()
-    nicla.port, nicla.baudrate, nicla.timeout = path, 115200, 1
-    # OpenMV holds back printed output while DTR is set (research/ledger.md § 10).
-    nicla.dtr = False
-    nicla.open()
+    # Sources disagree on whether OpenMV sends its prints with DTR set or cleared (research/ledger.md § 10), so
+    # start cleared and switch whenever the port stays silent.
+    dtr = False
     while True:
-        yield nicla.readline().decode(errors="replace")
+        try:
+            nicla = serial.Serial()
+            nicla.port, nicla.baudrate, nicla.timeout = path or find_nicla(), 115200, 1
+            nicla.dtr = dtr
+            nicla.open()
+            heard = time.monotonic()
+            while True:
+                line = nicla.readline().decode(errors="replace")
+                if line:
+                    heard = time.monotonic()
+                elif time.monotonic() - heard > SILENCE_S:
+                    dtr = nicla.dtr = not dtr
+                    heard = time.monotonic()
+                    print(f"nothing from the Nicla for {SILENCE_S} s; trying DTR {'on' if dtr else 'off'}", flush=True)
+                yield line
+        except serial.SerialException as error:
+            # Unplugging the Nicla (to retune it on a laptop) must not stop the app.
+            print(f"lost the Nicla ({error}); looking for it again", flush=True)
+            time.sleep(2)
+            yield ""
 
 
 def find_nicla() -> str:
@@ -123,12 +145,14 @@ def main() -> None:
     def handle(line: str) -> None:
         seen = parse_seen(line.strip())
         if seen is None:
+            if line.strip():
+                print(f"nicla says: {line.strip()}", flush=True)
             return
         print(f"nicla sees the part in: {', '.join(sorted(seen)) or 'no region'}", flush=True)
         with lock:
             send(rig.on_seen(seen))
 
-    lines = nicla_lines(args.nicla or find_nicla())
+    lines = nicla_lines(args.nicla)
     if App is None:
         for line in lines:
             handle(line)
