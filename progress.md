@@ -64,10 +64,10 @@ each builder's brief (`builder-file-<name>.md`, on the `context` branch).
 ## Latest
 - **The volatile facts live here only:** the current commit, test counts, what's merged vs. local-only, and deploy
   status.
-- **As of 2026-11-15 03:15:** `main` has the contract, fixtures and fakes, the relay (41 tests, type-check clean), the
-  UNO Q rig and Nicla code, Laura's marker and seven models, the dashboard (46 tests, type-check and build clean:
-  Max's scene with splat and mesh scans, calibration, steps, the phone's position, AI labels, dragging; Laura's
-  guide panel; Ahmed's relay client), and the first scan (`dashboard/public/scans/`, no marker: reference only).
+- **As of 2026-11-15 03:55:** `main` (`aa6d177`) has the contract, fixtures and fakes, the relay (41 tests, type-check clean), the
+  UNO Q rig and Nicla code, Laura's marker and seven models, the dashboard (54 tests, type-check and build clean:
+  Max's scene with splat and mesh scans, calibration, steps, the phone's position, AI labels, dragging, the header
+  with relay / phone / rig lights and the live strip; Laura's guide panel; Ahmed's relay client), and the first scan (`dashboard/public/scans/`, no marker: reference only).
   **Not on `main` yet:** the iPhone app (`salman-ios-polish`, `salman-ios-ar`), Max's research answers (PR #1),
   Salman's board entries (PR #5). Relay deploy: Max's laptop, port 8080.
 
@@ -740,3 +740,130 @@ each builder's brief (`builder-file-<name>.md`, on the `context` branch).
 - 📨 To @salman: are Gemini and ElevenLabs in the demo build? The README credits them; tell me if they're cut.
 - ⚠️ Conflicts: none
 - Conflict status: resolved by @laura 2026-11-15
+
+### 2026-11-15 03:40 — the expert's dashboard becomes a product screen (decision) — @max
+- Shipped: no code yet. Max's call on what the dashboard work is now: **a finished product screen first, then
+  cut-outs.** A header (Closed / Open switch, relay / phone / rig lights from `presence`, a **Call** button that opens
+  Salman's call page in its own window), a live strip (the person's step, ticks, the rig's ✓ / ✗, an amber "phone
+  offline, still working on its own" state with a timer), plain prompts in place of the debug text (kept behind a key
+  for us), one calm dark look. Why: judges watch this screen for the whole demo, the presentation is under 5 minutes,
+  and the offline moment is the pitch's main claim but showed nowhere.
+- Touched: on `context`: `PROJECT.md` (Decision log, Decisions in force, Active tasks), the four briefs
+- Decision: dashboard as a product screen before cut-outs; Max's agent restyles Laura's panel with her OK; the call
+  stays Salman's page in its own window, opened by a Call button; a calm dark look, no new package (Max, 03:40)
+- 📨 To @laura: **may Max's agent restyle `dashboard/src/guide/GuidePanel.css`?** Colours, fonts and spacing only;
+  no change to `GuidePanel.tsx` or how the panel works. Reply here ("yes" / "no" / "I'll do it"). Until then only
+  Max's half changes.
+- 📨 To @salman: the Call button opens `http://<dashboard host>:8000/?relay=<relay>` (your README's
+  `python3 -m http.server 8000` in `ios/expert-call/`). Please keep `?relay=` working and bring the page to `main`
+  with the app.
+- 📨 To @ahmed: cut-outs are still in scope, straight after this. The lights and the rig's ✓ / ✗ use `presence` and
+  `step.verified` as they are, no contract change. Max is working to about 10:00 for features, past the Clock's
+  07:00 freeze that you set; the Clock is unchanged until you two agree.
+- ⚠️ Conflicts: @laura — `GuidePanel.css` restyle waits on her yes
+- Conflict status: open
+
+### 2026-11-15 03:55 — the dashboard's header and live strip — @max
+- Shipped: `aa6d177` on `main`. The expert's screen now has a **header** (Closed / Open switch, scan name and kind,
+  a calibration chip with the residual in mm, relay / phone / rig lights from `presence`, **Call the phone**) and a
+  **live strip** under it that says what's happening: Set up (calibrate) → Build → "Step 2 of 4" with a dot per step
+  and the rig's last ✓ / ✗ → amber **Offline 0:42** when the phone drops off the relay → green **Back online**, with
+  how many steps were done offline → **Done**. The debug text (fps, scan size) is behind the backquote key or
+  `?debug`. One calm dark look on Max's half. Tried end to end with a memory-only relay, the fake expert and the fake
+  phone dropping off for 5 and 15 s (the phone and rig parts are SIMULATED until the real ones connect). Dashboard
+  54 tests (8 new for the live logic), type-check and build clean. Vault: `dashboard.md`, `running-the-demo.md`.
+- Touched: `dashboard/src/App.tsx`, `styles.css`, `index.html`; `dashboard/src/shell/` (new); `dashboard/src/scene/`
+  (`useScan`, `useCalibration`, `usePhonePose` replace the corner panel's `Calibrate` and `PhoneStatus`;
+  `Viewport`); `docs/vault/`
+- 📨 To @laura: your panel and `GuidePanel.css` are unchanged; it now sits on the new dark surface and keeps its own
+  13 px text. Your ticks and the strip's dots come from the same `progress.ts` functions (imported, not edited).
+  The restyle ask (03:40) still stands: reply "yes" / "no" / "I'll do it".
+- 📨 To @salman: **Call the phone** opens `http://<dashboard host>:8000/?relay=<relay>`: serve `ios/expert-call/` on
+  8000 before the demo. The Phone light shows your app's `client` name from `hello` as a tooltip, and says
+  "tracking" / "marker out of view" from `pose.markerTracked`.
+- 📨 To @ahmed: the Rig light turns green when the UNO Q says hello as `rig`, and the strip shows its last
+  `step.verified` (✓ / ✗ with `detail`). Nothing in the relay or contract changed. The offline timer starts when
+  `presence` drops the phone, so it lags a real drop by up to your 5 s heartbeat.
+- ⚠️ Conflicts: @laura — her panel's container (`.guide` in `styles.css`) changed background and padding; her
+  panel itself is untouched | none for @salman, @ahmed
+- Fix 03:58 (`7053035`): the controls hint wraps instead of running under the labels panel on a narrow window.
+- Conflict status: open (Laura's restyle answer)
+
+### 2026-11-15 04:10 — AI-made props on the DGX Spark (decision; build starting) — @max
+- Shipped: no code yet. Max's call: the team's DGX Spark runs **Hunyuan3D 2.1**, which turns one photo of a part
+  into a textured 3D model in about 3 min (forum users' timing, not ours yet). First props: the SSD and the #0
+  screwdriver, scaled by hand to their real size (SSD 22 × 80 mm), shown on the **dashboard first**. It's a guess
+  from one photo, so it never replaces the scan we calibrate against. Max's agent builds it over SSH in the
+  background (the Docker build compiles Python and Blender, so it's mostly waiting). **Dropped if it isn't built by
+  about 06:30**; nothing else depends on it.
+- Touched: on `context`: `research/ledger.md` § 18 (new), `PROJECT.md` (Decision log, Decisions in force, Active
+  tasks), `builder-file-max.md` (task C). On the Spark: a Docker image, nothing in this repo yet.
+- Decision: AI-made props with Hunyuan3D 2.1 on the DGX Spark, dashboard first, labelled "AI-generated from a
+  photo", dropped by about 06:30 if not built (Max, 04:05)
+- 📨 To @laura: for the README, video and Devpost: if a prop makes the demo, it says **"AI-generated from a photo"**,
+  and "made on our DGX Spark" only once it really was. Nothing to do now.
+- 📨 To @salman: nothing for you yet. If the SSD prop works, Max will ask whether the phone can load a USDZ file
+  (`Entity(contentsOf:)`, ledger § 15) next to the guide; only if you have time.
+- 📨 To @ahmed: nothing for you. No relay or contract change; the Spark isn't part of the live demo path.
+- ⚠️ Conflicts: none
+- Conflict status: n/a
+
+### 2026-11-15 04:12 — what's left, and the phone's camera — @ahmed
+- Shipped: no code. A read of `salman-ios-ar` at `fa51e72`: the camera freeze has had five fixes and no confirmed
+  cause, and the phone app is still the one piece not on `main`. Each brief has a new "What's left" block on top.
+  `EVENT.md` has the organisers' rules from Laura's 03:30 entry.
+- Touched: on `context`: all four briefs, `PROJECT.md` (Clock, decisions, pending, F14), `EVENT.md`
+- Decision (Ahmed): the plain build first. PR #8 (`salman-ios-polish`) goes to `main` and is the demo build; the
+  freeze is found by halving the commits between it and `fa51e72`; extras come across one at a time.
+- Decision (Ahmed): Max may build dashboard features until 10:00. The phone, relay, rig and every message shape
+  still freeze at 07:00.
+- 📨 To @salman: merge PR #8 now and smoke-test it on the phone. Then `git bisect` for the freeze (about 5 builds)
+  before any new fix; three suspects from the code are in your brief. Tell Laura whether ElevenLabs is in the demo.
+- 📨 To @max: the rescans with the marker in view are the next blocker; then one object placed in the scan and
+  measured on the real laptop. Features to 10:00 agreed. A `--state` flag for the relay is coming.
+- 📨 To @laura: scan with Max; a timed 5-minute beat sheet in `PROJECT.md` §9; answer Max's restyle ask.
+- ⚠️ Conflicts: @salman — changes which of his branches is the demo build
+- Conflict status: open
+
+### 2026-11-15 04:21 — relay `--state`, and the prepared SSD-swap guide (draft positions) — @ahmed
+- Shipped, on `main` at `edb39c9`: `npm start -- --state <file>` gives a relay its own save file (it prints which
+  one it uses), so a test relay can't empty the live one's. `fixtures/ssd-swap-guide.json`: Laura's 12 steps for the
+  Latitude 5530 with models, actions and the rig's check on steps 8 and 9. **Its positions are placeholders**, not
+  measured: the title starts "DRAFT POSITIONS" until they're taken from the marker's centre with a ruler. 42 relay
+  tests pass, one of them checking this guide.
+- Touched: `relay/server.ts`, `fixtures/ssd-swap-guide.json` (new), `relay/validate.test.ts`
+- 📨 To @max: start test relays with `--state` and a file outside the repo.
+- 📨 To @laura: "Open a guide file…" loads it for rung 1; steps 1–3 and 12 are text only, as you suggested.
+- ⚠️ Conflicts: none
+- Conflict status: resolved by @ahmed 2026-11-15
+
+### 2026-11-15 04:30 — AI-made props on hold: Hunyuan's licence excludes the UK — @max
+- Shipped: no code, nothing installed on the Spark. **Hunyuan3D 2.1 is out**: its licence "does not apply in the
+  European Union, United Kingdom and South Korea", and we're in Durham. A new model is being picked: Pixal3D (MIT,
+  SIGGRAPH 2026, the only one with a timed DGX Spark run) is the front-runner (`research/ledger.md` § 19). Also
+  found: the Spark is shared (eaby's vLLM holds 41 GB of GPU memory, about 61 GB free) and Max's account has no
+  Docker or sudo, so any install goes in his home folder.
+- Touched: on `context`: `research/ledger.md` § 19 (new) and a note on § 18, `PROJECT.md` (the 04:05 decision marked
+  on hold), `builder-file-max.md` (task C ⏸)
+- 📨 To @laura: if anyone mentions Hunyuan in the README, video or Devpost, take it out; we can't use it here.
+- 📨 To @salman: nothing for you.
+- 📨 To @ahmed: nothing for you.
+- ⚠️ Conflicts: none
+- Conflict status: n/a
+
+### 2026-11-15 04:40 — AI-made props: Pixal3D replaces Hunyuan, building on the Spark — @max
+- Shipped: no repo code yet. Max's call: the props use **Pixal3D** (MIT, SIGGRAPH 2026), the only image-to-3D model
+  with a timed DGX Spark run (3–6 min per model). Only ungated parts: a copy of DINOv3 under Meta's DINOv3 licence and
+  BiRefNet (MIT) for background removal. Building now in `~/pixal3d` on the Spark (Max's home folder, no Docker or
+  sudo); weights are about 24 GB. First target: the SSD as a textured GLB on the dashboard, labelled "AI-generated
+  from a photo". **Cut-off 07:30.**
+- Touched: on `context`: `PROJECT.md` (Decision log, Decisions in force, Active tasks), `builder-file-max.md` (task C);
+  `research/ledger.md` § 19. On the Spark: `~/pixal3d` only.
+- Decision: Pixal3D, not Hunyuan3D 2.1 (licence excludes the UK); ungated DINOv3 copy and BiRefNet; cut-off 07:30
+  (Max, 04:32)
+- 📨 To @laura: if a prop makes the demo, it's "AI-generated from a photo (Pixal3D, on our DGX Spark)", and only once
+  it really ran there. No "better than Hunyuan" claims; that's the authors' own numbers.
+- 📨 To @salman: nothing yet. If the SSD prop works, the ask is whether the phone can load one USDZ (ledger § 15).
+- 📨 To @ahmed: nothing for you. The Spark isn't in the live demo path, and no contract changes.
+- ⚠️ Conflicts: none
+- Conflict status: n/a

@@ -1,0 +1,736 @@
+{
+  "id": "ssd-swap-latitude-5530",
+  "rev": 1,
+  "title": "DRAFT POSITIONS: take the SSD out of a Dell Latitude 5530 and put it back",
+  "marker": {
+    "name": "marker",
+    "width": 0.18,
+    "height": 0.18
+  },
+  "steps": [
+    {
+      "id": "s1",
+      "text": "Save your work, shut down, and unplug the charger and anything else.",
+      "objects": []
+    },
+    {
+      "id": "s2",
+      "text": "Hold B and press the power button for 3 seconds. After 3 beeps it switches off in Service Mode, with the power cut.",
+      "objects": []
+    },
+    {
+      "id": "s3",
+      "text": "Close the lid and lay the laptop face down in the tape corners on the table.",
+      "objects": []
+    },
+    {
+      "id": "s4",
+      "text": "Loosen the 8 screws on the base cover with a #0 Phillips. They stay in the cover.",
+      "objects": [
+        {
+          "id": "s4-screw1",
+          "model": "screw",
+          "pos": [
+            0.1344,
+            0.02,
+            -0.1012
+          ],
+          "rot": [
+            0,
+            0,
+            0,
+            1
+          ],
+          "size": [
+            0.012,
+            0.008,
+            0.012
+          ],
+          "action": "unscrew",
+          "axis": [
+            0,
+            1,
+            0
+          ],
+          "label": "Cover screw 1"
+        },
+        {
+          "id": "s4-screw2",
+          "model": "screw",
+          "pos": [
+            0.3,
+            0.02,
+            -0.1012
+          ],
+          "rot": [
+            0,
+            0,
+            0,
+            1
+          ],
+          "size": [
+            0.012,
+            0.008,
+            0.012
+          ],
+          "action": "unscrew",
+          "axis": [
+            0,
+            1,
+            0
+          ],
+          "label": "Cover screw 2"
+        },
+        {
+          "id": "s4-screw3",
+          "model": "screw",
+          "pos": [
+            0.4656,
+            0.02,
+            -0.1012
+          ],
+          "rot": [
+            0,
+            0,
+            0,
+            1
+          ],
+          "size": [
+            0.012,
+            0.008,
+            0.012
+          ],
+          "action": "unscrew",
+          "axis": [
+            0,
+            1,
+            0
+          ],
+          "label": "Cover screw 3"
+        },
+        {
+          "id": "s4-screw4",
+          "model": "screw",
+          "pos": [
+            0.1344,
+            0.02,
+            0.0
+          ],
+          "rot": [
+            0,
+            0,
+            0,
+            1
+          ],
+          "size": [
+            0.012,
+            0.008,
+            0.012
+          ],
+          "action": "unscrew",
+          "axis": [
+            0,
+            1,
+            0
+          ],
+          "label": "Cover screw 4"
+        },
+        {
+          "id": "s4-screw5",
+          "model": "screw",
+          "pos": [
+            0.4656,
+            0.02,
+            0.0
+          ],
+          "rot": [
+            0,
+            0,
+            0,
+            1
+          ],
+          "size": [
+            0.012,
+            0.008,
+            0.012
+          ],
+          "action": "unscrew",
+          "axis": [
+            0,
+            1,
+            0
+          ],
+          "label": "Cover screw 5"
+        },
+        {
+          "id": "s4-screw6",
+          "model": "screw",
+          "pos": [
+            0.1344,
+            0.02,
+            0.1012
+          ],
+          "rot": [
+            0,
+            0,
+            0,
+            1
+          ],
+          "size": [
+            0.012,
+            0.008,
+            0.012
+          ],
+          "action": "unscrew",
+          "axis": [
+            0,
+            1,
+            0
+          ],
+          "label": "Cover screw 6"
+        },
+        {
+          "id": "s4-screw7",
+          "model": "screw",
+          "pos": [
+            0.3,
+            0.02,
+            0.1012
+          ],
+          "rot": [
+            0,
+            0,
+            0,
+            1
+          ],
+          "size": [
+            0.012,
+            0.008,
+            0.012
+          ],
+          "action": "unscrew",
+          "axis": [
+            0,
+            1,
+            0
+          ],
+          "label": "Cover screw 7"
+        },
+        {
+          "id": "s4-screw8",
+          "model": "screw",
+          "pos": [
+            0.4656,
+            0.02,
+            0.1012
+          ],
+          "rot": [
+            0,
+            0,
+            0,
+            1
+          ],
+          "size": [
+            0.012,
+            0.008,
+            0.012
+          ],
+          "action": "unscrew",
+          "axis": [
+            0,
+            1,
+            0
+          ],
+          "label": "Cover screw 8"
+        },
+        {
+          "id": "s4-driver",
+          "model": "screwdriver",
+          "pos": [
+            0.1344,
+            0.02,
+            -0.1012
+          ],
+          "rot": [
+            0,
+            0,
+            0,
+            1
+          ],
+          "size": [
+            0.012,
+            0.12,
+            0.012
+          ],
+          "action": null,
+          "axis": [
+            0,
+            1,
+            0
+          ],
+          "label": "#0 Phillips"
+        }
+      ]
+    },
+    {
+      "id": "s5",
+      "text": "Lift the cover at the U-shaped notches on the top edge with a plastic pry tool.",
+      "objects": [
+        {
+          "id": "s5-notch",
+          "model": "arrow",
+          "pos": [
+            0.3,
+            0.02,
+            -0.115
+          ],
+          "rot": [
+            0,
+            0,
+            0,
+            1
+          ],
+          "size": [
+            0.06,
+            0.02,
+            0.02
+          ],
+          "action": null,
+          "axis": [
+            0,
+            1,
+            0
+          ],
+          "label": "Notches"
+        },
+        {
+          "id": "s5-hand",
+          "model": "hand",
+          "pos": [
+            0.3,
+            0.02,
+            -0.115
+          ],
+          "rot": [
+            0,
+            0,
+            0,
+            1
+          ],
+          "size": [
+            0.06,
+            0.02,
+            0.02
+          ],
+          "action": "pull",
+          "axis": [
+            0,
+            1,
+            0
+          ],
+          "label": "Pry here"
+        }
+      ]
+    },
+    {
+      "id": "s6",
+      "text": "Hold the left and right sides and lift the cover off.",
+      "objects": [
+        {
+          "id": "s6-hand",
+          "model": "hand",
+          "pos": [
+            0.3,
+            0.02,
+            0.0
+          ],
+          "rot": [
+            0,
+            0,
+            0,
+            1
+          ],
+          "size": [
+            0.36,
+            0.02,
+            0.23
+          ],
+          "action": "pull",
+          "axis": [
+            0,
+            1,
+            0
+          ],
+          "label": "Base cover"
+        }
+      ]
+    },
+    {
+      "id": "s7",
+      "text": "Undo the one screw that holds the SSD.",
+      "objects": [
+        {
+          "id": "s7-screw",
+          "model": "screw",
+          "pos": [
+            0.3,
+            0.012,
+            -0.03
+          ],
+          "rot": [
+            0,
+            0,
+            0,
+            1
+          ],
+          "size": [
+            0.008,
+            0.006,
+            0.008
+          ],
+          "action": "unscrew",
+          "axis": [
+            0,
+            1,
+            0
+          ],
+          "label": "SSD screw"
+        }
+      ]
+    },
+    {
+      "id": "s8",
+      "text": "Slide the SSD out of its slot at an angle.",
+      "objects": [
+        {
+          "id": "s8-ssd",
+          "model": "ssd",
+          "pos": [
+            0.22,
+            0.012,
+            -0.03
+          ],
+          "rot": [
+            0,
+            0,
+            -0.70711,
+            0.70711
+          ],
+          "size": [
+            0.08,
+            0.01,
+            0.022
+          ],
+          "action": "pull",
+          "axis": [
+            1,
+            0,
+            0
+          ],
+          "label": "SSD",
+          "expect": {
+            "region": "ssd-bay",
+            "present": false
+          }
+        }
+      ]
+    },
+    {
+      "id": "s9",
+      "text": "Slide the same SSD back in at the same angle and press it flat.",
+      "objects": [
+        {
+          "id": "s9-ssd",
+          "model": "ssd",
+          "pos": [
+            0.22,
+            0.012,
+            -0.03
+          ],
+          "rot": [
+            0,
+            0,
+            -0.70711,
+            0.70711
+          ],
+          "size": [
+            0.08,
+            0.01,
+            0.022
+          ],
+          "action": "push",
+          "axis": [
+            1,
+            0,
+            0
+          ],
+          "label": "SSD",
+          "expect": {
+            "region": "ssd-bay",
+            "present": true
+          }
+        }
+      ]
+    },
+    {
+      "id": "s10",
+      "text": "Put the SSD's screw back.",
+      "objects": [
+        {
+          "id": "s10-screw",
+          "model": "screw",
+          "pos": [
+            0.3,
+            0.012,
+            -0.03
+          ],
+          "rot": [
+            0,
+            0,
+            0,
+            1
+          ],
+          "size": [
+            0.008,
+            0.006,
+            0.008
+          ],
+          "action": "push",
+          "axis": [
+            0,
+            1,
+            0
+          ],
+          "label": "SSD screw"
+        }
+      ]
+    },
+    {
+      "id": "s11",
+      "text": "Snap the cover back on and tighten the 8 screws.",
+      "objects": [
+        {
+          "id": "s11-screw1",
+          "model": "screw",
+          "pos": [
+            0.1344,
+            0.02,
+            -0.1012
+          ],
+          "rot": [
+            0,
+            0,
+            0,
+            1
+          ],
+          "size": [
+            0.012,
+            0.008,
+            0.012
+          ],
+          "action": "push",
+          "axis": [
+            0,
+            1,
+            0
+          ],
+          "label": "Cover screw 1"
+        },
+        {
+          "id": "s11-screw2",
+          "model": "screw",
+          "pos": [
+            0.3,
+            0.02,
+            -0.1012
+          ],
+          "rot": [
+            0,
+            0,
+            0,
+            1
+          ],
+          "size": [
+            0.012,
+            0.008,
+            0.012
+          ],
+          "action": "push",
+          "axis": [
+            0,
+            1,
+            0
+          ],
+          "label": "Cover screw 2"
+        },
+        {
+          "id": "s11-screw3",
+          "model": "screw",
+          "pos": [
+            0.4656,
+            0.02,
+            -0.1012
+          ],
+          "rot": [
+            0,
+            0,
+            0,
+            1
+          ],
+          "size": [
+            0.012,
+            0.008,
+            0.012
+          ],
+          "action": "push",
+          "axis": [
+            0,
+            1,
+            0
+          ],
+          "label": "Cover screw 3"
+        },
+        {
+          "id": "s11-screw4",
+          "model": "screw",
+          "pos": [
+            0.1344,
+            0.02,
+            0.0
+          ],
+          "rot": [
+            0,
+            0,
+            0,
+            1
+          ],
+          "size": [
+            0.012,
+            0.008,
+            0.012
+          ],
+          "action": "push",
+          "axis": [
+            0,
+            1,
+            0
+          ],
+          "label": "Cover screw 4"
+        },
+        {
+          "id": "s11-screw5",
+          "model": "screw",
+          "pos": [
+            0.4656,
+            0.02,
+            0.0
+          ],
+          "rot": [
+            0,
+            0,
+            0,
+            1
+          ],
+          "size": [
+            0.012,
+            0.008,
+            0.012
+          ],
+          "action": "push",
+          "axis": [
+            0,
+            1,
+            0
+          ],
+          "label": "Cover screw 5"
+        },
+        {
+          "id": "s11-screw6",
+          "model": "screw",
+          "pos": [
+            0.1344,
+            0.02,
+            0.1012
+          ],
+          "rot": [
+            0,
+            0,
+            0,
+            1
+          ],
+          "size": [
+            0.012,
+            0.008,
+            0.012
+          ],
+          "action": "push",
+          "axis": [
+            0,
+            1,
+            0
+          ],
+          "label": "Cover screw 6"
+        },
+        {
+          "id": "s11-screw7",
+          "model": "screw",
+          "pos": [
+            0.3,
+            0.02,
+            0.1012
+          ],
+          "rot": [
+            0,
+            0,
+            0,
+            1
+          ],
+          "size": [
+            0.012,
+            0.008,
+            0.012
+          ],
+          "action": "push",
+          "axis": [
+            0,
+            1,
+            0
+          ],
+          "label": "Cover screw 7"
+        },
+        {
+          "id": "s11-screw8",
+          "model": "screw",
+          "pos": [
+            0.4656,
+            0.02,
+            0.1012
+          ],
+          "rot": [
+            0,
+            0,
+            0,
+            1
+          ],
+          "size": [
+            0.012,
+            0.008,
+            0.012
+          ],
+          "action": "push",
+          "axis": [
+            0,
+            1,
+            0
+          ],
+          "label": "Cover screw 8"
+        }
+      ]
+    },
+    {
+      "id": "s12",
+      "text": "Plug the charger in (this ends Service Mode), then turn the laptop on.",
+      "objects": []
+    }
+  ]
+}

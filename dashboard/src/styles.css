@@ -1,17 +1,426 @@
+/* A calm control room (Max, 2026-11-15 03:40): dark so the scan stands out, quiet everywhere except the live strip.
+   Cyan is the expert's own tools (actions, selection, the marker outline); yellow stays the parts and orange the
+   models in the scan, so neither is used for chrome. */
+:root {
+  color-scheme: dark;
+  --bg: #111318; /* the scene's own background (scene.ts), so the stage has no seam */
+  --surface: oklch(19.5% 0.012 230);
+  --raised: oklch(24% 0.014 230);
+  --border: oklch(30% 0.014 230);
+  --border-strong: oklch(55% 0.014 230);
+  --ink: oklch(94% 0.008 230);
+  --ink-muted: oklch(72% 0.012 230);
+  --accent: oklch(80% 0.11 215);
+  --accent-fill: oklch(74% 0.12 215);
+  --accent-soft: oklch(27% 0.05 215);
+  --on-fill: oklch(18% 0.03 230);
+  --ok: oklch(80% 0.16 150);
+  --ok-soft: oklch(27% 0.05 150);
+  --warn: oklch(84% 0.15 80);
+  --warn-soft: oklch(30% 0.07 75);
+  --danger: oklch(74% 0.16 25);
+  --danger-soft: oklch(28% 0.07 25);
+  --ai: oklch(78% 0.12 300);
+  --ai-soft: oklch(30% 0.08 300);
+  --part: #facc15;
+
+  --font: system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+  --mono: ui-monospace, "Cascadia Mono", Consolas, monospace;
+  --radius-s: 6px;
+  --radius-m: 10px;
+  --radius-pill: 999px;
+  --ease-out: cubic-bezier(0.2, 0, 0, 1);
+  --dur: 200ms;
+
+  accent-color: var(--accent-fill);
+  scrollbar-color: var(--border) transparent;
+}
+
 html,
 body,
 #root {
   height: 100%;
   margin: 0;
-  background: #111318;
-  color: #e6e8ee;
-  font: 13px/1.4 system-ui, sans-serif;
+  background: var(--bg);
+  color: var(--ink);
+  font: 15px/1.45 var(--font);
+}
+
+::selection {
+  background: var(--accent-soft);
+}
+
+.sr-only {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  clip-path: inset(50%);
+  white-space: nowrap;
+}
+
+.muted {
+  color: var(--ink-muted);
+}
+
+.text-ok {
+  color: var(--ok);
+}
+
+.text-danger {
+  color: var(--danger);
+}
+
+.app {
+  display: grid;
+  grid-template-rows: auto auto 1fr;
+  height: 100%;
+}
+
+/* Controls on the expert's half. Laura's panel styles its own until she agrees to the restyle (board, 03:40). */
+.topbar button,
+.strip button,
+.labels button,
+.labels input,
+.button {
+  padding: 5px 12px;
+  border: 1px solid var(--border-strong);
+  border-radius: var(--radius-s);
+  background: var(--raised);
+  color: var(--ink);
+  font: inherit;
+  font-size: 14px;
+  text-decoration: none;
+  cursor: pointer;
+}
+
+.topbar button:hover,
+.strip button:hover,
+.labels button:hover {
+  background: var(--border);
+}
+
+.topbar button:disabled,
+.strip button:disabled,
+.labels button:disabled {
+  opacity: 0.45;
+  cursor: default;
+}
+
+.topbar :focus-visible,
+.strip :focus-visible,
+.stage :focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 2px;
+}
+
+.strip .primary,
+.button.call {
+  border-color: transparent;
+  background: var(--accent-fill);
+  color: var(--on-fill);
+  font-weight: 600;
+}
+
+.strip .primary:hover,
+.button.call:hover {
+  background: var(--accent);
+}
+
+/* Header */
+.topbar {
+  display: flex;
+  align-items: center;
+  gap: 20px;
+  padding: 10px 16px;
+  border-bottom: 1px solid var(--border);
+  background: var(--surface);
+}
+
+.brand {
+  font-size: 16px;
+  font-weight: 650;
+  letter-spacing: -0.01em;
+  white-space: nowrap;
+}
+
+.brand span {
+  margin-left: 4px;
+  color: var(--ink-muted);
+  font-weight: 400;
+}
+
+.scan-controls {
+  display: flex;
+  flex: 1;
+  align-items: center;
+  gap: 12px;
+  min-width: 0;
+  font-size: 14px;
+}
+
+.segmented {
+  display: inline-flex;
+  padding: 2px;
+  border: 1px solid var(--border-strong);
+  border-radius: var(--radius-s);
+}
+
+.topbar .segmented button {
+  padding: 3px 12px;
+  border: none;
+  border-radius: 4px;
+  background: none;
+  color: var(--ink-muted);
+}
+
+.topbar .segmented button[aria-pressed="true"] {
+  background: var(--accent-soft);
+  color: var(--accent);
+  font-weight: 600;
+}
+
+.scan-name {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.badge {
+  margin-right: 6px;
+  padding: 1px 6px;
+  border-radius: 4px;
+  font-size: 12px;
+  font-weight: 650;
+}
+
+.badge-warn {
+  background: var(--warn-soft);
+  color: var(--warn);
+}
+
+.chip {
+  display: inline-flex;
+  flex: none;
+  align-items: center;
+  gap: 8px;
+  padding: 2px 3px 2px 10px;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-pill);
+  white-space: nowrap;
+}
+
+.chip-ok {
+  color: var(--ok);
+}
+
+.chip-warn {
+  border-color: var(--warn-soft);
+  color: var(--warn);
+}
+
+.chip-plain {
+  padding-right: 10px;
+}
+
+.chip-accent {
+  padding-right: 10px;
+  border-color: var(--accent-soft);
+  color: var(--accent);
+}
+
+.topbar .chip-action {
+  padding: 1px 10px;
+  border-radius: var(--radius-pill);
+  font-size: 13px;
+}
+
+.lights {
+  display: flex;
+  gap: 16px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  font-size: 13px;
+  white-space: nowrap;
+}
+
+.light {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  color: var(--ink-muted);
+}
+
+.light-dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: var(--border-strong);
+}
+
+.light-ok {
+  color: var(--ink);
+}
+
+.light-ok .light-dot {
+  background: var(--ok);
+}
+
+.light-warn {
+  color: var(--warn);
+}
+
+.light-warn .light-dot {
+  background: var(--warn);
+}
+
+.light-danger {
+  color: var(--danger);
+}
+
+.light-danger .light-dot {
+  background: var(--danger);
+}
+
+/* The live strip: the one loud thing on the screen. Its colour is the session's state at a glance. */
+.strip {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  min-height: 52px;
+  padding: 8px 16px;
+  border-bottom: 1px solid var(--border);
+  background: var(--surface);
+  transition: background-color var(--dur) var(--ease-out);
+}
+
+.strip-phase {
+  flex: none;
+  padding: 3px 10px;
+  border-radius: var(--radius-s);
+  background: var(--raised);
+  color: var(--ink-muted);
+  font-size: 13px;
+  font-weight: 650;
+  font-variant-numeric: tabular-nums;
+}
+
+.strip-text {
+  flex: 1;
+  min-width: 0;
+  margin: 0;
+  font-size: 17px;
+}
+
+.strip .step-text {
+  font-weight: 600;
+}
+
+.strip-aside {
+  display: flex;
+  flex: none;
+  align-items: center;
+  gap: 16px;
+  font-size: 14px;
+}
+
+.strip-accent {
+  background: var(--accent-soft);
+}
+
+.strip-accent .strip-phase {
+  background: var(--accent-fill);
+  color: var(--on-fill);
+}
+
+.strip-ok {
+  background: var(--ok-soft);
+}
+
+.strip-ok .strip-phase {
+  background: var(--ok);
+  color: var(--on-fill);
+}
+
+.strip-warn {
+  background: var(--warn-soft);
+}
+
+.strip-warn .strip-phase {
+  background: var(--warn);
+  color: var(--on-fill);
+}
+
+.strip-danger {
+  background: var(--danger-soft);
+}
+
+.strip-danger .strip-phase {
+  background: var(--danger);
+  color: var(--on-fill);
+}
+
+.dots {
+  display: flex;
+  gap: 6px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.dot {
+  display: grid;
+  place-items: center;
+  width: 24px;
+  height: 24px;
+  border: 1.5px solid var(--border-strong);
+  border-radius: 50%;
+  color: var(--ink-muted);
+  font-size: 12px;
+  font-variant-numeric: tabular-nums;
+}
+
+/* Filled, not just outlined: an outline alone vanishes on the amber offline strip. Done keeps its number; a rig
+   check swaps it for ✓ or ✗. */
+.dot-done,
+.dot-checked {
+  border-color: var(--ok);
+  background: var(--ok);
+  color: var(--on-fill);
+  font-weight: 700;
+}
+
+.dot-check-failed {
+  border-color: var(--danger);
+  background: var(--danger);
+  color: var(--on-fill);
+  font-weight: 700;
+}
+
+.dot-current {
+  border-color: var(--accent);
+  color: var(--ink);
+  outline: 2px solid var(--accent);
+  outline-offset: 2px;
+}
+
+/* The 3D view and what floats over it */
+.work {
+  display: grid;
+  grid-template-columns: 1fr 360px;
+  min-height: 0;
+}
+
+.stage {
+  position: relative;
+  min-width: 0;
+  overflow: hidden;
 }
 
 .viewport {
-  position: relative;
-  height: 100%;
-  overflow: hidden;
+  position: absolute;
+  inset: 0;
 }
 
 .viewport canvas {
@@ -20,140 +429,112 @@ body,
   height: 100%;
 }
 
-.hud {
+.stage-note {
   position: absolute;
   z-index: 1;
-  top: 8px;
-  left: 8px;
-  padding: 6px 10px;
-  border-radius: 6px;
-  background: rgb(0 0 0 / 0.55);
+  top: 16px;
+  left: 50%;
+  translate: -50% 0;
+  padding: 8px 14px;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-m);
+  background: var(--surface);
+}
+
+.stage-note.error {
+  border-color: var(--danger-soft);
+  color: var(--danger);
+}
+
+.controls-hint {
+  position: absolute;
+  z-index: 1;
+  right: 12px;
+  bottom: 12px;
+  /* Wraps instead of running under the labels panel (280 px wide, bottom-left) on a narrow window. */
+  max-width: calc(100% - 320px);
+  margin: 0;
+  padding: 4px 10px;
+  border-radius: var(--radius-m);
+  background: rgb(17 19 24 / 0.75);
+  text-align: right;
+  color: var(--ink-muted);
+  font-size: 12px;
   pointer-events: none;
-  font-variant-numeric: tabular-nums;
 }
 
-.hud .tag {
+kbd {
   padding: 0 4px;
+  border: 1px solid var(--border-strong);
   border-radius: 3px;
-  background: #b45309;
-  font-weight: 600;
+  font: 11px var(--mono);
 }
 
-.hud .error {
-  color: #fca5a5;
-}
-
-.hud .hint {
-  opacity: 0.6;
-}
-
-.app {
-  display: grid;
-  grid-template-columns: 1fr 320px;
-  height: 100%;
-}
-
-.hud button,
-.hud .calibrate {
-  pointer-events: auto;
-}
-
-.hud button {
-  margin: 4px 4px 0 0;
-  padding: 3px 8px;
-  border: 1px solid #4b5563;
-  border-radius: 4px;
-  background: #1f2937;
-  color: inherit;
-  font: inherit;
-  cursor: pointer;
-}
-
-.hud button[aria-pressed="true"] {
-  border-color: #22d3ee;
-  background: #164e63;
-}
-
-.hud .warn {
-  color: #fcd34d;
-}
-
-.hud .ok {
-  color: #86efac;
-}
-
-.guide {
-  padding: 10px;
-  border-left: 1px solid #262a33;
-  overflow-y: auto;
-}
-
-.guide .relay-connected {
-  color: #86efac;
-}
-
-.guide .relay-connecting,
-.guide .relay-closed {
-  color: #fca5a5;
-}
-
-.guide .placeholder {
-  opacity: 0.6;
+.debug {
+  position: absolute;
+  z-index: 2;
+  top: 12px;
+  left: 12px;
+  padding: 6px 10px;
+  border-radius: var(--radius-s);
+  background: rgb(0 0 0 / 0.7);
+  color: var(--ink-muted);
+  font: 12px/1.5 var(--mono);
+  pointer-events: none;
 }
 
 .scene-labels {
   position: absolute;
   top: 0;
   left: 0;
-  /* Its own stacking context, so the renderer's per-label z-index can't lift a tag over the HUD or the panel. */
+  /* Its own stacking context, so the renderer's per-label z-index can't lift a tag over the overlays or the panel. */
   z-index: 0;
   pointer-events: none;
 }
 
 .scene-label {
   padding: 1px 6px;
-  border: 1px solid #4b5563;
+  border: 1px solid var(--border-strong);
   border-radius: 4px;
   background: rgb(0 0 0 / 0.7);
-  font-size: 11px;
+  font-size: 12px;
   white-space: nowrap;
 }
 
 .scene-label.highlight {
-  border-color: #facc15;
-  color: #facc15;
+  border-color: var(--part);
+  color: var(--part);
 }
 
 .labels {
   position: absolute;
   z-index: 1;
-  bottom: 8px;
-  left: 8px;
-  width: 260px;
+  bottom: 12px;
+  left: 12px;
+  width: 280px;
   max-height: 45%;
   overflow-y: auto;
-  padding: 6px 10px;
-  border-radius: 6px;
-  background: rgb(0 0 0 / 0.55);
+  padding: 10px 12px;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-m);
+  background: color-mix(in oklch, var(--surface) 92%, transparent);
+  font-size: 14px;
 }
 
 .labels button,
 .labels input {
   margin: 2px 4px 2px 0;
-  padding: 3px 8px;
-  border: 1px solid #4b5563;
-  border-radius: 4px;
-  background: #1f2937;
-  color: inherit;
-  font: inherit;
 }
 
 .labels input[type="search"] {
-  width: calc(100% - 20px);
+  box-sizing: border-box;
+  width: 100%;
+  margin-top: 8px;
+  cursor: text;
 }
 
 .labels ul {
-  margin: 4px 0 0;
+  margin: 6px 0 0;
   padding: 0;
   list-style: none;
 }
@@ -163,29 +544,51 @@ body,
   align-items: center;
 }
 
+.labels li button {
+  padding: 2px 8px;
+}
+
 .labels li .link {
   flex: 1;
   border: none;
   background: none;
   text-align: left;
-  cursor: pointer;
 }
 
 .labels li.match .link {
-  color: #facc15;
+  color: var(--part);
 }
 
 .labels .tag.ai {
-  padding: 0 4px;
-  border-radius: 3px;
-  background: #6d28d9;
-  font-weight: 600;
+  padding: 0 5px;
+  border-radius: 4px;
+  background: var(--ai-soft);
+  color: var(--ai);
+  font-size: 12px;
+  font-weight: 650;
 }
 
 .labels .error {
-  color: #fca5a5;
+  color: var(--danger);
 }
 
 .labels .hint {
-  opacity: 0.75;
+  margin-top: 6px;
+  color: var(--ink-muted);
+  font-size: 13px;
+}
+
+/* Laura's panel keeps its own sizes until she agrees to the restyle (board, 03:40). */
+.guide {
+  padding: 12px 16px;
+  border-left: 1px solid var(--border);
+  background: var(--surface);
+  overflow-y: auto;
+  font: 13px/1.4 var(--font);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .strip {
+    transition: none;
+  }
 }
