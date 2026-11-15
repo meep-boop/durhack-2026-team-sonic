@@ -90,21 +90,57 @@ private struct CheckToggleStyle: ToggleStyle {
   }
 }
 
-/// Under a laptop-guide step: where the steps come from, how pins get there, and the ghost screwdriver toggle.
+/// Under a laptop-guide step: set up the laptop, teach where this step's parts are, and the ghost screwdriver.
 struct LaptopStepTools: View {
   let laptop: LaptopGuide
   @Binding var ghostToolOn: Bool
+  let frameLocked: Bool
+  let canTeach: Bool
+  let teaching: Bool
+  let taughtCount: Int
+  let shareURL: URL?
+  let onSetup: () -> Void
+  let onTeach: () -> Void
+  let onUndo: () -> Void
 
   var body: some View {
-    HStack {
-      Label("\(laptop.stepSource) · the expert taps to pin parts", systemImage: "checkmark.seal")
+    VStack(alignment: .leading, spacing: 8) {
+      HStack(spacing: 8) {
+        Button(action: onSetup) {
+          Label(frameLocked ? "Re-do corners" : "Set up laptop", systemImage: frameLocked ? "viewfinder" : "laptopcomputer.and.iphone")
+        }
+        .buttonStyle(.bordered)
+        if canTeach {
+          Button(action: onTeach) {
+            Label(teaching ? "Done teaching" : "Teach", systemImage: teaching ? "checkmark" : "hand.point.up.left")
+          }
+          .buttonStyle(.bordered)
+          .tint(teaching ? Theme.accent : nil)
+        }
+        Spacer(minLength: 0)
+        Toggle(isOn: $ghostToolOn) { Image(systemName: "screwdriver") }
+          .toggleStyle(.button)
+          .controlSize(.small)
+          .accessibilityLabel(ghostToolOn ? "Hide the ghost screwdriver" : "Show the ghost screwdriver")
+      }
+      .controlSize(.small)
+
+      if teaching {
+        HStack(spacing: 10) {
+          Text("Tap each part on the laptop · \(taughtCount) marked").font(.caption.weight(.semibold))
+          Spacer(minLength: 0)
+          Button("Undo", action: onUndo).disabled(taughtCount == 0)
+          if let shareURL {
+            ShareLink(item: shareURL) { Image(systemName: "square.and.arrow.up") }
+              .accessibilityLabel("Share the layout with the team")
+          }
+        }
+        .controlSize(.small)
+      }
+
+      Label("\(laptop.stepSource) · ARKit lines it up with your laptop", systemImage: "checkmark.seal")
         .font(.caption2)
         .foregroundStyle(.secondary)
-      Spacer(minLength: 8)
-      Toggle(isOn: $ghostToolOn) { Image(systemName: "screwdriver") }
-        .toggleStyle(.button)
-        .controlSize(.mini)
-        .accessibilityLabel(ghostToolOn ? "Hide the ghost screwdriver" : "Show the ghost screwdriver")
     }
   }
 }

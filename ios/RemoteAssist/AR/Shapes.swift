@@ -147,6 +147,8 @@ enum Shapes {
   }
 
   enum PinKind {
+    /// From the laptop layout: where this step's parts are.
+    case guide
     /// Tapped by the expert on the live video.
     case expert
     /// A screw going back into the hole it came out of.
@@ -154,7 +156,8 @@ enum Shapes {
 
     var color: UIColor {
       switch self {
-      case .expert: Theme.accentUI
+      case .guide: Theme.accentUI
+      case .expert: .white
       case .refit: Theme.accentSoftUI
       }
     }
@@ -202,6 +205,63 @@ enum Shapes {
       old.removeFromParent()
       pin.addChild(tag)
     }
+  }
+
+  /// "Work here": a translucent quad lying on the surface through four world points, with a glowing outline.
+  /// Its parent should be a world anchor at the origin, since the points are already in world space.
+  static func focusArea(corners: [SIMD3<Float>], normal: SIMD3<Float>, label text: String) -> Entity {
+    let root = Entity()
+    guard corners.count == 4 else { return root }
+    // Lifted 2 mm off the surface so it doesn't flicker against the real laptop's depth.
+    let lifted = corners.map { $0 + simd_normalize(normal) * 0.002 }
+
+    var descriptor = MeshDescriptor(name: "focus")
+    descriptor.positions = MeshBuffers.Positions(lifted)
+    // Both windings, so it shows whichever side the camera is on.
+    descriptor.primitives = .triangles([0, 1, 2, 0, 2, 3, 0, 2, 1, 0, 3, 2])
+    if let mesh = try? MeshResource.generate(from: [descriptor]) {
+      let fill = ModelEntity(mesh: mesh, materials: [UnlitMaterial(color: Theme.accentUI.withAlphaComponent(0.22))])
+      root.addChild(fill)
+      if let animation = try? AnimationResource.generate(with: FromToByAnimation<Float>(
+        from: 0.45, to: 1, duration: 1.1, timing: .easeInOut, bindTarget: .opacity, repeatMode: .autoReverse
+      )) {
+        fill.components.set(OpacityComponent(opacity: 1))
+        fill.playAnimation(animation)
+      }
+    }
+    for i in 0..<4 {
+      root.addChild(bar(from: lifted[i], to: lifted[(i + 1) % 4], thickness: 0.0025, color: Theme.accentUI))
+    }
+    let centre = lifted.reduce(.zero, +) / 4
+    let tag = label(text, size: 0.013)
+    tag.position = centre + simd_normalize(normal) * 0.03
+    root.addChild(tag)
+    return root
+  }
+
+  /// The laptop's footprint on the table: a purple outline that says "locked on".
+  static func laptopOutline(corners: [SIMD3<Float>], normal: SIMD3<Float>) -> Entity {
+    let root = Entity()
+    guard corners.count == 4 else { return root }
+    let lifted = corners.map { $0 + simd_normalize(normal) * 0.002 }
+    for i in 0..<4 {
+      root.addChild(bar(from: lifted[i], to: lifted[(i + 1) % 4], thickness: 0.004, color: Theme.accentUI))
+    }
+    // A dot on the top-left corner, so it's clear which way round the laptop was read.
+    let dot = ModelEntity(mesh: .generateSphere(radius: 0.006), materials: [UnlitMaterial(color: .white)])
+    dot.position = lifted[0]
+    root.addChild(dot)
+    return root
+  }
+
+  /// Where the first corner was tapped, while waiting for the second.
+  static func cornerMarker() -> Entity {
+    let root = Entity()
+    root.addChild(ModelEntity(mesh: .generateSphere(radius: 0.008), materials: [UnlitMaterial(color: Theme.accentUI)]))
+    let ring = ModelEntity(mesh: .generateCylinder(height: 0.001, radius: 0.016), materials: [UnlitMaterial(color: Theme.accentUI.withAlphaComponent(0.5))])
+    root.addChild(ring)
+    pulse(ring)
+    return root
   }
 
   /// A see-through screwdriver standing on a pin, turning the way the user should turn theirs.

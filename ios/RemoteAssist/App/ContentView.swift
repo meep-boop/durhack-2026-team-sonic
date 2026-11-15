@@ -19,6 +19,16 @@ struct ContentView: View {
   @State private var spotlight = SpotlightTracker()
   @State private var commands = VoiceCommands()
   @State private var appSpeaking = false
+  /// The laptop's frame on the table, once its two corners are tapped. Lives for this AR session only.
+  @State private var laptopFrame: LaptopFrame?
+  /// Non-nil while the setup coach is showing.
+  @State private var setup: LaptopSetupStage?
+  @State private var setupProblem: String?
+  @State private var layout = LaptopLayout.load()
+  /// Teach mode: taps on the laptop record where this step's parts are, instead of ticking pins.
+  @State private var teaching = false
+  /// The layout as a JSON file to share, rewritten only when the layout changes.
+  @State private var layoutFile: URL?
   @AppStorage("ghostToolOn") private var ghostToolOn = true
   @AppStorage("onboarded") private var onboarded = false
   @AppStorage("voiceOn") private var voiceOn = true
@@ -50,6 +60,11 @@ struct ContentView: View {
 
       VStack(spacing: 12) {
         topBar
+
+        if let setup {
+          LaptopSetupCoach(stage: setup, problem: setupProblem, onCancel: cancelSetup)
+            .transition(.move(edge: .top).combined(with: .opacity))
+        }
 
         if call.state == .ringing {
           IncomingCallBanner(call: call)
@@ -97,7 +112,7 @@ struct ContentView: View {
           canAdvance: ar.markerSeen || isLaptopGuide,
           outboxCount: relay.outboxCount,
           voiceOn: $voiceOn,
-          tools: isLaptopGuide && player.currentStep != nil ? AnyView(LaptopStepTools(laptop: laptop, ghostToolOn: $ghostToolOn)) : nil,
+          tools: isLaptopGuide && player.currentStep != nil ? AnyView(laptopTools) : nil,
           pinProgress: pinProgress,
           handsFree: (commands.isOn, commands.heard, commands.problem),
           onToggleHandsFree: commands.toggle,
@@ -123,6 +138,14 @@ struct ContentView: View {
       }
     }
     .animation(.snappy, value: call.state)
+    .animation(.snappy, value: setup)
+    .task(id: setup) {
+      // Step 1 of the setup finishes by itself once ARKit has found a horizontal surface.
+      while setup == .surface, !Task.isCancelled {
+        if ar.hasHorizontalSurface { setup = .cornerA; break }
+        try? await Task.sleep(for: .milliseconds(400))
+      }
+    }
     .animation(.easeInOut, value: ar.markerSeen)
     .animation(.easeInOut, value: ar.markerLostForAWhile)
     .animation(.easeInOut, value: pinMessage)
@@ -145,6 +168,7 @@ struct ContentView: View {
         screwMemory.reset()
         player.replace(with: guide)
         player.restart()
+        if laptopFrame == nil { startSetup() }
       }
       .presentationDetents([.large])
     }
@@ -202,6 +226,7 @@ struct ContentView: View {
   private func wire() {
     ar.step = player.currentStep
     ar.onPinToggled = { pin in pinToggled(pin) }
+    ar.onSurfaceTap = { position, normal in surfaceTapped(position, normal) }
     spotlight.start(ar)
     ar.onPose = { [relay] pose in relay.sendPose(pose) }
     // Runs on the AR session queue; the source checks its own thread-safe switch, set by CallManager.
@@ -330,7 +355,9 @@ struct ContentView: View {
 
   private func stepChanged() {
     // On the laptop guide pins belong to the step they were placed for; on a marker guide expert pins stay up.
-    ar.clearPins(kinds: isLaptopGuide ? [.expert, .refit] : [.refit])
+    ar.clearPins(kinds: isLaptopGuide ? [.guide, .expert, .refit] : [.refit])
+    ar.clearFocus()
+    setTeaching(false)
     pinMessage = nil
     spotlight.enabled = true
     updateGhost()
@@ -339,12 +366,126 @@ struct ContentView: View {
     if currentPhase == "refit", let group = screwMemory.group(for: currentLookFor) {
       // Screw memory: the same holes come back, last out first in, so each screw returns where it came from.
       ar.placeStoredPins(screwMemory.entries(in: group).reversed().map { ($0.number, $0.label, $0.transform) }, kind: .refit)
+      renderLayout(points: false)
       pinMessage = laptop.captiveScrews ? "Tighten each screw as you go" : "Put each screw back in its numbered hole"
-    } else if currentPhase == "remove", let part = currentLookFor {
-      pinMessage = call.state == .live
-        ? "Ask the expert to tap \(part) on their screen"
-        : "Call the expert to have \(part) pinned, or just follow the step"
+    } else {
+      renderLayout(points: true)
+      pinMessage = layoutHint
     }
+  }
+
+  // MARK: Laptop setup and layout
+
+  private var laptopTools: some View {
+    LaptopStepTools(
+      laptop: laptop,
+      ghostToolOn: $ghostToolOn,
+      frameLocked: laptopFrame != nil,
+      canTeach: laptopFrame != nil && currentLookFor != nil,
+      teaching: teaching,
+      taughtCount: layout.part(for: currentLookFor)?.points.count ?? 0,
+      shareURL: layoutFile,
+      onSetup: startSetup,
+      onTeach: { setTeaching(!teaching) },
+      onUndo: undoTeach
+    )
+  }
+
+  /// What the step card says about lighting up this step's parts.
+  private var layoutHint: String? {
+    guard isLaptopGuide, let part = currentLookFor else { return nil }
+    guard laptopFrame != nil else { return "Set up the laptop (tap 2 corners) to light up \(part)" }
+    if layout.isTaught(part) { return currentPhase == "remove" ? "Work on each lit pin and tap it when done" : nil }
+    guard currentPhase == "remove" || currentPhase == "refit" else { return nil }
+    return "Not measured yet: tap Teach and tap \(part) once, or ask the expert to tap them"
+  }
+
+  private func startSetup() {
+    setTeaching(false)
+    laptopFrame = nil
+    ar.showLaptopOutline(nil)
+    ar.clearPins(kinds: [.guide])
+    ar.clearFocus()
+    ar.showCornerMarker(at: nil)
+    setupProblem = nil
+    ar.setCoachingGoal(.horizontalPlane)
+    ar.tapMode = .surface
+    setup = ar.hasHorizontalSurface ? .cornerA : .surface
+    spotlight.enabled = false
+  }
+
+  private func cancelSetup() {
+    setup = nil
+    setupProblem = nil
+    ar.showCornerMarker(at: nil)
+    ar.setCoachingGoal(.tracking)
+    ar.tapMode = .pins
+    spotlight.enabled = true
+  }
+
+  private func surfaceTapped(_ position: SIMD3<Float>, _ normal: SIMD3<Float>) {
+    switch setup {
+    case .cornerA:
+      setupProblem = nil
+      ar.showCornerMarker(at: position)
+      setup = .cornerB(position, normal)
+    case .cornerB(let a, let firstNormal):
+      switch LaptopFrame.make(a: a, c: position, normal: firstNormal, footprint: layout.footprintMetres, screenRight: ar.screenRightInWorld ?? [1, 0, 0]) {
+      case .success(let frame):
+        laptopFrame = frame
+        ar.showLaptopOutline(frame)
+        cancelSetup()
+        pinTicks += 1
+        stepChanged()
+      case .failure(let problem):
+        ar.showCornerMarker(at: nil)
+        setup = .cornerA
+        switch problem {
+        case .tooClose: setupProblem = "Those corners are too close together for this laptop. Start again from the top-left corner."
+        case .tooFar: setupProblem = "Those corners are too far apart for this laptop. Start again from the top-left corner."
+        case .sameSpot: setupProblem = "That's the same spot. Tap the top-left corner, then the opposite one."
+        }
+      }
+    default:
+      // Teach mode: where this step's part really is, in millimetres from the top-left corner.
+      guard teaching, let frame = laptopFrame, let part = currentLookFor else { return }
+      layout.teach(frame.mm(of: position), for: part)
+      layoutChanged()
+      pinTicks += 1
+      renderLayout(points: true)
+    }
+  }
+
+  /// Lights up this step's zone and, when `points`, its parts as numbered pins, from the layout.
+  private func renderLayout(points: Bool) {
+    ar.clearPins(kinds: [.guide])
+    ar.clearFocus()
+    guard isLaptopGuide, let frame = laptopFrame, let part = layout.part(for: currentLookFor) else { return }
+    if let zone = part.zone {
+      ar.showFocus(corners: zone.corners.map { frame.world(mm: $0) }, normal: frame.normal, label: player.currentStep?.text.components(separatedBy: "\n").first ?? "Work here")
+    }
+    guard points else { return }
+    let label = (currentLookFor ?? "").contains("screw") ? "screw" : "here"
+    ar.placeStoredPins(part.points.enumerated().map { ($0.offset + 1, label, frame.transform(mm: $0.element)) }, kind: .guide)
+    spotlight.enabled = true
+  }
+
+  private func layoutChanged() {
+    layout.save()
+    layoutFile = layout.exportFile()
+  }
+
+  private func setTeaching(_ on: Bool) {
+    if on, layoutFile == nil { layoutFile = layout.exportFile() }
+    teaching = on
+    ar.tapMode = on || setup != nil ? .surface : .pins
+  }
+
+  private func undoTeach() {
+    guard let part = currentLookFor else { return }
+    layout.undoLast(for: part)
+    layoutChanged()
+    renderLayout(points: true)
   }
 
   private func updateGhost() {
@@ -358,7 +499,7 @@ struct ContentView: View {
 
   private func pinToggled(_ pin: ARSessionController.PinInfo) {
     pinTicks += 1
-    guard pin.kind == .expert, currentPhase == "remove" else { return }
+    guard pin.kind == .expert || pin.kind == .guide, currentPhase == "remove" else { return }
     if pin.done {
       screwMemory.remember(pin, group: currentLookFor ?? "screws", note: nil, photo: nil)
     } else {

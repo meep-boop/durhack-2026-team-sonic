@@ -45,6 +45,13 @@ final class ARSessionController: NSObject, ARSessionDelegate {
   /// Called on main when the user taps a pin to tick or untick it.
   @ObservationIgnored var onPinToggled: ((PinInfo) -> Void)?
 
+  /// What a tap on the camera view means: tick a pin, or mark a point on the surface (setting the laptop's corners,
+  /// teaching where a screw is).
+  enum TapMode { case pins, surface }
+  @ObservationIgnored var tapMode: TapMode = .pins
+  /// In `.surface` mode: where the tap met the surface, and the surface's normal. Main thread.
+  @ObservationIgnored var onSurfaceTap: ((SIMD3<Float>, SIMD3<Float>) -> Void)?
+
   /// The step being shown. Drawn as soon as the marker is found, and redrawn when it changes.
   var step: Step? {
     didSet { if step != oldValue { renderStep() } }
@@ -71,6 +78,11 @@ final class ARSessionController: NSObject, ARSessionDelegate {
   @ObservationIgnored private var isRunning = false
   @ObservationIgnored private let coaching = ARCoachingOverlayView()
   @ObservationIgnored private var pinEntities: [UUID: (anchor: AnchorEntity, arAnchor: ARAnchor, entity: Entity)] = [:]
+  @ObservationIgnored private var focusAnchor: AnchorEntity?
+  @ObservationIgnored private var focusCorners: [SIMD3<Float>] = []
+  @ObservationIgnored private var focusLabel = ""
+  @ObservationIgnored private var outlineAnchor: AnchorEntity?
+  @ObservationIgnored private var cornerAnchor: AnchorEntity?
   @ObservationIgnored private var ghost: Entity?
   @ObservationIgnored private var ghostPinId: UUID?
   @ObservationIgnored private let imageContext = CIContext()
@@ -222,6 +234,65 @@ final class ARSessionController: NSObject, ARSessionDelegate {
     return imageContext.jpegRepresentation(of: image, colorSpace: CGColorSpaceCreateDeviceRGB(), options: [:])
   }
 
+  /// True once ARKit has found a horizontal surface (the desk, or the laptop's cover) to put things on.
+  var hasHorizontalSurface: Bool {
+    arView.session.currentFrame?.anchors.contains { ($0 as? ARPlaneAnchor)?.alignment == .horizontal } ?? false
+  }
+
+  /// The world direction that is "right" on the phone's screen: the camera's +Y (its axes are the sensor's, landscape).
+  var screenRightInWorld: SIMD3<Float>? {
+    guard let t = arView.session.currentFrame?.camera.transform else { return nil }
+    return simd_normalize(SIMD3(t.columns.1.x, t.columns.1.y, t.columns.1.z))
+  }
+
+  /// Apple's coaching overlay: "find a surface" while setting up the laptop, "keep tracking" otherwise.
+  func setCoachingGoal(_ goal: ARCoachingOverlayView.Goal) {
+    coaching.goal = goal
+  }
+
+  // MARK: Laptop frame, zones (main)
+
+  /// The purple outline around the laptop once its corners are set; nil takes it away.
+  func showLaptopOutline(_ frame: LaptopFrame?) {
+    outlineAnchor.map { arView.scene.removeAnchor($0) }
+    outlineAnchor = nil
+    guard let frame else { return }
+    let anchor = AnchorEntity(world: matrix_identity_float4x4)
+    anchor.addChild(Shapes.laptopOutline(corners: frame.corners, normal: frame.normal))
+    arView.scene.addAnchor(anchor)
+    outlineAnchor = anchor
+  }
+
+  /// A pulsing marker on the first tapped corner; nil takes it away.
+  func showCornerMarker(at position: SIMD3<Float>?) {
+    cornerAnchor.map { arView.scene.removeAnchor($0) }
+    cornerAnchor = nil
+    guard let position else { return }
+    var transform = matrix_identity_float4x4
+    transform.columns.3 = SIMD4(position.x, position.y, position.z, 1)
+    let anchor = AnchorEntity(world: transform)
+    anchor.addChild(Shapes.cornerMarker())
+    arView.scene.addAnchor(anchor)
+    cornerAnchor = anchor
+  }
+
+  /// "Work here": a zone of the laptop lit on the surface, which the spotlight also follows.
+  func showFocus(corners: [SIMD3<Float>], normal: SIMD3<Float>, label: String) {
+    clearFocus()
+    let anchor = AnchorEntity(world: matrix_identity_float4x4)
+    anchor.addChild(Shapes.focusArea(corners: corners, normal: normal, label: label))
+    arView.scene.addAnchor(anchor)
+    focusAnchor = anchor
+    focusCorners = corners
+    focusLabel = label
+  }
+
+  func clearFocus() {
+    focusAnchor.map { arView.scene.removeAnchor($0) }
+    focusAnchor = nil
+    focusCorners = []
+  }
+
   /// The camera as it was `secondsAgo`, from the last ~2.5 s.
   func cameraContext(secondsAgo: Double) -> CameraContext? {
     shared.withLock { state in
@@ -257,7 +328,7 @@ final class ARSessionController: NSObject, ARSessionDelegate {
   }
 
   /// Clears pins of the given kinds (all by default).
-  func clearPins(kinds: Set<Shapes.PinKind> = [.expert, .refit]) {
+  func clearPins(kinds: Set<Shapes.PinKind> = [.guide, .expert, .refit]) {
     for pin in pins where kinds.contains(pin.kind) {
       if let entry = pinEntities.removeValue(forKey: pin.id) {
         arView.scene.removeAnchor(entry.anchor)
@@ -314,6 +385,14 @@ final class ARSessionController: NSObject, ARSessionDelegate {
 
   @objc private func tapped(_ gesture: UITapGestureRecognizer) {
     let location = gesture.location(in: arView)
+    if tapMode == .surface {
+      // A measured plane first; ARKit's estimate from feature points if the tap is past a plane's edge.
+      let hit = arView.raycast(from: location, allowing: .existingPlaneGeometry, alignment: .horizontal).first
+        ?? arView.raycast(from: location, allowing: .estimatedPlane, alignment: .any).first
+      guard let t = hit?.worldTransform else { return }
+      onSurfaceTap?(SIMD3(t.columns.3.x, t.columns.3.y, t.columns.3.z), SIMD3(t.columns.1.x, t.columns.1.y, t.columns.1.z))
+      return
+    }
     // Nearest pin on screen within a finger's width: kinder than hit-testing a 7 mm ball.
     let nearest = pins.indices
       .compactMap { i -> (Int, CGFloat)? in
@@ -360,12 +439,15 @@ final class ARSessionController: NSObject, ARSessionDelegate {
     var label: String
   }
 
-  /// The pins still to do (the expert's newest alone when it's the only one), then the marker step.
+  /// The pins still to do, then the step's zone of the laptop, then the marker step.
   func spotlightTarget() -> SpotlightTarget? {
     let pending = pins.filter { !$0.done }
     if !pending.isEmpty {
       let label = pending.count == 1 ? "\(pending[0].number) · \(pending[0].label)" : "\(pending.count) left"
       return SpotlightTarget(points: pending.map(\.position), label: label)
+    }
+    if !focusCorners.isEmpty {
+      return SpotlightTarget(points: focusCorners, label: focusLabel)
     }
     if markerSeen, !stepRoot.children.isEmpty {
       let points = stepRoot.children.map { $0.position(relativeTo: nil) }

@@ -61,10 +61,17 @@ the exact error if the key is missing or wrong.
 
 ## Laptop guide and voice
 The laptop button starts the SSD swap for Ahmed's Dell Latitude 5530, with no marker: the team's checked steps from
-Dell's manual (`research/ledger.md` § 17, checked on the laptop by Laura). Tick the safety checklist, then on a call
-the expert clicks each part on the live video and a pin lands on the real laptop; tap a pin when that part is done.
-The ghost screwdriver shows which way to turn, and the refit steps bring back the same holes. With
-`ELEVENLABS_API_KEY` set, steps are read aloud by ElevenLabs; without it (or offline) the built-in iOS voice reads them.
+Dell's manual (`research/ledger.md` § 17, checked on the laptop by Laura).
+1. Tick the safety checklist.
+2. **Set up the laptop:** lay it face down, move the phone slowly until ARKit finds the surface, tap the top-left
+   corner (the top edge has the U-shaped notches), then the opposite corner. A purple outline locks onto the laptop.
+3. Each step lights up its part of the laptop. Screw positions aren't guessed: on a step, tap **Teach** and tap each
+   screw once; they're saved in millimetres from the corner, so every later run is just "tap 2 corners". **Share**
+   sends the layout file to bundle as `RemoteAssist/Resources/dell-latitude-5530-layout.json`.
+4. Tap a pin when that part is done. The ghost screwdriver shows which way to turn, and the refit steps bring back
+   the same holes. On a call the expert can also click any part on the live video to pin it.
+
+With `ELEVENLABS_API_KEY` set, steps are read aloud by ElevenLabs; without it (or offline) the iOS voice reads them.
 
 ## Checks
 ```bash
