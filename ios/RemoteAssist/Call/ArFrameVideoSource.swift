@@ -36,9 +36,14 @@ final class ArFrameVideoSource {
   /// Called on the AR session queue for every camera frame. Throttles to the frame rate and returns quickly.
   func push(_ pixelBuffer: CVPixelBuffer, timestamp: TimeInterval) {
     guard isEnabled else { return }
-    // A hot phone sends fewer frames rather than letting tracking and the encoder fight for the chip.
-    let hot = ProcessInfo.processInfo.thermalState.rawValue >= ProcessInfo.ThermalState.serious.rawValue
-    let fps: Double = hot ? 12 : 20
+    // A warming phone sends fewer frames rather than letting tracking and the encoder fight for the chip: the AR view
+    // the user is looking at matters more than the expert's frame rate.
+    let fps: Double
+    switch ProcessInfo.processInfo.thermalState {
+    case .nominal: fps = 20
+    case .fair: fps = 15
+    default: fps = 10
+    }
     guard timestamp - lastSent >= 1 / fps, let output = makeBuffer(), let transfer = makeTransfer() else { return }
     guard VTPixelTransferSessionTransferImage(transfer, from: pixelBuffer, to: output) == noErr else { return }
     lastSent = timestamp
