@@ -27,6 +27,11 @@ struct MarkerReading: Equatable {
     )
   }
 
+  /// A measured point as the dashboard's Position (cm) fields want it: x, y, z in centimetres from the marker centre.
+  static func positionText(_ point: SIMD3<Float>) -> String {
+    String(format: "x %.1f · y %.1f · z %.1f cm", point.x * 100, point.y * 100, point.z * 100)
+  }
+
   var line: String {
     let pose = isFlat ? "lying flat" : (flatness < -0.5 ? "face down" : "standing up")
     return String(format: "Marker %.0f cm away · seen %.1f cm wide (×%.2f) · %@", distance * 100, seenWidth * 100, scale, pose)

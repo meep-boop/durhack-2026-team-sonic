@@ -560,6 +560,15 @@ final class ARSessionController: NSObject, ARSessionDelegate {
     focusCorners = []
   }
 
+  /// Where a world point is in the marker's frame, the frame guide positions are written in; nil before the marker
+  /// has been found. Measuring with this is what lines a guide up with the real laptop: whatever way the marker's axes
+  /// turn out to run, a position measured here is placed back on the same spot.
+  func markerFramePoint(_ world: SIMD3<Float>) -> SIMD3<Float>? {
+    guard let markerAnchor else { return nil }
+    let local = markerAnchor.transformMatrix(relativeTo: nil).inverse * SIMD4(world.x, world.y, world.z, 1)
+    return SIMD3(local.x, local.y, local.z)
+  }
+
   /// The camera as it was `secondsAgo`, from the last ~2.5 s.
   func cameraContext(secondsAgo: Double) -> CameraContext? {
     shared.withLock { state in

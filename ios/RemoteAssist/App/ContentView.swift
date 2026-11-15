@@ -28,6 +28,10 @@ struct ContentView: View {
   @State private var layout = LaptopLayout.load()
   /// Teach mode: taps on the laptop record where this step's parts are, instead of ticking pins.
   @State private var teaching = false
+  /// "Measure positions": taps on the laptop give their position from the marker, to type into the dashboard so the
+  /// guide's parts land on the real screws.
+  @State private var measuring = false
+  @State private var measured: [SIMD3<Float>] = []
   /// The layout as a JSON file to share, rewritten only when the layout changes.
   @State private var layoutFile: URL?
   @State private var confirmingLeave = false
@@ -234,6 +238,7 @@ struct ContentView: View {
       isLaptopGuide: isLaptopGuide,
       frameLocked: laptopFrame != nil,
       teaching: teaching,
+      measuring: measuring,
       inCall: call.state != .idle && call.state != .ringing,
       layoutFile: layoutFile,
       voiceOn: $voiceOn,
@@ -245,6 +250,7 @@ struct ContentView: View {
       onSetup: startSetup,
       onTeach: { setTeaching(!teaching) },
       onUndoTeach: undoTeach,
+      onMeasure: { setMeasuring(!measuring) },
       onHandsFree: commands.toggle,
       onLeave: { confirmingLeave = true }
     )
@@ -257,6 +263,11 @@ struct ContentView: View {
       return .init(text: "Teaching: tap each part on the laptop · \(count) marked", symbol: "hand.point.up.left.fill")
     }
     if let problem = commands.problem { return .init(text: problem, symbol: "mic.badge.xmark", tint: .orange) }
+    if measuring {
+      guard ar.markerSeen else { return .init(text: "Measuring: find the marker first", symbol: "ruler", tint: .orange) }
+      guard let last = measured.last else { return .init(text: "Measuring: tap a screw or part on the laptop", symbol: "ruler") }
+      return .init(text: "#\(measured.count): \(MarkerReading.positionText(last)) · type it into the dashboard", symbol: "ruler")
+    }
     if ar.markerNotFlat, ar.markerSeen, !isLaptopGuide {
       return .init(text: "Lay the printed marker flat on the table, beside the laptop: the guide assumes it's lying down", symbol: "exclamationmark.triangle.fill", tint: .orange)
     }
@@ -675,6 +686,10 @@ struct ContentView: View {
   }
 
   private func surfaceTapped(_ position: SIMD3<Float>, _ normal: SIMD3<Float>) {
+    if measuring {
+      recordMeasurement(position)
+      return
+    }
     switch setup {
     case .cornerA:
       setupProblem = nil
@@ -729,7 +744,21 @@ struct ContentView: View {
   private func setTeaching(_ on: Bool) {
     if on, layoutFile == nil { layoutFile = layout.exportFile() }
     teaching = on
-    ar.tapMode = on || setup != nil ? .surface : .pins
+    ar.tapMode = on || setup != nil || measuring ? .surface : .pins
+  }
+
+  private func setMeasuring(_ on: Bool) {
+    measuring = on
+    if on { measured = [] } else { ar.showCornerMarker(at: nil) }
+    ar.tapMode = on || teaching || setup != nil ? .surface : .pins
+  }
+
+  private func recordMeasurement(_ world: SIMD3<Float>) {
+    guard let point = ar.markerFramePoint(world) else { return }
+    measured.append(point)
+    ar.showCornerMarker(at: world)
+    pinTicks += 1
+    ARSessionController.log.notice("Measured #\(measured.count, privacy: .public): \(MarkerReading.positionText(point), privacy: .public) from the marker centre")
   }
 
   private func undoTeach() {
