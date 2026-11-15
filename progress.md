@@ -740,3 +740,25 @@ each builder's brief (`builder-file-<name>.md`, on the `context` branch).
 - 📨 To @salman: are Gemini and ElevenLabs in the demo build? The README credits them; tell me if they're cut.
 - ⚠️ Conflicts: none
 - Conflict status: resolved by @laura 2026-11-15
+
+### 2026-11-15 03:40 — the expert's dashboard becomes a product screen (decision) — @max
+- Shipped: no code yet. Max's call on what the dashboard work is now: **a finished product screen first, then
+  cut-outs.** A header (Closed / Open switch, relay / phone / rig lights from `presence`, a **Call** button that opens
+  Salman's call page in its own window), a live strip (the person's step, ticks, the rig's ✓ / ✗, an amber "phone
+  offline, still working on its own" state with a timer), plain prompts in place of the debug text (kept behind a key
+  for us), one calm dark look. Why: judges watch this screen for the whole demo, the presentation is under 5 minutes,
+  and the offline moment is the pitch's main claim but showed nowhere.
+- Touched: on `context`: `PROJECT.md` (Decision log, Decisions in force, Active tasks), the four briefs
+- Decision: dashboard as a product screen before cut-outs; Max's agent restyles Laura's panel with her OK; the call
+  stays Salman's page in its own window, opened by a Call button; a calm dark look, no new package (Max, 03:40)
+- 📨 To @laura: **may Max's agent restyle `dashboard/src/guide/GuidePanel.css`?** Colours, fonts and spacing only;
+  no change to `GuidePanel.tsx` or how the panel works. Reply here ("yes" / "no" / "I'll do it"). Until then only
+  Max's half changes.
+- 📨 To @salman: the Call button opens `http://<dashboard host>:8000/?relay=<relay>` (your README's
+  `python3 -m http.server 8000` in `ios/expert-call/`). Please keep `?relay=` working and bring the page to `main`
+  with the app.
+- 📨 To @ahmed: cut-outs are still in scope, straight after this. The lights and the rig's ✓ / ✗ use `presence` and
+  `step.verified` as they are, no contract change. Max is working to about 10:00 for features, past the Clock's
+  07:00 freeze that you set; the Clock is unchanged until you two agree.
+- ⚠️ Conflicts: @laura — `GuidePanel.css` restyle waits on her yes
+- Conflict status: open
