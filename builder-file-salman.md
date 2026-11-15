@@ -82,7 +82,8 @@ rung 2 a guide built in the scan lines up on the phone; rung 3 the extras. Decis
 5. ⬜ P0 **With rung 2: measure the alignment error** with a ruler on three parts. It's the only number we quote.
 6. P1 Saving the guide, place and queue across an app kill is already on `salman-ios-ar` (your call, noted). P2: the
    guide is scaled by ARKit's size estimate (`ARSessionController.swift:295`); measure alignment with and without.
-- **Your `chat` message** (PR #7) is a contract change and waits for Ahmed's decision. Your tap-to-pin and hang-up
+- **Your `chat` message** (PR #7): decided 01:55 by Ahmed, **no chat**. It stays out of the contract and the relay;
+  please take the chat screen out of the app and `ios/expert-call/` before PR #7 merges. Your tap-to-pin and hang-up
   ride the call's `control` data channel, which Ahmed will document in the contract comment.
 - **Scope:** Ahmed's ask is the core path first (1–5) before more extras; the feature freeze is in the Clock.
 

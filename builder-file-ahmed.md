@@ -81,7 +81,7 @@ rung 2 a guide built in the scan lines up on the phone; rung 3 the extras. Decis
 7. ⬜ P1 **The rig on its hardware** (task 9). If the UNO Q can't read the Nicla after an hour on the board, use
    the SSH route in `hardware/README.md`. If it isn't working by the freeze, drop the RS claim rather than fake it.
 8. ⬜ P1 **One paid labelling call** once Max's snapshot exists (task 8).
-- Yours to decide: Salman's `chat` message (PR #7); a per-step scan field on `Step`, only if the manual switch annoys.
+- Decided 01:55: no chat (Salman's PR #7). Yours to decide: a per-step scan field on `Step`, only if the manual switch annoys.
 
 1. ✅ **The event's rules and deadlines** (done 2026-11-14 20:30; still unknown: criterion weights, the cap on challenges,
    licence and public-repo rules, all marked _not stated_ in `EVENT.md`)

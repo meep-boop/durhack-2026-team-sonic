@@ -48,6 +48,7 @@ Source: `EVENT.md` §1 (one notes file, not yet checked against Devpost). The 02
 
 | Date | Decision |
 |---|---|
+| 2026-11-15 | No text chat: Salman's `chat` message stays out of the contract and the relay (Ahmed, 01:55) |
 | 2026-11-15 | A plan to the deadline as a four-rung ladder: prepared guide on the phone, dashboard sends it, a guide built in the scan lines up, then extras (Ahmed, 01:45; `.omc/plans/remote-assist-to-deadline.md` on his machine, tasks in the briefs) |
 | 2026-11-15 | Taps get a receipt: the relay sends each `step.done` it accepts, and each repeat, back to its sender; the phone drops a tap only on its receipt (Ahmed) |
 | 2026-11-15 | Two scans, closed and cover off, sharing the marker; the relay keeps one calibration per scan; a manual switch on the dashboard (Ahmed) |
@@ -155,7 +156,7 @@ SSD-swap demo (23:03).
   snapshot. Owner: Ahmed.
 
 - **Salman's `chat` message** (PR #7): `{ id, from, text, at }`, the relay keeping the last 50 and replaying
-  them. A contract change and new stored data. Owner: Ahmed. **Not decided.**
+  them. A contract change and new stored data. Owner: Ahmed. **Settled 01:55: no chat** (Ahmed); see Parked.
 - **Should a step remember its scan?** An optional field on `Step`; only if the manual switch annoys. Owner:
   Ahmed. **Not decided.**
 - **The phone scales the guide by ARKit's size estimate.** Measure alignment with and without. Owner: Salman.
@@ -311,6 +312,9 @@ The diagram, components, alignment maths and draft protocol are in `docs/remote-
 
 ## Parked
 *Doable, decided against. Each item says why, and what would bring it back.*
+- **Text chat between phone and expert** (parked 2026-11-15 01:55, Ahmed): Salman's PR #7 proposed a `chat`
+  message with the relay keeping the last 50. The team doesn't want chat; the call carries voice. Would come back
+  after the event, as a new contract message.
 - **Training the splat on Dawn** (parked 2026-11-14): we have no Dawn access; the DGX Spark replaces it. Would come
   back if Dawn access turns up.
 
