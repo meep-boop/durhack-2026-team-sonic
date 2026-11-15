@@ -63,6 +63,29 @@ splats until that's settled. Training splats in the app (the scan is taken in Sc
 ## 3. ▶ Current tasks (2026-11-14), in order
 *Status: ⬜ not started · 🟡 in progress · ⏸ blocked · ✅ done*
 
+**▶ The plan to the deadline (from @ahmed, 2026-11-15 01:45). Do these first, in this order; the older tasks below keep
+their detail.** Why: the phone side is nearly there, but the dashboard is still a viewer with no relay connection,
+so we climb a ladder: rung 0 the real phone plays a prepared guide; rung 1 the dashboard connects and sends it;
+rung 2 a guide built in the scan lines up on the phone; rung 3 the extras. Decisions: `PROJECT.md` → Decision log.
+1. ⬜ P0 **Merge `salman-ios-polish` to `main`** with `ship` (it carries PR #4). PR #7 (`salman-ios-ar`) follows
+   after its own device test; it merges cleanly with `main` today. *Done when:* `ios/` is on `main`.
+2. ⬜ P0 **Smoke test on the real phone** with the relay and `node fixtures/fake-expert.ts ws://<relay>:8080`: the
+   green outline hugs the print; the sample guide appears; four taps arrive in order; Wi-Fi off, tap on, Wi-Fi on,
+   each tap arrives once; `--step s3` jumps the phone; a call from `ios/expert-call/` shows video while AR keeps
+   tracking. *Done when:* a board entry says which of the six passed.
+3. ⬜ P0 **Post which printed edge red (+X) and blue (+Z) point to** (item D). Calibration is provisional until then.
+4. ⬜ P0 **The tap receipt** (decided by Ahmed): the relay will send each `step.done` it accepts, and each repeat,
+   back to the phone that sent it. Remove a tap from the outbox only on its receipt (today it goes when the socket
+   write succeeds, `RelayClient.swift:210`), and resend the queue in order on reconnect. Wait for the board entry
+   saying the relay side is on `main`; `fixtures/fake-phone.ts` will be the reference.
+   `[⚠ conflicts with @ahmed: the relay side]`
+5. ⬜ P0 **With rung 2: measure the alignment error** with a ruler on three parts. It's the only number we quote.
+6. P1 Saving the guide, place and queue across an app kill is already on `salman-ios-ar` (your call, noted). P2: the
+   guide is scaled by ARKit's size estimate (`ARSessionController.swift:295`); measure alignment with and without.
+- **Your `chat` message** (PR #7) is a contract change and waits for Ahmed's decision. Your tap-to-pin and hang-up
+  ride the call's `control` data channel, which Ahmed will document in the contract comment.
+- **Scope:** Ahmed's ask is the core path first (1–5) before more extras; the feature freeze is in the Clock.
+
 **New from @ahmed (2026-11-14 23:40 sweep), before the tasks below:**
 - A. ⬜ **Mirror the new `expect`.** It changed at 23:24 to `{ region, present }` (the SSD swap has no cable). If your
   Swift struct requires `port` and `cable`, any guide carrying the new `expect` fails to decode, the sample guide

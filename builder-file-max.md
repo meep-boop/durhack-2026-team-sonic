@@ -64,6 +64,35 @@ and the walking skeleton is the next one. Anything new for you is in the block a
 ## 3. ▶ Current tasks (2026-11-14), in order
 *Status: ⬜ not started · 🟡 in progress · ⏸ blocked · ✅ done*
 
+**▶ The plan to the deadline (from @ahmed, 2026-11-15 01:45). Do these first, in this order; the older tasks below keep
+their detail.** Why: the phone side is nearly there, but the dashboard is still a viewer with no relay connection,
+so we climb a ladder: rung 0 the real phone plays a prepared guide; rung 1 the dashboard connects and sends it;
+rung 2 a guide built in the scan lines up on the phone; rung 3 the extras. Decisions: `PROJECT.md` → Decision log.
+1. ⬜ P0 **Merge PR #6 now** (item B): it's only the shell, it passed the pre-check, and three people build on it.
+2. ⬜ P0 **App shell** (answers Laura's ask 1): `App.tsx` makes the scene once and renders the viewport beside
+   `<GuidePanel scene relay />`. Add `isCalibrated()` and `onCalibrated()` to `SceneApi` (ask 3). Asks 2 and 4 fall
+   away: the laptop lies flat beside the marker, so objects stand upright and turn only about Y.
+3. ⬜ P0 **Two scans** (decided by Ahmed): closed, then cover off, both with the marker in view and the laptop in
+   Laura's corner stops. Load by URL (`?splat=`) from a git-ignored folder, with a Closed / Open switch. A scan's
+   id is its file name; the relay will keep one calibration per scan.
+4. ⬜ P0 **`pickPoint()`** (task 2) with three's `Raycaster` on the `SplatMesh`. Show the hit as a dot: Spark can
+   hit hidden splats (its issues #497, #498).
+5. ⬜ P0 **Calibration screen** (task 3): four clicks → `solveCalibration` → one `markerGroup` holding the
+   marker→scan transform → `calib.set`. Draw the marker outline and axes on the scan, show the residual, refuse
+   above 5 mm. Ahmed recommends no placing until calibrated (your open question; yours and his to settle).
+6. ⬜ P0 **`showStep()`** (task 4): the yellow box plus the `.glb` under `markerGroup`. `GLTFLoader` is a three
+   add-on; Vite needs `server.fs.allow: [".."]` to serve `../assets/models`.
+7. ⬜ P1 **The user's position** (task 6): a cone under `markerGroup` from `pose`, which is already in the marker frame.
+8. ⬜ P1 **Labels** (task 7): snapshot → `labels.request` → labels on screen → search box → `focus()`.
+9. ⬜ P1 **Dragging** with three's `TransformControls` → `onObjectMoved`; then **cut-outs** (task 5). Both stay in
+   scope (Ahmed), after rung 2.
+- 📨 **Ahmed asks your OK** for his agent to build two pieces in `dashboard/`: `src/relay/client.ts` (the relay
+  connection: hello as `expert`, reconnect, typed `send` and `on`) and `src/scene/calibration.ts`
+  (`solveCalibration(corners, marker)`, pure maths with tests). Everything that needs the 3D view stays yours.
+- **You're now a docs owner** (`team.conf`): Ahmed's laptop is the demo prop, so it goes dark for the scans, the
+  video and the demo. You can publish any shared doc.
+- The call screen is Salman's `ios/expert-call/` page beside the dashboard; no React video panel.
+
 > 🟡 **START HERE (2026-11-14 23:55, @max's session):** answer Laura's four asks on `dashboard/src/scene/api.ts`
 > (her `progress.md` entry at 23:04). **Ask 1 blocks her:** how `dashboard/src/guide/` gets the `SceneApi` instance
 > and where her panel mounts (`main.tsx` renders only `<Viewport />` today). Asks 2–4: return the surface normal from

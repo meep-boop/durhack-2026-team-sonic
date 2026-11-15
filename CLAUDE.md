@@ -12,7 +12,7 @@ apply; the step-by-step protocols live in the skills it names (§ Triggers).*
 | Project | **Remote Assist** (working name, from Max's plan; DurHack 2026) · team **Team Sonic** |
 | One-line pitch | Step-by-step 3D guidance on a phone, built by a remote engineer from a scan of the room, that keeps working when the network is down. |
 | Repo · main branch | `github.com/meep-boop/durhack-2026-team-sonic` · `main`. Builder branches: `<name>-<area>` |
-| Team | `progress.md` → **Who owns what** (names, GitHub logins, roles, branches). Docs owners: **ahmed** (`team.conf`) |
+| Team | `progress.md` → **Who owns what** (names, GitHub logins, roles, branches). Docs owners: **ahmed, max** (`team.conf`) |
 | Shared docs | The **`context` branch** (docs only, never on `main`). Pull: `bash scripts/sync-context.sh` · publish: `bash scripts/publish-context.sh "what changed"` |
 | Project doc | `PROJECT.md`: NOW (headline, clock, decisions, tasks) at the top, then spec, design, parked, decision log |
 | Event rules | `EVENT.md`: rules, judging, submission checklist, platform |
@@ -166,7 +166,7 @@ it per session ("Level 2 today") or per decision ("explain this one at Level 3")
   merge the two versions by hand, and publish again. There is no force.
 - **They never go to `main`.** They're git-ignored there on purpose. Never `git add -f` them, and never paste them
   into a code commit. At the root of `main` the only markdown is `progress.md`, `README.md` and `LICENSE.md`.
-- **Docs owners (ahmed) publish anything.** Everyone else publishes `research/**` and their own brief, and
+- **Docs owners (ahmed, max) publish anything.** Everyone else publishes `research/**` and their own brief, and
   in the brief only status: ✅/🟡 marks, the Done log, Waiting on, a START HERE note. New tasks and scope changes come
   from an owner. The script enforces which files; the brief rule is on trust.
 - **Nobody wipes another builder's entries.** Sync first, then only add, annotate or move. A builder's own additions
@@ -204,7 +204,8 @@ rig is a Nicla Vision and an UNO Q. Splats come from Scaniverse, with the team's
 table: `PROJECT.md` §6.
 **The plan:** `docs/remote-assist/` on `main`.
 **Runtime shape:** `PROJECT.md` §5 diagram.
-**Known gaps** (2026-11-14 23:40): the iPhone app (PR #4), the dashboard (PR #6) and the guide builder (`laura-guide`) aren't
+**Known gaps** (2026-11-15 01:45): the dashboard is a splat viewer with no relay connection, calibration, picking or guide
+screen, and the phone app is on `salman-ios-polish`, not `main`. (2026-11-14 23:40): the iPhone app (PR #4), the dashboard (PR #6) and the guide builder (`laura-guide`) aren't
 on `main` yet. No alignment accuracy has been measured. The UNO Q rig hasn't run on its hardware. Claude labelling has
 never made a live call. The fake peers and `fixtures/video-test.html` are test tools, never demo content.
 

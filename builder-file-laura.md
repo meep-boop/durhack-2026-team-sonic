@@ -65,6 +65,20 @@ them, so a renamed or resized model breaks two apps).
 ## 3. ▶ Current tasks (2026-11-14), in order
 *Status: ⬜ not started · 🟡 in progress · ⏸ blocked · ✅ done*
 
+**▶ The plan to the deadline (from @ahmed, 2026-11-15 01:45). Do these first, in this order; the older tasks below keep
+their detail.** Why: the phone side is nearly there, but the dashboard is still a viewer with no relay connection,
+so we climb a ladder: rung 0 the real phone plays a prepared guide; rung 1 the dashboard connects and sends it;
+rung 2 a guide built in the scan lines up on the phone; rung 3 the extras. Decisions: `PROJECT.md` → Decision log.
+1. ⬜ P0 **The board** (task 2), first: it blocks both scans and the rig. Add **corner stops** so the laptop lifts
+   off and goes back in the same place: it's Ahmed's only machine, so it can't stay fixed down.
+2. ⬜ P0 **The real SSD-swap steps for Ahmed's laptop:** text, model and action per step, power-off first. Post
+   them on the board; Ahmed turns them into `fixtures/ssd-swap-guide.json` with ruler-measured positions (rung 0).
+3. ⬜ P0 **`GuidePanel.tsx`** (task 3) on your `guide.ts` and `progress.ts`: step list, instruction, add object
+   (model, action, "place" → `pickPoint()`, typed position as the fallback), Send with `sendBlockers`, ticks from
+   `step.done` and `step.verified`. Max's shell hands you `scene` and `relay` as props (your ask 1).
+4. ⬜ P0 **What the judges see** (task 6): README, video, Devpost, AI tools credited. Times: `PROJECT.md` → Clock.
+- Task 5 (the live video panel) is superseded: see the note on it below.
+
 1. ✅ **The marker** (printed, measured 180 × 180 mm, on main `eca6c24`; waiting on @salman to confirm Xcode) (sweep
    by @ahmed: Salman's app tracks it at 0.18 m, his 22:10 entry; he didn't mention Xcode warnings) (do this first: @salman and @max are both waiting on it)
    - A high-contrast, detailed, non-repeating image, 15 to 20 cm wide (small ones track badly), printed flat and
@@ -104,7 +118,8 @@ them, so a renamed or resized model breaks two apps).
      first: author once and convert, or keep both by hand. Same names, sizes and origins in both.
    - *Done when:* each model loads in the dashboard and in @salman's app, the same size and the same way up.
    - `[⚠ conflicts with @salman and @max: both load these]`
-5. ⬜ **The live video panel**
+5. ⏸ **The live video panel** (superseded 2026-11-15 01:45 by Ahmed, do NOT action: Salman's `ios/expert-call/` page is
+   the call screen, opened beside the dashboard. Would come back only if that page can't be used in the demo.)
    - Show the phone's camera in the dashboard.
    - **The expert calls the phone** (decided 23:30): the dashboard makes the offer, the phone answers. Salman's
      `ios/expert-call/index.html` (on `salman-ios`) is a working expert side to build from: the offer, `rtc.signal`,

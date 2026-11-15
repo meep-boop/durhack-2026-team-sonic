@@ -11,7 +11,7 @@ the system is shaped this way, and **History** says how we got here.
 
 ---
 
-## NOW (updated 2026-11-14)
+## NOW (updated 2026-11-15 01:45)
 
 ### Headline
 **Step-by-step 3D guidance on a phone, built by a remote engineer from a scan of the room, that keeps working when the network is down.**
@@ -34,7 +34,7 @@ The idea is Max's (`docs/remote-assist/` on `main` has the full plan). It was ta
 | When | What |
 |---|---|
 | Sat 14 Nov, 12:00 | Hacking started |
-| **Sun 15 Nov, 02:00** | Walking skeleton: the real phone, the real dashboard and the relay play one guide end to end |
+| **Sun 15 Nov, 02:00** | Walking skeleton: the real phone, the real dashboard and the relay play one guide end to end. **Missed** (01:45: the dashboard can't talk to the relay yet; the order to get there is in each brief) |
 | **Sun 15 Nov, 07:00** | Feature freeze: after it, only fixes, and no message shape changes |
 | **Sun 15 Nov, 10:00** | Demo video recorded |
 | Sun 15 Nov, 11:30 | Submit on Devpost (half an hour before the deadline) |
@@ -48,6 +48,12 @@ Source: `EVENT.md` §1 (one notes file, not yet checked against Devpost). The 02
 
 | Date | Decision |
 |---|---|
+| 2026-11-15 | A plan to the deadline as a four-rung ladder: prepared guide on the phone, dashboard sends it, a guide built in the scan lines up, then extras (Ahmed, 01:45; `.omc/plans/remote-assist-to-deadline.md` on his machine, tasks in the briefs) |
+| 2026-11-15 | Taps get a receipt: the relay sends each `step.done` it accepts, and each repeat, back to its sender; the phone drops a tap only on its receipt (Ahmed) |
+| 2026-11-15 | Two scans, closed and cover off, sharing the marker; the relay keeps one calibration per scan; a manual switch on the dashboard (Ahmed) |
+| 2026-11-15 | Salman's `ios/expert-call/` page is the call screen; no React video panel (Ahmed) |
+| 2026-11-15 | Ahmed's agent builds the dashboard's relay connection and the calibration maths, once Max agrees; cut-outs and 3D dragging stay in scope, after rung 2 (Ahmed) |
+| 2026-11-15 | Max is a second docs owner; the 02:00 walking-skeleton row stays in the Clock, marked missed (Ahmed) |
 | 2026-11-14 | Nobody sprays Ahmed's laptop for the scan; it's scanned as it is (Ahmed) |
 | 2026-11-14 | Internal deadlines: walking skeleton 02:00, feature freeze 07:00, demo video 10:00, submit 11:30 (Ahmed) |
 | 2026-11-14 | Salman's Gemini assistant and ElevenLabs voice stay as optional, AI-labelled extras, entered for MLH Gemini and ElevenLabs; not Vultr or Tiger Data (Ahmed) |
@@ -148,13 +154,22 @@ SSD-swap demo (23:03).
 - **Claude labelling has never made a live call.** One paid test, with Ahmed's OK, once Max's dashboard can send a
   snapshot. Owner: Ahmed.
 
+- **Salman's `chat` message** (PR #7): `{ id, from, text, at }`, the relay keeping the last 50 and replaying
+  them. A contract change and new stored data. Owner: Ahmed. **Not decided.**
+- **Should a step remember its scan?** An optional field on `Step`; only if the manual switch annoys. Owner:
+  Ahmed. **Not decided.**
+- **The phone scales the guide by ARKit's size estimate.** Measure alignment with and without. Owner: Salman.
+  **Not decided.**
+- **Placing before calibration (01:45):** Ahmed's agent recommends none until calibrated, with one `markerGroup`
+  carrying the marker→scan transform. Still Max + Ahmed's to settle (the item above).
+
 ### Active tasks (details in each brief)
 | Who | Now |
 |---|---|
-| Ahmed | The UNO Q access test, then the rig on its hardware; move the relay to the dashboard laptop with Max; the walking skeleton |
-| Salman | Mirror `expect: { region, present }`; keep the phone's own place on reconnect; merge PR #4 (the iPhone app); post the +X/+Z edges |
-| Max | Answer Laura's four scene-API asks (ask 1 blocks her); merge PR #6; run the relay on his laptop; scan the laptop on its board |
-| Laura | The laptop and marker on one board, with a sticker on the SSD; the `ssd` model; the guide builder once Max answers ask 1 |
+| Ahmed | The tap receipt and a calibration per scan in the relay; the dashboard's relay connection and calibration maths; the rung-0 guide file; the rig on its hardware |
+| Salman | Merge `salman-ios-polish`; the smoke test on the real phone; post the +X/+Z edges; the tap receipt; measure alignment |
+| Max | Merge PR #6; the app shell; two scans; click-picking; the calibration screen; drawing a step's objects |
+| Laura | The board with corner stops; the real SSD-swap steps; the guide panel; README, video, Devpost |
 
 Asked for by Max (19:40 board entry): "Pick and get the demo objects" is Laura's task 3. "Check we have a Mac with
 Xcode" is answered: yes, per Ahmed.
@@ -162,7 +177,8 @@ Xcode" is answered: yes, per Ahmed.
 ### Blockers only humans can clear
 *Accounts, API keys, access, team registration, hardware, asking the organisers.*
 - **Cleared 22:20: Dawn login.** We have no Dawn access; the team has a DGX Spark instead (Max).
-- **Back up Ahmed's laptop before any rehearsal.** The demo opens it and takes the SSD out. Ahmed.
+- **Back up Ahmed's laptop before any rehearsal.** The demo opens it and takes the SSD out. Ahmed. It's his only
+  machine: push before every opening, and have the BitLocker recovery key on a phone first.
 - **Keys and credit:** Salman's Gemini and ElevenLabs keys (his git-ignored `Secrets.xcconfig`); Anthropic
   credentials on the laptop that runs the relay, if labelling is on. Neither has been tested live.
 - **For the rig: a micro-USB data cable** for the Nicla Vision (not charge-only) and **a charger for the hub's power
@@ -213,12 +229,13 @@ Xcode" is answered: yes, per Ahmed.
 | F6 | Built-in models in glTF and USDZ | Laura | P0 | ✅ six on `main`; `ssd` to add |
 | F7 | The demo set (the laptop on a board), scanned | Laura, Max | P0 | ⬜ |
 | F8 | Offline play and resync (Neptune North) | Salman, Ahmed | P0 | 🟡 relay and fake phone ✅; phone side partial |
-| F9 | Live camera over WebRTC | Salman, Ahmed, Laura | P1 | 🟡 phone and expert page on `salman-ios`; dashboard panel not started |
+| F9 | Live camera over WebRTC | Salman, Ahmed | P1 | 🟡 phone and expert page on `salman-ios-polish`; that page is the call screen, no dashboard panel |
 | F10 | Cut-outs from the scan | Max | P1 | ⬜ |
 | F11 | Find a part by name, AI labels (Accenture) | Max, Ahmed | P1 | 🟡 relay side on `main`; search box not started; no live call yet |
 | F12 | Hardware check with the UNO Q (RS) | Ahmed | P1 | 🟡 code on `main`, reworked for the SSD; access test in progress |
 | F14 | Gemini laptop assistant and ElevenLabs voice (MLH), optional | Salman | P1 | 🟡 on `salman-ios` |
 | F13 | The user's position shown in the scan | Max | P1 | ⬜ |
+| F15 | The dashboard's relay connection and calibration maths | Ahmed | P0 | ⬜ once Max agrees |
 
 **The rule across all of them:** the guide (F1–F8) must never depend on video, the AI labels or the hardware.
 
@@ -255,8 +272,9 @@ The diagram, components, alignment maths and draft protocol are in `docs/remote-
 ## 10. Team, timeline, cut order
 - **Who owns what:** `progress.md` → Who owns what.
 - **Timeline:** NOW → Clock.
-- **Cut order (first to go → last):** proposed by Ahmed's agent, **not decided**: hardware check (F12), cut-outs (F10),
-  AI labels (F11), the user's position (F13), live video (F9).
+- **Build order after the guide lines up (decided by Ahmed, 2026-11-15 01:45; last is first to go):** the user's position
+  (F13), the call page (F9), the rig (F12), AI labels (F11), 3D dragging, cut-outs (F10). The earlier proposal
+  (never decided) cut F12 first.
 - **Never cut:** proposed, **not decided**: F1–F8, a guide that lines up, plays, and survives the link going down.
 
 ## 11. Risks and judge questions
@@ -298,6 +316,25 @@ The diagram, components, alignment maths and draft protocol are in `docs/remote-
 
 ## Decision log
 *Full records, newest first. NOW → Decisions in force holds the one-line versions.*
+
+## 2026-11-15 01:45 — The plan to the deadline
+- Context: a read of every branch found the phone nearly complete (`salman-ios-polish`, not on `main`) and the
+  dashboard still a splat viewer: no relay connection (nobody owned it), no calibration, picking, object drawing or
+  guide screen. The 02:00 walking skeleton couldn't happen.
+- Chose (Ahmed): a ladder so one rung always works. Rung 0 the real phone plays a prepared, ruler-measured guide;
+  rung 1 the dashboard connects and sends it; rung 2 a guide built in the scan lines up; rung 3 the extras, in the
+  order user's position, call page, rig, AI labels, 3D dragging, cut-outs.
+- Chose (Ahmed): **a tap receipt.** The phone dropped a tap when the socket write succeeded, so a silently dead
+  hotspot could lose one. The relay echoes each accepted or repeated `step.done` to its sender. No new shape.
+  Rejected: leaving it, and not claiming "no tap is lost".
+- Chose (Ahmed): **two scans** sharing the marker, one calibration per scan in the relay, a manual Closed / Open
+  switch. Rejected: one scan cover off; one scan cover on with typed SSD positions; deciding later.
+- Chose (Ahmed): Salman's call page instead of a React video panel; cut-outs and 3D dragging stay, after rung 2
+  (Ahmed's agent had recommended parking both); Ahmed's agent builds `dashboard/src/relay/` and
+  `dashboard/src/scene/calibration.ts` once Max agrees; Max becomes a docs owner because Ahmed's laptop, his only
+  machine, is the demo prop; the Clock is left alone with 02:00 marked missed.
+- Not decided: no placing before calibration (recommended; Max + Ahmed); Salman's `chat` message; how the pitch
+  answers "no central hub"; scaling by ARKit's size estimate on the phone (Salman, after measuring).
 
 ## 2026-11-14 23:30 — Call direction, Salman's extras, deadlines, the laptop scan
 - Chose (Ahmed): the expert calls the phone, matching Salman's working build, which reverses "the phone offers" from
