@@ -67,7 +67,19 @@ splats until that's settled. Training splats in the app (the scan is taken in Sc
 positions yet (the only scan has no marker; the prepared guide has placeholders). Decided by Ahmed: rescan and place
 in the scan, with a ruler photo as the fallback; bigger animations; the demo is "expert builds, user follows".
 1. ⬜ P0 **Bigger animations on the phone** (Ahmed allows this one change after the freeze; no message change):
-   pull / push travel 4 cm over 1.0 s (now 2 cm); unscrew does two full turns and rises 15 mm over 1.6 s, then restarts (now a half turn, 3 mm). `Shapes.animate` in `ios/RemoteAssist/AR/Shapes.swift`. Max matches the dashboard preview.
+   see the spec below (corrected 2026-11-15 07:38 after reading the code on `main`).
+   **What's actually there, and why it looks flat:** `unscrew` only spins the screw in place (`Shapes.spin`, quarter
+   turns, no rise), and a round 1.6 cm screw spinning on its own axis looks still. `pull` / `push` slide 2 cm and
+   come back (`autoReverse`), so they read as a wobble with no direction. The box is 1.2 mm lines with an 18% fill;
+   the label is 12 mm text; every object in a step moves in step with the others. The dashboard preview is different
+   again (3 cm slide, two turns rising 5 mm, `scene/preview.ts`).
+   **Spec, same on both sides, no message change:**
+   - `unscrew`: two turns anticlockwise while rising 15 mm along the axis over 1.6 s, hold 0.4 s, restart from the
+     hole (repeat, not reverse).
+   - `pull` / `push`: 4 cm one way over 1.0 s, hold 0.4 s, restart (repeat, not reverse), so the direction is clear.
+   - Each object's loop starts 0.15 s after the one before it, so 8 screws ripple instead of moving as one.
+   - Phone only: a pulsing ring on the surface under each object (`Shapes.pulse` already does this for pins), box
+     lines 2.5 mm, label 18 mm. Optional: the ghost screwdriver (`Shapes.ghostTool`) over the current screw. `Shapes.animate` in `ios/RemoteAssist/AR/Shapes.swift`. Max matches the dashboard preview.
 2. ⬜ P0 **PR #12**: run its phone check (45 s camera, Done → receipt) and merge it.
 3. ⬜ P0 **Be at the table for the first real run** once Max's guide is built in the scan: the expert's guide, not
    the laptop guide, is the demo's spine. Post which printed edges red +X and blue +Z point to.
