@@ -9,7 +9,6 @@ struct ContentView: View {
   @State private var voice = VoiceGuide()
   @State private var showingConnection = false
   @State private var showingAssistant = false
-  @State private var showingChat = false
   @State private var aiBusy = false
   @State private var pinMessage: String?
   @State private var verified: [String: StepVerified] = [:]
@@ -156,9 +155,6 @@ struct ContentView: View {
       )
       .presentationDetents([.medium, .large])
     }
-    .sheet(isPresented: $showingChat) {
-      ChatSheet(relay: relay).presentationDetents([.medium, .large])
-    }
     .fullScreenCover(isPresented: .constant(!onboarded)) {
       Onboarding { onboarded = true }
     }
@@ -202,7 +198,6 @@ struct ContentView: View {
   private var topBar: some View {
     HStack(spacing: 10) {
       StatusCapsule(ar: ar, relay: relay, call: call) { showingConnection = true }
-      ChatButton(unread: relay.unreadChat) { showingChat = true }
       if assistant.isAvailable {
         Button { showingAssistant = true } label: {
           Image(systemName: "laptopcomputer").font(.headline).frame(width: 44, height: 44)
@@ -248,10 +243,6 @@ struct ContentView: View {
       updateListening()
     }
     commands.onCommand = { command in run(command) }
-    relay.onChat = { message in
-      // Hands busy: read the expert's message out, unless the chat is open and they can see it.
-      if voiceOn, !showingChat { voice.speak("The expert says: \(message.text)") }
-    }
     relay.connectSaved()
     if onboarded { ar.start() }
   }

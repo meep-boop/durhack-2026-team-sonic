@@ -1,7 +1,7 @@
 import Foundation
 
 /// Small JSON files in Application Support, for state that must survive the app being killed: the offline outbox
-/// (finished steps and chat not yet sent) and the user's place in the guide. Writes are atomic, so a kill mid-write
+/// (finished steps not yet confirmed by the relay) and the user's place in the guide. Writes are atomic, so a kill mid-write
 /// leaves the previous file, never half of one.
 enum Persistence {
   private static let queue = DispatchQueue(label: "persistence", qos: .utility)

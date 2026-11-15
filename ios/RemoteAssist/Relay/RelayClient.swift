@@ -15,26 +15,11 @@ final class RelayClient {
   private(set) var lastError: String?
   private(set) var outboxCount = 0
   private(set) var url: URL?
-  /// The conversation with the expert, oldest first, including messages still waiting to send.
-  private(set) var chat: [ChatMessage] = [] {
-    didSet { Persistence.save(Array(chat.suffix(100)), as: Self.chatFile) }
-  }
-  private(set) var unreadChat = 0
-  /// Ids of messages typed here that haven't reached the relay yet.
-  private(set) var pendingChatIds: Set<String> = []
-  /// Ids of every message typed on this phone. "Mine" is decided by this, never by the `from` a message claims:
-  /// anyone on the relay can send `from: "user"`.
-  private(set) var sentChatIds: Set<String> = [] {
-    didSet { Persistence.save(sentChatIds, as: Self.chatSentFile) }
-  }
-  /// The relay refused a chat message: it's an older relay without the (proposed) chat message.
-  private(set) var chatUnsupported = false
 
   @ObservationIgnored var onGuide: ((Guide) -> Void)?
   @ObservationIgnored var onStepSet: ((StepSet) -> Void)?
   @ObservationIgnored var onSignal: ((RtcSignal) -> Void)?
   @ObservationIgnored var onStepVerified: ((StepVerified) -> Void)?
-  @ObservationIgnored var onChat: ((ChatMessage) -> Void)?
 
   @ObservationIgnored private let session = URLSession(configuration: .default)
   @ObservationIgnored private var task: URLSessionWebSocketTask?
@@ -49,24 +34,13 @@ final class RelayClient {
     }
   }
   @ObservationIgnored private var flushing = false
-  /// Chat typed offline waits here, like finished steps, and survives an app kill.
-  @ObservationIgnored private var chatOutbox: [ChatMessage] = [] {
-    didSet {
-      pendingChatIds = Set(chatOutbox.map(\.id))
-      Persistence.save(chatOutbox, as: Self.chatOutboxFile)
-    }
-  }
-  @ObservationIgnored private var flushingChat = false
   @ObservationIgnored private var pingTimer: Timer?
   /// False after the user taps Disconnect, so coming back from the background doesn't reconnect behind their back.
   @ObservationIgnored private var wantsConnection = false
 
   private static let urlKey = "relayURL"
   private static let outboxFile = "outbox"
-  private static let chatFile = "chat"
-  private static let chatOutboxFile = "chat-outbox"
-  private static let chatSentFile = "chat-sent"
-  private static let chatLimit = 100
+
   private let encoder = JSONEncoder()
   private let decoder = JSONDecoder()
 
@@ -75,16 +49,11 @@ final class RelayClient {
       self.url = url
     }
     outbox = Persistence.load([StepDone].self, from: Self.outboxFile) ?? []
-    chat = Persistence.load([ChatMessage].self, from: Self.chatFile) ?? []
-    chatOutbox = Persistence.load([ChatMessage].self, from: Self.chatOutboxFile) ?? []
-    sentChatIds = Persistence.load(Set<String>.self, from: Self.chatSentFile) ?? []
   }
 
   // MARK: Connection
 
   func connect(to url: URL) {
-    // A different relay is a different session: its expert mustn't see (or receive) chat meant for the last one.
-    if let old = self.url, old != url { clearChat() }
     UserDefaults.standard.set(url.absoluteString, forKey: Self.urlKey)
     self.url = url
     attempt = 0
@@ -171,7 +140,6 @@ final class RelayClient {
     attempt = 0
     lastError = nil
     flush()
-    flushChat()
   }
 
   private func dropped(_ error: Error) {
@@ -181,7 +149,6 @@ final class RelayClient {
     pingTimer?.invalidate()
     expertOnline = false
     flushing = false
-    flushingChat = false
     lastError = error.localizedDescription
     state = .connecting
 
@@ -213,9 +180,6 @@ final class RelayClient {
     case .rtcSignal(let m): onSignal?(m.signal)
     case .stepVerified(let m): onStepVerified?(m)
     case .presence(let m): expertOnline = m.clients.contains { $0.role == .expert }
-    case .chat(let m): receiveChat(m)
-    case .error(let m) where m.about == "chat":
-      chatUnsupported = true
     case .error(let m): lastError = "Relay refused \(m.about ?? "a message"): \(m.message)"
     default: break
     }
@@ -232,70 +196,6 @@ final class RelayClient {
     )
     outbox.append(done)
     flush()
-  }
-
-  // MARK: Chat
-
-  func sendChat(_ text: String) {
-    let trimmed = text.trimmingCharacters(in: .whitespacesAndNewlines)
-    guard !trimmed.isEmpty else { return }
-    let message = ChatMessage(id: UUID().uuidString.lowercased(), from: .user, text: String(trimmed.prefix(500)), at: Int64(Date().timeIntervalSince1970 * 1000))
-    sentChatIds.insert(message.id)
-    if sentChatIds.count > Self.chatLimit * 2 {
-      sentChatIds = Set(chat.suffix(Self.chatLimit).map(\.id)).intersection(sentChatIds).union([message.id])
-    }
-    appendChat(message)
-    chatOutbox.append(message)
-    flushChat()
-  }
-
-  func isMine(_ message: ChatMessage) -> Bool {
-    sentChatIds.contains(message.id)
-  }
-
-  private func clearChat() {
-    chat = []
-    chatOutbox = []
-    sentChatIds = []
-    unreadChat = 0
-  }
-
-  /// Arrival order, not the sender's clock (which anyone can set), and a bounded history.
-  private func appendChat(_ message: ChatMessage) {
-    chat.append(message)
-    if chat.count > Self.chatLimit { chat.removeFirst(chat.count - Self.chatLimit) }
-  }
-
-  func markChatRead() {
-    unreadChat = 0
-  }
-
-  private func receiveChat(_ message: ChatMessage) {
-    // The relay replays recent chat on every connect, and may echo ours back: ids make that harmless.
-    // Ours already shows from when it was typed; an "echo" carrying our id adds nothing and might carry edited text.
-    guard !chat.contains(where: { $0.id == message.id }), !sentChatIds.contains(message.id) else { return }
-    var message = message
-    message.text = String(message.text.prefix(500))
-    appendChat(message)
-    guard !isMine(message) else { return }
-    unreadChat += 1
-    onChat?(message)
-  }
-
-  private func flushChat() {
-    guard state == .connected, !flushingChat, let socket = task, let next = chatOutbox.first else { return }
-    flushingChat = true
-    let gen = generation
-    send(.chat(next), on: socket) { [weak self] error in
-      DispatchQueue.main.async {
-        guard let self, gen == self.generation else { return }
-        self.flushingChat = false
-        if error == nil, self.chatOutbox.first?.id == next.id {
-          self.chatOutbox.removeFirst()
-          self.flushChat()
-        }
-      }
-    }
   }
 
   /// Live only: a stale pose is useless, so poses are dropped rather than queued while offline.

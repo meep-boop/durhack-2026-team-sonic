@@ -43,9 +43,6 @@
   #qr img { width: 180px; height: 180px; image-rendering: pixelated; }
   .hint { color: var(--muted); font-size: 13px; margin: 8px 0 0; }
   meter { width: 100%; height: 10px; margin-top: 10px; }
-  #chat { list-style: none; margin: 0; padding: 0; max-height: 200px; overflow: auto; display: flex; flex-direction: column; gap: 6px; }
-  #chat li { padding: 7px 11px; border-radius: 14px; max-width: 85%; font-size: 14px; background: #262c3a; align-self: flex-start; }
-  #chat li.mine { background: var(--accent); align-self: flex-end; }
   #log { list-style: none; margin: 0; padding: 0; font-size: 13px; max-height: 220px; overflow: auto; }
   #log li { padding: 6px 0; border-bottom: 1px solid var(--line); color: var(--muted); }
   #log li b { color: var(--text); font-weight: 600; }
@@ -93,13 +90,6 @@
       <div class="row"><button id="clearPins" class="secondary" disabled>Clear pins</button></div>
       <p class="hint">Click the live video: a pin appears on that spot on the real laptop, in the phone's AR view.</p>
       <meter id="level" min="0" max="1" value="0" title="Phone audio level"></meter>
-    </div>
-
-    <div class="card">
-      <h2>Chat with the phone</h2>
-      <ul id="chat"></ul>
-      <div class="row"><input id="chatText" placeholder="Type a message" maxlength="500"><button id="chatSend" style="flex:0 0 auto">Send</button></div>
-      <p class="hint" id="chatNote">Works with or without a call.</p>
     </div>
 
     <div class="card">
@@ -180,11 +170,7 @@ function handle(message) {
       break;
     case "step.verified": log(`Rig on ${message.stepId}: ${message.ok ? "✓ correct" : "✗ " + (message.detail || "wrong")}`); break;
     case "rtc.signal": onSignal(message.signal); break;
-    case "chat": showChat(message); break;
-    case "error":
-      if (message.about === "chat") $("chatNote").textContent = "This relay doesn't carry chat yet (the chat message is proposed, not merged).";
-      else log(`Relay refused ${message.about || "a message"}: ${message.message}`);
-      break;
+    case "error": log(`Relay refused ${message.about || "a message"}: ${message.message}`); break;
   }
 }
 
@@ -241,29 +227,6 @@ $("callBtn").onclick = async () => {
   $("callBtn").disabled = true; $("endBtn").disabled = false; $("muteBtn").disabled = false;
   log("Calling the phone");
 };
-
-// Chat (proposed contract message): the relay keeps recent messages and replays them on connect, so ids dedupe.
-const seenChat = new Set();
-function showChat(message) {
-  if (seenChat.has(message.id)) return;
-  seenChat.add(message.id);
-  const li = document.createElement("li");
-  li.textContent = message.text;
-  if (message.from === "expert") li.className = "mine";
-  $("chat").append(li);
-  $("chat").scrollTop = $("chat").scrollHeight;
-  if (message.from !== "expert") log(`Phone: ${message.text}`);
-}
-function sendChat() {
-  const text = $("chatText").value.trim();
-  if (!text) return;
-  const message = { type: "chat", id: (crypto.randomUUID?.() ?? Math.random().toString(36).slice(2) + Date.now().toString(36)), from: "expert", text, at: Date.now() };
-  send(message);
-  showChat(message);
-  $("chatText").value = "";
-}
-$("chatSend").onclick = sendChat;
-$("chatText").addEventListener("keydown", (e) => { if (e.key === "Enter") sendChat(); });
 
 function sendControl(message) { if (control?.readyState === "open") control.send(JSON.stringify(message)); }
 
