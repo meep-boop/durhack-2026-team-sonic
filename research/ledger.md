@@ -1251,7 +1251,7 @@ the centimetre. It can make clean, textured props (the SSD, the screwdriver) for
 splat cut-outs. Budget about 2 h of unattended setup, then minutes per object; nothing measured on our Spark. Label
 it "AI-generated from a photo" wherever it shows, and scale it from the part's real size.
 
-**Superseded in part (04:45): Hunyuan3D 2.1's licence "does not apply in the European Union, United Kingdom and
+**Superseded in part (04:30): Hunyuan3D 2.1's licence "does not apply in the European Union, United Kingdom and
 South Korea", and DurHack is in Durham, so we can't use it. Model choice: § 19.**
 
 ## Source ledger
