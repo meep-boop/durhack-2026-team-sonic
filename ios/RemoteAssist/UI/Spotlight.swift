@@ -162,11 +162,10 @@ struct SpotlightOverlay: View {
         let radius = min(rect.width, rect.height) / 3
         var dim = Path(CGRect(origin: .zero, size: size))
         dim.addRoundedRect(in: rect, cornerSize: CGSize(width: radius, height: radius))
-        context.fill(dim, with: .color(.black.opacity(0.5)), style: FillStyle(eoFill: true))
+        // A gentle dim and one white hairline: the mark itself does the pointing, the beam only quiets the rest.
+        context.fill(dim, with: .color(.black.opacity(0.35)), style: FillStyle(eoFill: true))
         let edge = Path(roundedRect: rect, cornerRadius: radius)
-        context.stroke(edge, with: .color(Theme.accent.opacity(0.18)), lineWidth: 14)
-        context.stroke(edge, with: .color(Theme.accent.opacity(0.35)), lineWidth: 6)
-        context.stroke(edge, with: .color(Theme.accent), lineWidth: 2)
+        context.stroke(edge, with: .color(.white.opacity(0.6)), lineWidth: 1.5)
       }
       // Taps inside the beam reach the AR view (to tick pins); a tap on the dimmed area turns the spotlight off.
       .contentShape(DimmedArea(hole: rect), eoFill: true)
@@ -189,7 +188,7 @@ struct SpotlightOverlay: View {
   private func edgeGlow(_ direction: CGVector, label: String, size: CGSize) -> some View {
     let point = Self.edgePoint(direction, in: size)
     return ZStack {
-      RadialGradient(colors: [Theme.accent.opacity(0.75), .clear], center: .center, startRadius: 0, endRadius: 170)
+      RadialGradient(colors: [.white.opacity(0.35), .clear], center: .center, startRadius: 0, endRadius: 170)
         .frame(width: 340, height: 340)
         .position(point)
       // Words and a big arrow, not just a glow: anyone holding the phone knows which way to move it.
@@ -215,7 +214,8 @@ struct SpotlightOverlay: View {
   /// Always inside the screen's width.
   static func labelPoint(for rect: CGRect, in size: CGSize) -> CGPoint {
     let below = rect.maxY + 22
-    let y = below > size.height * 0.6 ? max(rect.minY - 22, 90) : below
+    // Never above 140 pt from the top, where the call bar is.
+    let y = below > size.height * 0.6 ? max(rect.minY - 22, 140) : below
     return CGPoint(x: min(max(rect.midX, 90), size.width - 90), y: y)
   }
 

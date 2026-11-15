@@ -395,7 +395,7 @@ struct ContentView: View {
     }
     call.sendSignal = { [relay] signal in relay.sendSignal(signal) }
     call.onExpertTap = { tap in
-      guard ar.placeExpertPin(at: CGPoint(x: tap.x, y: tap.y), label: tap.label, secondsAgo: tap.secondsAgo) else { return false }
+      guard ar.placeExpertPin(at: CGPoint(x: tap.x, y: tap.y), label: tap.label, secondsAgo: tap.secondsAgo, turn: tap.turn) else { return false }
       spotlight.enabled = true
       pinTicks += 1
       flashPinMessage("The expert marked: \(tap.label)")

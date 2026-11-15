@@ -105,6 +105,8 @@
     <div class="toolbar" role="toolbar" aria-label="Guide them">
       <div class="tools">
         <button id="toolPoint" class="on" title="Click the video to drop a pin">Point</button>
+        <button id="toolUnscrew" title="Click a screw: the phone shows it turning anticlockwise">Unscrew ↺</button>
+        <button id="toolScrewIn" title="Click a hole: the phone shows a screw turning clockwise">Screw in ↻</button>
         <button id="toolArea" title="Drag a box around what they should look at">Area</button>
       </div>
       <span class="sep"></span>
@@ -157,7 +159,7 @@
 // offers, the phone rings and answers. Relay messages follow contracts/protocol.ts (hello, rtc.signal, presence,
 // step.done, pose). Pointing and the transcript ride the call's own "control" data channel, peer to peer, so they
 // need no relay or contract change. Its messages (x, y are 0..1 of the upright video; latency in seconds):
-//   page → phone: {kind:"ping", t} · {kind:"tap", id, x, y, label, latency}
+//   page → phone: {kind:"ping", t} · {kind:"tap", id, x, y, label, latency, action?:"unscrew"|"screw-in"}
 //                 {kind:"area", id, x0, y0, x1, y1, label, latency} · {kind:"clear"}
 //                 {kind:"caption"|"transcript", id?, speaker:"expert"|"user", text} · {kind:"stt-token-request", which}
 //   phone → page: {kind:"pong", t} · {kind:"pinned", id, ok} (for a tap or an area)
@@ -477,36 +479,46 @@ function inPicture(e) {
   return { x, y, inside: x >= 0 && x <= 1 && y >= 0 && y <= 1, px: e.clientX - stage.left, py: e.clientY - stage.top };
 }
 const callReady = () => pc && control?.readyState === "open";
-const label = () => $("tapLabel").value.trim() || "here";
+// The turning tools send a plain tap plus an action, so the phone animates it; their mark is named after the action
+// unless the technician typed a label.
+const TURNS = { unscrew: { action: "unscrew", name: "Unscrew", glyph: "↺" }, screwIn: { action: "screw-in", name: "Screw in", glyph: "↻" } };
+const label = () => $("tapLabel").value.trim() || (TURNS[tool] ? TURNS[tool].name : "here");
 const newId = () => Math.random().toString(36).slice(2, 10);
 
+const TOOL_HINTS = {
+  point: "Click the video: a pin appears on that spot on the phone.",
+  unscrew: "Click a screw: the phone shows it turning anticlockwise, to undo it.",
+  screwIn: "Click a hole: the phone shows a screw turning clockwise, to tighten it.",
+  area: "Drag a box around what they should look at: it's framed on the phone.",
+};
 function setTool(name) {
   tool = name;
-  $("toolPoint").classList.toggle("on", name === "point");
-  $("toolArea").classList.toggle("on", name === "area");
+  for (const [id, key] of [["toolPoint", "point"], ["toolUnscrew", "unscrew"], ["toolScrewIn", "screwIn"], ["toolArea", "area"]]) {
+    $(id).classList.toggle("on", name === key);
+  }
   document.querySelector(".stage").classList.toggle("area", name === "area");
-  $("toolHint").textContent = name === "point"
-    ? "Click the video: a pin appears on that spot on the phone."
-    : "Drag a box around what they should look at: it lights up on the phone.";
+  $("toolHint").textContent = TOOL_HINTS[name];
 }
 $("toolPoint").onclick = () => setTool("point");
+$("toolUnscrew").onclick = () => setTool("unscrew");
+$("toolScrewIn").onclick = () => setTool("screwIn");
 $("toolArea").onclick = () => setTool("area");
 
 $("remote").addEventListener("click", async (e) => {
-  if (tool !== "point" || !callReady()) return;
+  if (tool === "area" || !callReady()) return;
   const at = inPicture(e);
   if (!at?.inside) return;
-  const id = newId(), text = label();
-  sendControl({ kind: "tap", id, x: at.x, y: at.y, label: text, latency: await frameAgeSeconds() });
+  const id = newId(), text = label(), turn = TURNS[tool];
+  sendControl({ kind: "tap", id, x: at.x, y: at.y, label: text, latency: await frameAgeSeconds(), ...(turn ? { action: turn.action } : {}) });
   const dot = document.createElement("div");
   dot.className = "tapdot";
   dot.id = "mark-" + id;
   dot.style.left = at.px + "px";
   dot.style.top = at.py + "px";
-  dot.append(Object.assign(document.createElement("span"), { textContent: text }));
+  dot.append(Object.assign(document.createElement("span"), { textContent: turn ? `${turn.glyph} ${text}` : text }));
   $("remote").parentElement.append(dot);
   setTimeout(() => dot.remove(), 6000);
-  log(`Pointed at “${text}”`);
+  log(turn ? `Showed “${text}” ${turn.glyph}` : `Pointed at “${text}”`);
 });
 
 // Area: press, drag, release. The latency is taken at the press, when the technician saw what they're boxing.

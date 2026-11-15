@@ -6,6 +6,8 @@ import SwiftUI
 struct CaptionStrip: View {
   let call: CallManager
   @State private var expiredLineId: String?
+  /// The "transcript off" notice shows for 5 s, then gets out of the way (it stays in the transcript sheet).
+  @State private var expiredProblem: String?
 
   private var lastExpertLine: TranscriptLine? { call.transcript.last { $0.speaker == .expert } }
 
@@ -32,7 +34,7 @@ struct CaptionStrip: View {
         .transition(.opacity)
         .accessibilityElement(children: .combine)
         .accessibilityLabel("Expert: \(line.text)")
-      } else if let problem = call.transcriptProblem {
+      } else if let problem = call.transcriptProblem, problem != expiredProblem {
         Label(problem, systemImage: "captions.bubble")
           .font(.caption)
           .foregroundStyle(.secondary)
@@ -42,6 +44,11 @@ struct CaptionStrip: View {
       }
     }
     .animation(.easeInOut(duration: 0.2), value: line?.id)
+    .task(id: call.transcriptProblem) {
+      guard let problem = call.transcriptProblem else { return }
+      try? await Task.sleep(for: .seconds(5))
+      if !Task.isCancelled { expiredProblem = problem }
+    }
     .task(id: lastExpertLine?.id) {
       guard let id = lastExpertLine?.id else { return }
       try? await Task.sleep(for: .seconds(5))
