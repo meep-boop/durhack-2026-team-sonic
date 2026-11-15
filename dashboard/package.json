@@ -1,0 +1,30 @@
+{
+  "name": "remote-assist-dashboard",
+  "private": true,
+  "type": "module",
+  "engines": {
+    "node": ">=24"
+  },
+  "scripts": {
+    "dev": "vite",
+    "build": "vite build",
+    "preview": "vite preview",
+    "test": "node --test",
+    "typecheck": "tsc -p tsconfig.json"
+  },
+  "dependencies": {
+    "@sparkjsdev/spark": "~2.4.0",
+    "react": "~19.3.1",
+    "react-dom": "~19.3.1",
+    "three": "~0.187.0"
+  },
+  "devDependencies": {
+    "@types/node": "~24.19.2",
+    "@types/react": "~19.3.0",
+    "@types/react-dom": "~19.3.0",
+    "@types/three": "~0.187.0",
+    "@vitejs/plugin-react": "~6.3.0",
+    "typescript": "~7.0.2",
+    "vite": "~8.3.8"
+  }
+}
