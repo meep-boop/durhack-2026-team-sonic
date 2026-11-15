@@ -141,7 +141,7 @@ rung 2 a guide built in the scan lines up on the phone; rung 3 the extras. Decis
 - 2026-11-14 21:31 · 🟡 Marker printed on matte paper, measured 180 × 180 mm, image + print sheet in `assets/marker/` on main. Closes when @salman confirms Xcode accepts it.
 
 ## 5. Waiting on / owed to others
-- 📥 **Waiting on @max:** answers to your four scene-API asks (ask 1 blocks the guide builder); PR #6 merged.
+- 📥 **Waiting on @max:** nothing blocking (asks 1 and 3 answered, PR #6 merged 2026-11-15). Still open: 3D dragging (`onObjectMoved`), and the laptop scan so the panel can be tried on a calibrated scan.
 - 📥 **Waiting on @ahmed:** nothing right now. The contract, relay and fake phone are on `main`
   (`node fixtures/fake-phone.ts ws://<relay>:8080`), and the deadlines are in `PROJECT.md` → Clock.
 - 📤 **Owed to @salman and @max:** the marker image and width are on main (task 1, 180 mm); the six models are on main too (`assets/models/`).
