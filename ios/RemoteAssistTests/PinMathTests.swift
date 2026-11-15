@@ -96,4 +96,15 @@ final class PinMathTests: XCTestCase {
     let near = SIMD3<Float>(0.2, 0, -0.1)
     XCTAssertEqual(PinMath.pulledIn(near, toward: centre, limit: 0.45), near)
   }
+
+  func testABoxSitsOnItsFootprintAtTheDrawnSize() {
+    // A laptop-sized footprint on a flat table, drawn clockwise from the top-left.
+    let corners: [SIMD3<Float>] = [[0, 0, 0], [0.36, 0, 0], [0.36, 0, 0.23], [0, 0, 0.23]]
+    let frame = Shapes.boxFrame(corners: corners, normal: [0, 1, 0], height: 0.02)
+    XCTAssertEqual(frame.size.x, 0.36, accuracy: 1e-5)
+    XCTAssertEqual(frame.size.z, 0.23, accuracy: 1e-5)
+    XCTAssertEqual(frame.transform.columns.3.y, 0.01, accuracy: 1e-5, "lifted half its height")
+    XCTAssertEqual(frame.transform.columns.3.x, 0.18, accuracy: 1e-5)
+    XCTAssertEqual(simd_determinant(frame.transform), 1, accuracy: 1e-4, "never mirrored")
+  }
 }

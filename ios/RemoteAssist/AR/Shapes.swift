@@ -142,6 +142,37 @@ enum Shapes {
     return Array(repeating: (angle: Float.pi / 2, rise: rise / Float(count), duration: duration / Double(count)), count: count)
   }
 
+  /// A see-through white block with white edges, centred on its origin: the expert's 3D box.
+  static func solidBox(size: SIMD3<Float>) -> Entity {
+    let root = Entity()
+    root.addChild(ModelEntity(mesh: .generateBox(size: size), materials: [UnlitMaterial(color: UIColor.white.withAlphaComponent(0.22))]))
+    let h = size / 2
+    let corners: [SIMD3<Float>] = [
+      [-h.x, -h.y, -h.z], [h.x, -h.y, -h.z], [h.x, -h.y, h.z], [-h.x, -h.y, h.z],
+      [-h.x, h.y, -h.z], [h.x, h.y, -h.z], [h.x, h.y, h.z], [-h.x, h.y, h.z],
+    ]
+    for (a, b) in [(0, 1), (1, 2), (2, 3), (3, 0), (4, 5), (5, 6), (6, 7), (7, 4), (0, 4), (1, 5), (2, 6), (3, 7)] {
+      root.addChild(bar(from: corners[a], to: corners[b], thickness: 0.0025, color: .white))
+    }
+    return root
+  }
+
+  /// Where a block on a drawn footprint goes: centred over the four corners and lifted half its height, +X along the
+  /// first edge, +Y out of the surface, never mirrored; and its size (first edge, height, second edge).
+  static func boxFrame(corners: [SIMD3<Float>], normal: SIMD3<Float>, height: Float) -> (transform: simd_float4x4, size: SIMD3<Float>) {
+    let up = simd_normalize(normal)
+    var edge = corners[1] - corners[0]
+    edge -= simd_dot(edge, up) * up
+    let width = max(simd_length(edge), 0.01)
+    let x = edge / width
+    let z = simd_normalize(simd_cross(x, up))
+    var side = corners[3] - corners[0]
+    side -= simd_dot(side, up) * up
+    let depth = max(abs(simd_dot(side, z)), 0.01)
+    let centre = corners.reduce(.zero, +) / 4 + up * (height / 2)
+    return (simd_float4x4(SIMD4(x, 0), SIMD4(up, 0), SIMD4(z, 0), SIMD4(centre, 1)), SIMD3(width, height, depth))
+  }
+
   /// A thin white ring under a guide part, gently pulsing, so each part reads as "this one" from across the table.
   static func partRing(radius: Float) -> Entity {
     guard let mesh = annulus(inner: max(radius - 0.0015, 0.001), outer: radius) else { return Entity() }
