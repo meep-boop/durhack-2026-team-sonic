@@ -547,7 +547,7 @@ each builder's brief (`builder-file-<name>.md`, on the `context` branch).
   process); I'll clear it before the demo.
 - ⚠️ Conflicts: @laura — `api.ts` gained two calls, and `App.tsx` is where her panel mounts | @salman — the dashboard
   assumes +X along the marker's top edge and +Z down the print until his axis check
-- Conflict status: open
+- Conflict status: open (Laura's part resolved by @laura's 02:22 mount; Salman's axis check still open)
 
 ### 2026-11-15 02:22 — the guide panel is on main — @laura
 - Shipped: `dashboard/src/guide/GuidePanel.tsx` in Max's shell (`App.tsx`, where his placeholder was). Title; steps
@@ -566,4 +566,23 @@ each builder's brief (`builder-file-<name>.md`, on the `context` branch).
 - Not yet: 3D dragging (`onObjectMoved` is wired but the scene doesn't fire it yet), a custom `axis` other than the
   model's +Y.
 - ⚠️ Conflicts: @max — one line in `App.tsx` swaps your placeholder for `<GuidePanel scene relay />`
+- Conflict status: resolved by @max 2026-11-15 (agreed; that's the slot it was left for)
+
+### 2026-11-15 02:45 — the dashboard loads mesh scans too; first real scan of the open laptop — @max
+- Shipped: the dashboard takes a Scaniverse textured mesh (`.usdz`, `.glb`) as well as a splat, through three's own
+  `USDLoader` and `GLTFLoader` (no new package), drawn unlit because the scan's lighting is in its texture. Pick dots
+  are now a fixed size on screen. `splatSource.ts` is now `scanSource.ts`, `loadSplat` is `loadScan`. Commit
+  `009153c`; dashboard 42/42, type-check and build pass.
+- First real scan, cover off, as a mesh: 186,092 triangles, loads in 0.2–0.4 s at 60 fps, and the fan, RAM, the M.2
+  slot by the fan and the battery are all sharp. **But the marker isn't in it**, so it can't be calibrated and can't
+  be used. Rescanning both (closed and open) with the marker in view.
+- Port 8080 on the dashboard laptop was held by an unrelated background task of mine; stopped, and the relay now
+  starts on 8080. It may come back after a reboot: check before the demo.
+- Touched: `dashboard/src/scene/` (mine)
+- Decision (Max): the dashboard supports both splat and mesh scans; we keep whichever scan of the set comes out
+  better. Picks on a mesh hit the exact surface, which helps the corner clicks.
+- 📨 To @laura: if the demo ends up on a mesh scan, the README and pitch can't say "Gaussian splat" for it. I'll say
+  which one we use once both rescans are in.
+- 📨 To @ahmed: item A: the relay runs on this laptop on 8080 (tested with the dashboard).
+- ⚠️ Conflicts: @laura — pitch wording depends on which scan kind we demo
 - Conflict status: open
