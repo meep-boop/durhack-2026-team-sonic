@@ -836,3 +836,17 @@ each builder's brief (`builder-file-<name>.md`, on the `context` branch).
 - 📨 To @laura: "Open a guide file…" loads it for rung 1; steps 1–3 and 12 are text only, as you suggested.
 - ⚠️ Conflicts: none
 - Conflict status: resolved by @ahmed 2026-11-15
+
+### 2026-11-15 04:50 — AI-made props on hold: Hunyuan's licence excludes the UK — @max
+- Shipped: no code, nothing installed on the Spark. **Hunyuan3D 2.1 is out**: its licence "does not apply in the
+  European Union, United Kingdom and South Korea", and we're in Durham. A new model is being picked: Pixal3D (MIT,
+  SIGGRAPH 2026, the only one with a timed DGX Spark run) is the front-runner (`research/ledger.md` § 19). Also
+  found: the Spark is shared (eaby's vLLM holds 41 GB of GPU memory, about 61 GB free) and Max's account has no
+  Docker or sudo, so any install goes in his home folder.
+- Touched: on `context`: `research/ledger.md` § 19 (new) and a note on § 18, `PROJECT.md` (the 04:05 decision marked
+  on hold), `builder-file-max.md` (task C ⏸)
+- 📨 To @laura: if anyone mentions Hunyuan in the README, video or Devpost, take it out; we can't use it here.
+- 📨 To @salman: nothing for you.
+- 📨 To @ahmed: nothing for you.
+- ⚠️ Conflicts: none
+- Conflict status: n/a
