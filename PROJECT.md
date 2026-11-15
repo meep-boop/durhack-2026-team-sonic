@@ -48,6 +48,7 @@ Source: `EVENT.md` §1 (one notes file, not yet checked against Devpost). The 02
 
 | Date | Decision |
 |---|---|
+| 2026-11-15 | AI-made props: Hunyuan3D 2.1 runs on the team's DGX Spark (Docker fork), building in the background; one photo of a part (the SSD, the screwdriver) becomes a textured 3D model, scaled by hand to its real size, shown on the dashboard first, the phone only if there's time; labelled "AI-generated from a photo" wherever it shows; dropped if it hasn't built by about 06:30 (Max, 04:05; `research/ledger.md` § 18) |
 | 2026-11-15 | The expert's dashboard becomes a finished product screen before cut-outs: a header with relay / phone / rig lights and a Call button that opens Salman's call page in its own window, a live strip that shows the person's step and the offline moment, plain prompts with the debug text behind a key, one calm dark look on both halves (Laura's panel restyled by Max's agent once she agrees, colours and spacing only); cut-outs follow it (Max, 03:40) |
 | 2026-11-15 | Scans are kept in git (`dashboard/public/scans/`), not per machine, so the team and the judges see the same files; a scan's file name is its calibration id, so never overwrite one (Max, 02:39; reverses the git-ignored folder in Ahmed's 01:45 plan) |
 | 2026-11-15 | The dashboard loads both splat and mesh scans from Scaniverse; we demo whichever scan of the set comes out better, and the pitch names the kind honestly (Max, 02:32) |
@@ -171,7 +172,7 @@ SSD-swap demo (23:03).
 |---|---|
 | Ahmed | The tap receipt and a calibration per scan in the relay; the dashboard's relay connection and calibration maths; the rung-0 guide file; the rig on its hardware |
 | Salman | Merge `salman-ios-polish`; the smoke test on the real phone; post the +X/+Z edges; the tap receipt; measure alignment |
-| Max | The dashboard as a product screen (header and lights, live strip, one look); then cut-outs; the two rescans once Laura's board is ready |
+| Max | The dashboard as a product screen (header and lights, live strip, one look) ✅ 03:55; then cut-outs; AI-made props building on the DGX Spark in the background (§ 18); the two rescans once Laura's board is ready |
 | Laura | The board with corner stops; the real SSD-swap steps; the guide panel; README, video, Devpost |
 
 Asked for by Max (19:40 board entry): "Pick and get the demo objects" is Laura's task 3. "Check we have a Mac with
@@ -322,6 +323,25 @@ The diagram, components, alignment maths and draft protocol are in `docs/remote-
 
 ## Decision log
 *Full records, newest first. NOW → Decisions in force holds the one-line versions.*
+
+## 2026-11-15 04:05 — AI-made props on the DGX Spark
+- Context: the team's DGX Spark was idle. Max asked whether it could turn pictures of a thing into 3D models.
+  There are two jobs. A scan (100s of photos → a measured splat or mesh, § 9, § 12, § 14) takes hours and has no proof
+  it beats Scaniverse. A generative model (one photo → a guessed, textured 3D model, § 18) takes minutes per object
+  but invents the hidden sides and has no real size.
+- Chose (Max): **the generative route, with Hunyuan3D 2.1**, for props only (the M.2 2280 SSD, the #0 screwdriver),
+  never for the set we calibrate against. Hunyuan3D 2.1 is the only such model with a timed run on a Spark (about
+  3 min per textured model, forum users; § 18).
+- How: the `dr-vij/Hunyuan3D-2.1-DGX-Docker` fork, built over SSH by Max's agent while Max works on the dashboard. The
+  build compiles Python and Blender's `bpy` from source, so it's mostly waiting. Each prop is scaled by hand to the
+  part's real size (SSD 22 × 80 mm) and shown on the dashboard first; the phone needs USDZ (§ 15) and Salman's time,
+  so it comes only if there's time.
+- Honesty: a prop says "AI-generated from a photo" wherever it shows. "Made on our DGX Spark" only if it was.
+- Rejected: rescanning the set on the Spark (hours, unproven against Scaniverse, needs a rescan); TRELLIS.2 (no
+  timed Spark run, and its setup compiles FlashAttention); SAM 3D Objects (no ARM report); not tonight (the Spark
+  stays unused).
+- Revisit if: the build hasn't finished by about 06:30, or the first SSD model looks wrong. Then drop it; nothing
+  else depends on it.
 
 ## 2026-11-15 03:40 — The expert's dashboard as a product screen
 - Context: the dashboard did nearly everything the plan asked, but read as a test screen: debug text in the corner,

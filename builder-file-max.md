@@ -73,6 +73,12 @@ and the walking skeleton is the next one. Anything new for you is in the block a
   catch-up, and the screen reads without the debug text.
   `[⚠ conflicts with @laura: GuidePanel.css restyle, colours and spacing only, once she agrees]`
 - B. ⬜ **Cut-outs** (task 5 below), after A.
+- C. 🟡 (04:05, Max's call; `PROJECT.md` → Decision log) **AI-made props on the DGX Spark.** Hunyuan3D 2.1
+  (`dr-vij/Hunyuan3D-2.1-DGX-Docker`) builds over SSH in the background. Then one clean photo each of the SSD and the
+  #0 screwdriver → textured GLB → scaled to the real size (SSD 22 × 80 mm) → shown on the dashboard, labelled
+  "AI-generated from a photo". Phone (USDZ, § 15) only with Salman, only if there's time. *Done when:* the SSD prop
+  shows on the dashboard at its real size with its label. *Drop it if:* not built by about 06:30. Research:
+  `research/ledger.md` § 18.
 
 **▶ The plan to the deadline (from @ahmed, 2026-11-15 01:45). Do these first, in this order; the older tasks below keep
 their detail.** Why: the phone side is nearly there, but the dashboard is still a viewer with no relay connection,
