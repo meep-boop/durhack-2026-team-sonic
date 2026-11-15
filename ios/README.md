@@ -50,8 +50,18 @@ come back.
 4. Turn Wi-Fi back on. The phone reconnects by itself, the toast says "3 steps synced to the expert", and the expert
    page logs the three `step.done` with the times you tapped them, not the time they arrived.
 
+## Live transcript
+With `ELEVENLABS_API_KEY` set on the phone, a call is transcribed live by ElevenLabs Scribe: captions under the in-call
+bar, the whole call behind the captions button, and in the report. The expert page does the transcribing (it has both
+voices); the phone hands it single-use tokens over the call's data channel, so the key never leaves the phone.
+
+## Check before a demo
+Tap the status capsule, then **System check** at the bottom: **Test** next to Gemini and ElevenLabs shows the exact
+error if a key is missing or a model name is wrong. Without a Gemini key the laptop button explains how to add one.
+
 ## Laptop assistant and voice (optional)
-With `GEMINI_API_KEY` set, the laptop button identifies the laptop from the camera, writes the SSD-swap steps, pins
+With `GEMINI_API_KEY` set, the laptop button identifies the laptop from the camera (on Ahmed's Dell Latitude 5530 it
+uses the team's checked steps from Dell's manual, `research/ledger.md` § 17; on other laptops it writes the steps), pins
 parts ("Show me where") and checks each step ("Check my work"). Everything it says is labelled AI-generated, and it
 refuses to guide when the storage is soldered. With `ELEVENLABS_API_KEY` set, steps are read aloud by ElevenLabs;
 without it (or offline) the built-in iOS voice reads them.

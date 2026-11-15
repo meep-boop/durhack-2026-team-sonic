@@ -17,6 +17,12 @@ final class CallManager: NSObject {
   private(set) var isSpeakerOn = true
   /// Set when the expert sends their webcam, so the phone can show a face bubble.
   private(set) var remoteVideoTrack: RTCVideoTrack?
+  /// The current (or last) call, line by line, transcribed by ElevenLabs on the expert's page.
+  private(set) var transcript: [TranscriptLine] = []
+  /// What's being said right now, before ElevenLabs commits it.
+  private(set) var caption: TranscriptLine?
+  /// Why there's no transcript, when there isn't one.
+  private(set) var transcriptProblem: String?
 
   @ObservationIgnored var sendSignal: ((RtcSignal) -> Void)?
 
@@ -87,6 +93,9 @@ final class CallManager: NSObject {
     guard state == .ringing, let offer = pendingOffer else { return }
     pendingOffer = nil
     expertSendsVideo = Self.offerSendsVideo(offer)
+    transcript = []
+    caption = nil
+    transcriptProblem = nil
     state = .connecting
     audioSession.beginCall(speakerOn: isSpeakerOn)
 
@@ -191,6 +200,7 @@ final class CallManager: NSObject {
     audioTrack = nil
     videoTrack = nil
     remoteVideoTrack = nil
+    caption = nil
     pendingOffer = nil
     pendingCandidates = []
     state = .idle
@@ -231,6 +241,26 @@ extension CallManager: RTCPeerConnectionDelegate {
   func peerConnection(_ peerConnection: RTCPeerConnection, didOpen dataChannel: RTCDataChannel) {
     dataChannel.delegate = self
     onMain { [weak self] in self?.control = dataChannel }
+    startTranscript(on: dataChannel)
+  }
+
+  /// Hands the expert's page two single-use ElevenLabs tokens, one per voice, so it can transcribe the call.
+  private func startTranscript(on channel: RTCDataChannel) {
+    guard TranscriptService.apiKey != nil else {
+      onMain { [weak self] in self?.transcriptProblem = "Transcript off: no ElevenLabs key on the phone" }
+      Self.send(["kind": "stt-off", "reason": "no ElevenLabs key on the phone"], on: channel)
+      return
+    }
+    Task {
+      do {
+        async let expert = TranscriptService.mintToken()
+        async let phone = TranscriptService.mintToken()
+        Self.send(["kind": "stt-tokens", "expert": try await expert, "phone": try await phone], on: channel)
+      } catch {
+        DispatchQueue.main.async { [weak self] in self?.transcriptProblem = "Transcript off: \(error.localizedDescription)" }
+        Self.send(["kind": "stt-off", "reason": error.localizedDescription], on: channel)
+      }
+    }
   }
 
   func peerConnection(_ peerConnection: RTCPeerConnection, didAdd rtpReceiver: RTCRtpReceiver, streams mediaStreams: [RTCMediaStream]) {
@@ -272,6 +302,32 @@ extension CallManager: RTCDataChannelDelegate {
       }
     case "clear":
       onMain { [weak self] in self?.onExpertClear?() }
+    case "stt-token-request":
+      // A transcription session ended (time limit, network): the page asks for a fresh token for that voice.
+      guard let which = message["which"] as? String, which == "expert" || which == "phone" else { return }
+      Task {
+        guard let token = try? await TranscriptService.mintToken() else { return }
+        Self.send(["kind": "stt-token", "which": which, "token": token], on: dataChannel)
+      }
+    case "transcript", "caption":
+      guard let speaker = (message["speaker"] as? String).flatMap(TranscriptLine.Speaker.init(rawValue:)),
+            let text = message["text"] as? String, !text.isEmpty else { return }
+      let line = TranscriptLine(
+        id: message["id"] as? String ?? UUID().uuidString,
+        speaker: speaker,
+        text: String(text.prefix(600)),
+        at: (message["at"] as? Double).map { Date(timeIntervalSince1970: $0 / 1000) } ?? Date()
+      )
+      onMain { [weak self] in
+        guard let self else { return }
+        if kind == "caption" {
+          self.caption = line
+        } else if !self.transcript.contains(where: { $0.id == line.id }) {
+          self.transcript.append(line)
+          if self.transcript.count > 400 { self.transcript.removeFirst() }
+          if self.caption?.speaker == line.speaker { self.caption = nil }
+        }
+      }
     default:
       break
     }

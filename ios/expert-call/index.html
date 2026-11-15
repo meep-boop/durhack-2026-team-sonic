@@ -43,6 +43,11 @@
   #qr img { width: 180px; height: 180px; image-rendering: pixelated; }
   .hint { color: var(--muted); font-size: 13px; margin: 8px 0 0; }
   meter { width: 100%; height: 10px; margin-top: 10px; }
+  #transcript { list-style: none; margin: 0; padding: 0; max-height: 240px; overflow: auto; font-size: 14px; }
+  #transcript li { padding: 5px 0; border-bottom: 1px solid var(--line); }
+  #transcript li b { font-weight: 700; margin-right: 6px; }
+  #transcript li.expert b { color: var(--accent); }
+  #transcript li.partial { color: var(--muted); font-style: italic; }
   #log { list-style: none; margin: 0; padding: 0; font-size: 13px; max-height: 220px; overflow: auto; }
   #log li { padding: 6px 0; border-bottom: 1px solid var(--line); color: var(--muted); }
   #log li b { color: var(--text); font-weight: 600; }
@@ -90,6 +95,12 @@
       <div class="row"><button id="clearPins" class="secondary" disabled>Clear pins</button></div>
       <p class="hint">Click the live video: a pin appears on that spot on the real laptop, in the phone's AR view.</p>
       <meter id="level" min="0" max="1" value="0" title="Phone audio level"></meter>
+    </div>
+
+    <div class="card">
+      <h2>Call transcript</h2>
+      <ul id="transcript"></ul>
+      <p class="hint" id="transcriptNote">Starts when the call connects. Transcribed live by ElevenLabs; the key stays on the phone.</p>
     </div>
 
     <div class="card">
@@ -230,7 +241,113 @@ $("callBtn").onclick = async () => {
 
 function sendControl(message) { if (control?.readyState === "open") control.send(JSON.stringify(message)); }
 
+// ---- Live transcript (ElevenLabs Scribe realtime) ----
+// The phone holds the ElevenLabs key and sends single-use tokens over this channel; this page has both voices (its
+// own mic and the phone's audio), so it runs one transcription session per voice and sends the lines back.
+// API: https://elevenlabs.io/docs/api-reference/speech-to-text/v-1-speech-to-text-realtime
+const PCM_WORKLET = `
+class Pcm16 extends AudioWorkletProcessor {
+  process(inputs) {
+    const channel = inputs[0] && inputs[0][0];
+    if (channel) {
+      const out = new Int16Array(channel.length);
+      for (let i = 0; i < channel.length; i++) out[i] = Math.max(-1, Math.min(1, channel[i])) * 0x7fff;
+      this.port.postMessage(out.buffer, [out.buffer]);
+    }
+    return true;
+  }
+}
+registerProcessor("pcm16", Pcm16);`;
+const workletUrl = URL.createObjectURL(new Blob([PCM_WORKLET], { type: "application/javascript" }));
+const scribes = {};
+let lastCaptionAt = 0;
+
+function startScribe(which, token) {
+  scribes[which]?.stop();
+  const stream = which === "expert" ? mic : $("remote").srcObject;
+  const tracks = stream?.getAudioTracks() ?? [];
+  if (!tracks.length) return log(`No ${which === "expert" ? "microphone" : "phone"} audio to transcribe yet`);
+  const speaker = which === "expert" ? "expert" : "user";
+  const url = "wss://api.elevenlabs.io/v1/speech-to-text/realtime?model_id=scribe_v2_realtime&audio_format=pcm_16000&commit_strategy=vad&token=" + encodeURIComponent(token);
+  const ws = new WebSocket(url);
+  const ctx = new AudioContext({ sampleRate: 16000 });
+  let node, pending = [], pendingSamples = 0, stopped = false;
+
+  const flush = () => {
+    if (ws.readyState !== WebSocket.OPEN || !pendingSamples) return;
+    const joined = new Int16Array(pendingSamples);
+    let offset = 0;
+    for (const part of pending) { joined.set(part, offset); offset += part.length; }
+    pending = []; pendingSamples = 0;
+    const bytes = new Uint8Array(joined.buffer);
+    let binary = "";
+    for (let i = 0; i < bytes.length; i++) binary += String.fromCharCode(bytes[i]);
+    ws.send(JSON.stringify({ message_type: "input_audio_chunk", audio_base_64: btoa(binary), commit: false, sample_rate: 16000 }));
+  };
+
+  ctx.audioWorklet.addModule(workletUrl).then(() => {
+    const source = ctx.createMediaStreamSource(new MediaStream(tracks));
+    node = new AudioWorkletNode(ctx, "pcm16");
+    // About 100 ms per message, as the API suggests; silent output keeps the node running without echoing the audio.
+    node.port.onmessage = (e) => { const part = new Int16Array(e.data); pending.push(part); pendingSamples += part.length; if (pendingSamples >= 1600) flush(); };
+    const mute = ctx.createGain(); mute.gain.value = 0;
+    source.connect(node).connect(mute).connect(ctx.destination);
+  });
+
+  ws.onmessage = (event) => {
+    const m = JSON.parse(event.data);
+    if (m.message_type === "partial_transcript" && m.text) {
+      showPartial(speaker, m.text);
+      if (performance.now() - lastCaptionAt > 200) { lastCaptionAt = performance.now(); sendControl({ kind: "caption", speaker, text: m.text }); }
+    } else if (m.message_type === "committed_transcript" && m.text?.trim()) {
+      const line = { kind: "transcript", id: Math.random().toString(36).slice(2) + Date.now().toString(36), speaker, text: m.text.trim(), at: Date.now() };
+      showLine(line);
+      sendControl(line);
+    } else if (m.error) {
+      log(`Transcript (${speaker === "expert" ? "you" : "phone"}): ${m.message_type}: ${m.error}`);
+    }
+  };
+  ws.onclose = () => {
+    // A session ends at its time limit or on a network blip: ask the phone for a fresh token while the call lasts.
+    if (!stopped && control?.readyState === "open") setTimeout(() => sendControl({ kind: "stt-token-request", which }), 1000);
+  };
+
+  scribes[which] = {
+    stop() { stopped = true; try { ws.close(); } catch {} ctx.close(); },
+  };
+}
+
+function stopScribes() {
+  Object.values(scribes).forEach((s) => s.stop());
+  for (const key of Object.keys(scribes)) delete scribes[key];
+}
+
+function showPartial(speaker, text) {
+  let li = document.querySelector(`#transcript li.partial.${speaker}`);
+  if (!li) { li = document.createElement("li"); li.className = `partial ${speaker}`; $("transcript").append(li); }
+  li.replaceChildren(Object.assign(document.createElement("b"), { textContent: speaker === "expert" ? "You" : "On-site" }), text);
+  $("transcript").scrollTop = $("transcript").scrollHeight;
+}
+
+function showLine(line) {
+  document.querySelector(`#transcript li.partial.${line.speaker}`)?.remove();
+  const li = document.createElement("li");
+  li.className = line.speaker;
+  li.append(Object.assign(document.createElement("b"), { textContent: line.speaker === "expert" ? "You" : "On-site" }), line.text);
+  $("transcript").append(li);
+  $("transcript").scrollTop = $("transcript").scrollHeight;
+}
+
 function onControl(message) {
+  if (message.kind === "stt-tokens") {
+    $("transcriptNote").textContent = "Transcribing live with ElevenLabs.";
+    startScribe("expert", message.expert);
+    // The phone's audio track may arrive a moment after the channel opens.
+    const startPhone = () => { if (!pc) return; $("remote").srcObject?.getAudioTracks().length ? startScribe("phone", message.phone) : setTimeout(startPhone, 500); };
+    startPhone();
+  }
+  if (message.kind === "stt-token") startScribe(message.which, message.token);
+  if (message.kind === "stt-off") $("transcriptNote").textContent = "Transcript off: " + message.reason;
   if (message.kind === "pong") rttMs = 0.7 * rttMs + 0.3 * (performance.now() - message.t);
   if (message.kind === "pinned") {
     const dot = document.getElementById("tap-" + message.id);
@@ -309,6 +426,7 @@ function endCall(reason) {
   if (!pc) return;
   try { control?.close(); } catch {}
   clearInterval(pingTimer); $("clearPins").disabled = true;
+  stopScribes();
   document.querySelector(".stage").classList.remove("live");
   document.querySelectorAll(".tapdot").forEach((d) => d.remove());
   pc.close(); pc = null; control = null; pendingCandidates = [];

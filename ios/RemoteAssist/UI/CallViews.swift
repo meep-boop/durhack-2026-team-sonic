@@ -37,16 +37,20 @@ struct IncomingCallBanner: View {
 /// Controls while the expert is on the line.
 struct InCallBar: View {
   let call: CallManager
+  var onTranscript: () -> Void = {}
 
   var body: some View {
-    HStack(spacing: 18) {
-      Label(call.state == .reconnecting ? "Reconnecting…" : (call.state == .connecting ? "Connecting…" : "Expert is watching"), systemImage: "eye.fill")
+    HStack(spacing: 8) {
+      Label(call.state == .reconnecting ? "Reconnecting…" : (call.state == .connecting ? "Connecting…" : "Expert watching"), systemImage: "eye.fill")
         .font(.footnote.weight(.semibold))
         .labelStyle(.titleAndIcon)
+        .lineLimit(1)
+        .minimumScaleFactor(0.8)
         .foregroundStyle(call.state == .live ? .primary : .secondary)
       Spacer(minLength: 0)
       control(call.isMuted ? "mic.slash.fill" : "mic.fill", active: call.isMuted, label: call.isMuted ? "Unmute" : "Mute", action: call.toggleMute)
       control(call.isSpeakerOn ? "speaker.wave.2.fill" : "speaker.fill", active: call.isSpeakerOn, label: "Speaker", action: call.toggleSpeaker)
+      control("captions.bubble", active: false, label: "Call transcript", action: onTranscript)
       Button(action: call.hangUp) {
         Image(systemName: "phone.down.fill").frame(width: 44, height: 44)
       }

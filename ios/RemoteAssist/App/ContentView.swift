@@ -9,6 +9,7 @@ struct ContentView: View {
   @State private var voice = VoiceGuide()
   @State private var showingConnection = false
   @State private var showingAssistant = false
+  @State private var showingTranscript = false
   @State private var aiBusy = false
   @State private var pinMessage: String?
   @State private var verified: [String: StepVerified] = [:]
@@ -62,8 +63,9 @@ struct ContentView: View {
           IncomingCallBanner(call: call)
             .transition(.move(edge: .top).combined(with: .opacity))
         } else if call.state != .idle {
-          InCallBar(call: call)
+          InCallBar(call: call) { showingTranscript = true }
             .transition(.move(edge: .top).combined(with: .opacity))
+          CaptionStrip(call: call)
         }
 
         if let error = ar.errorMessage {
@@ -156,6 +158,9 @@ struct ContentView: View {
         onAskExpert: { showingAssistant = false; showingConnection = true }
       )
       .presentationDetents([.medium, .large])
+    }
+    .sheet(isPresented: $showingTranscript) {
+      TranscriptSheet(call: call).presentationDetents([.medium, .large])
     }
     .fullScreenCover(isPresented: .constant(!onboarded)) {
       Onboarding { onboarded = true }
@@ -296,7 +301,9 @@ struct ContentView: View {
       safety: isAIGuide ? assistant.safety : nil,
       safetyOverridden: assistant.safetyOverridden,
       aiGenerated: isAIGuide,
-      photo: ar.snapshotJPEG(maxSide: 1200).flatMap(UIImage.init(data:))
+      photo: ar.snapshotJPEG(maxSide: 1200).flatMap(UIImage.init(data:)),
+      stepSource: isAIGuide ? assistant.stepSource : nil,
+      transcript: call.transcript
     )
     reportURL = try? RepairReport.render(input)
   }

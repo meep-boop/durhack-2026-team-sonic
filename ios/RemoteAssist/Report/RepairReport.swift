@@ -22,6 +22,8 @@ enum RepairReport {
     var safetyOverridden: Bool
     var aiGenerated: Bool
     var photo: UIImage?
+    var stepSource: String? = nil
+    var transcript: [TranscriptLine] = []
   }
 
   /// Writes the PDF to a temporary file and returns its URL.
@@ -70,7 +72,7 @@ enum RepairReport {
         y += 8
       }
 
-      write("Steps", .systemFont(ofSize: 14, weight: .semibold))
+      write(input.stepSource.map { "Steps · \($0)" } ?? "Steps", .systemFont(ofSize: 14, weight: .semibold))
       for step in input.steps {
         let done = step.doneAt.map { "done \($0.formatted(time))" } ?? "not done"
         write("\(step.number). \(step.text.replacingOccurrences(of: "\n", with: " · "))", .systemFont(ofSize: 11), gap: 2)
@@ -89,6 +91,15 @@ enum RepairReport {
         write("At the end", .systemFont(ofSize: 14, weight: .semibold))
         photo.draw(in: CGRect(x: margin, y: y, width: size.width, height: size.height))
         y += size.height + 12
+      }
+
+      if !input.transcript.isEmpty {
+        y += 6
+        write("Call with the expert (transcribed live by ElevenLabs)", .systemFont(ofSize: 14, weight: .semibold))
+        for line in input.transcript {
+          write("\(line.at.formatted(time))  \(line.speaker == .expert ? "Expert" : "On-site"): \(line.text)", .systemFont(ofSize: 10), gap: 3)
+        }
+        y += 6
       }
 
       if input.aiGenerated {
