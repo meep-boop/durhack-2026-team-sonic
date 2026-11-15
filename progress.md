@@ -705,3 +705,17 @@ each builder's brief (`builder-file-<name>.md`, on the `context` branch).
   time with you directly.
 - ⚠️ Conflicts: none (docs only; each owner checks their part's note)
 - Conflict status: open (waiting on the three skims)
+
+### 2026-11-15 03:25 — the rig runs on its hardware — @ahmed
+- Shipped: first real run of the whole rig. The App Lab app starts on the UNO Q, connects to the relay on Max's
+  laptop as `rig`, and reads the Nicla Vision's lines over the hub ("nicla sees the part in: no region"). Fixes on
+  the way, all on `main` (last `d502f4e`): the Nicla's sensor can't lock gain or white balance; the app waits for the
+  Nicla instead of stopping, survives it being unplugged, and accepts an address without `ws://`; **the Nicla only
+  sends with DTR set** (our measurement; the ledger's source said the opposite, § 10 corrected). App Lab's own
+  board update had failed on corrupt package lists: cleared with `sudo rm -rf /var/lib/apt/lists/*` and
+  `sudo apt-get update`.
+- Not yet: the sticker colour and the `ssd-bay` region tuned on the real SSD; a tick on the LED matrix; a
+  `step.verified` seen on the dashboard or phone.
+- Touched: `hardware/`; on `context`: `research/ledger.md` § 10, `builder-file-ahmed.md`
+- ⚠️ Conflicts: none
+- Conflict status: resolved by @ahmed 2026-11-15
