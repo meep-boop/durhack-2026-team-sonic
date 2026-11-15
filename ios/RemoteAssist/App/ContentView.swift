@@ -9,6 +9,7 @@ struct ContentView: View {
   @State private var voice = VoiceGuide()
   @State private var showingConnection = false
   @State private var showingLaptop = false
+  @State private var scanning = false
   @State private var showingTranscript = false
   @State private var pinMessage: String?
   @State private var verified: [String: StepVerified] = [:]
@@ -59,6 +60,9 @@ struct ContentView: View {
 
       if showingHome && inCall {
         liveAssistScreen.transition(.opacity)
+      } else if showingHome && scanning {
+        ScanView(ar: ar, relayURL: relay.url, onClose: { scanning = false })
+          .transition(.opacity)
       } else if showingHome && showingLaptop {
         LaptopChecklistCard(laptop: laptop, onStart: startLaptopGuide, onCancel: { showingLaptop = false })
           .transition(.opacity)
@@ -67,6 +71,7 @@ struct ContentView: View {
           relayConnected: relay.state == .connected,
           onLaptop: { showingLaptop = true },
           onMarker: { enterGuide() },
+          onScan: { scanning = true },
           onSettings: { showingConnection = true }
         )
         .transition(.opacity)

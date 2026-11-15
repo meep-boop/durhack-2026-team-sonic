@@ -894,3 +894,59 @@ each builder's brief (`builder-file-<name>.md`, on the `context` branch).
 - 📨 To @ahmed: nothing for you.
 - ⚠️ Conflicts: @laura — a possible future change to how the `screwdriver` model looks; nothing changed yet
 - Conflict status: open
+
+### 2026-11-15 07:37 — the last stretch: why boxes hover, and the demo's shape — @ahmed
+- Shipped: no code. Ahmed reports the phone works and a guide sent from the dashboard reaches it. **Boxes hover
+  above the laptop because no guide has real positions:** the only scan on `main` has no marker, so nothing can be
+  calibrated or placed in it, and `fixtures/ssd-swap-guide.json` has placeholders. Each brief has a "last stretch"
+  block on top.
+- Touched: on `context`: the four briefs, `PROJECT.md` (Decisions in force)
+- Decision (Ahmed): rescan twice with the marker in view and place parts by clicking in the scan, with a top-down
+  ruler photo as the fallback; bigger animations (pull / push 4 cm, unscrew two turns rising 15 mm), no message
+  change; the demo is "expert builds, user follows"; #11 on `main` is the demo build.
+- Beat sheet draft (under 5 min): problem 0:30 · expert clicks a screw, picks unscrew, sends 0:45 · it lands on the
+  real screw 0:30 · taps and ticks 0:30 · phone Wi-Fi off, keeps going, syncs 0:45 · SSD out, the rig's ✓ 0:30 · call
+  with tap-to-point 0:30 · extras 0:30 · what's real 0:30.
+- 📨 To @max @laura: rescan now, closed then cover off, marker fully in view; ruler photos at the same time. Then
+  build the guide in the scan. Ahmed's laptop is the prop from then on, so Max is the docs owner on duty.
+- 📨 To @salman: bigger animations in `Shapes.animate`, check and merge PR #12, and be at the table for the first
+  real run with the expert's guide.
+- ⚠️ Conflicts: @salman — one post-freeze change asked of the phone | @max — the preview must match it
+- Conflict status: open
+
+### 2026-11-15 07:38 — correction: what the animations really do on main — @ahmed
+- Shipped: no code. My 07:37 entry gave the phone's current animation sizes from an old branch. Read from `main`
+  (`ios/RemoteAssist/AR/Shapes.swift`, `dashboard/src/scene/preview.ts`): `unscrew` on the phone only spins the
+  screw in place, which a round screw barely shows; `pull` / `push` slide 2 cm and come back, so they read as a
+  wobble; the dashboard preview moves differently (3 cm, two turns rising 5 mm). The corrected spec is in Salman's
+  and Max's briefs: unscrew rises 15 mm over two turns, pull / push go 4 cm one way, loops restart, objects start
+  0.15 s apart, and on the phone a pulsing ring, thicker box lines and a bigger label.
+- Touched: on `context`: `builder-file-salman.md`, `builder-file-max.md`
+- ⚠️ Conflicts: @salman @max — the spec in their briefs changed
+- Conflict status: open
+
+### 2026-11-15 07:40 — a check of main from the code itself — @ahmed
+- Shipped: no code. Run on `main` on Ahmed's laptop: relay 42/42 and type-check; dashboard 54/54, type-check and
+  build; rig 13/13. The model tests didn't run here (`usd-core` isn't installed on this laptop). Swift not compiled.
+- Found by reading the code:
+  - **The phone starts on the bundled SAMPLE guide** (`RemoteAssistApp.swift:18`, `fixtures/sample-guide.json`),
+    whose positions are invented, so its boxes float wherever they fall. Only a guide sent by the dashboard
+    replaces it (`ContentView.swift:343`).
+  - **"Add at marker" puts a new object at the marker's centre** (`GuidePanel.tsx:225`) until a position is typed,
+    and "Place on scan" can't work yet: `dashboard/public/scans/` still has only the scan with no marker.
+  - The phone scales the guide by ARKit's size estimate of the marker (`ARSessionController.swift:200`, `889`).
+  - The root `README.md` is still the team-kit README; the judges' version is a draft in `docs/`.
+  - The dashboard's Call button expects Salman's page on port 8000 of the dashboard laptop (`App.tsx:20`).
+- 📨 To @laura: swap the judges' README in before submitting. 📨 To @max: the rescans are what unblock placing.
+- ⚠️ Conflicts: none
+- Conflict status: n/a
+
+### 2026-11-15 07:47 — a simple checklist at the top of every brief — @ahmed
+- Shipped: no code. Each brief now opens with "YOUR CHECKLIST": numbered steps to do top to bottom, with the exact
+  commands and what to look for, plus the same six-step "how to start everything" in all four. It replaces the 07:37
+  "last stretch" block (same decisions, plainer steps). Ahmed's laptop is backed up and is the prop from now on, so
+  **Max is the docs owner on duty**.
+- Touched: on `context`: the four briefs
+- 📨 To @max @laura @salman: start at step 1 of your checklist. The scan with the marker in it comes first.
+- ⚠️ Conflicts: none
+- Conflict status: n/a

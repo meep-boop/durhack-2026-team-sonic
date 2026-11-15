@@ -5,6 +5,7 @@ struct HomeView: View {
   let relayConnected: Bool
   let onLaptop: () -> Void
   let onMarker: () -> Void
+  let onScan: () -> Void
   let onSettings: () -> Void
 
   var body: some View {
@@ -32,6 +33,12 @@ struct HomeView: View {
             ? "Connected. Point the camera at the printed marker."
             : "Uses the printed marker. Connect to the expert from the menu to get their guide.",
           action: onMarker
+        )
+        choice(
+          symbol: "cube.transparent",
+          title: "Scan the room",
+          detail: "For the expert: record a 3D scan lined up with the marker and send it to the laptop.",
+          action: onScan
         )
 
         Spacer()

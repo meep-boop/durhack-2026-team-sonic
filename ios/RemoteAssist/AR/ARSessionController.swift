@@ -68,6 +68,11 @@ final class ARSessionController: NSObject, ARSessionDelegate {
     get { shared.withLock { $0.onCameraFrame } }
     set { shared.withLock { $0.onCameraFrame = newValue } }
   }
+  /// Set while the scan screen is open: it sees every frame, with the marker's last tracked pose.
+  @ObservationIgnored var scanRecorder: ScanRecorder? {
+    get { shared.withLock { $0.scanRecorder } }
+    set { shared.withLock { $0.scanRecorder = newValue } }
+  }
 
   /// Made on first use, not with the controller: SwiftUI can build and drop a @State's initial value, and every ARView
   /// starts a whole RealityKit renderer. Replaced by a fresh one (same session, same anchors) if it stops drawing.
@@ -132,6 +137,7 @@ final class ARSessionController: NSObject, ARSessionDelegate {
   /// What the session queue and main share. Always behind `shared`'s lock.
   private struct Shared {
     var onCameraFrame: ((CVPixelBuffer, TimeInterval) -> Void)?
+    var scanRecorder: ScanRecorder?
     var feed: CameraFeedView?
     /// The marker's last tracked pose, for expressing the camera in the marker frame.
     var markerTransform: simd_float4x4?
@@ -810,6 +816,9 @@ final class ARSessionController: NSObject, ARSessionDelegate {
 
     // Synchronous: the handler copies what it needs, so ARKit's buffer is free again when this returns.
     if let onCameraFrame { onCameraFrame(frame.capturedImage, timestamp) }
+
+    let (scanRecorder, marker) = shared.withLock { ($0.scanRecorder, $0.markerTransform) }
+    scanRecorder?.consider(frame, marker: marker)
 
     let pose: PoseUpdate? = shared.withLock { state in
       guard let marker = state.markerTransform, timestamp - state.lastPoseTime >= 0.2 else { return nil }
