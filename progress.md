@@ -824,3 +824,15 @@ each builder's brief (`builder-file-<name>.md`, on the `context` branch).
 - 📨 To @laura: scan with Max; a timed 5-minute beat sheet in `PROJECT.md` §9; answer Max's restyle ask.
 - ⚠️ Conflicts: @salman — changes which of his branches is the demo build
 - Conflict status: open
+
+### 2026-11-15 04:21 — relay `--state`, and the prepared SSD-swap guide (draft positions) — @ahmed
+- Shipped, on `main` at `edb39c9`: `npm start -- --state <file>` gives a relay its own save file (it prints which
+  one it uses), so a test relay can't empty the live one's. `fixtures/ssd-swap-guide.json`: Laura's 12 steps for the
+  Latitude 5530 with models, actions and the rig's check on steps 8 and 9. **Its positions are placeholders**, not
+  measured: the title starts "DRAFT POSITIONS" until they're taken from the marker's centre with a ruler. 42 relay
+  tests pass, one of them checking this guide.
+- Touched: `relay/server.ts`, `fixtures/ssd-swap-guide.json` (new), `relay/validate.test.ts`
+- 📨 To @max: start test relays with `--state` and a file outside the repo.
+- 📨 To @laura: "Open a guide file…" loads it for rung 1; steps 1–3 and 12 are text only, as you suggested.
+- ⚠️ Conflicts: none
+- Conflict status: resolved by @ahmed 2026-11-15
