@@ -37,6 +37,12 @@ enum PinMath {
     return (origin, simd_normalize(SIMD3(world.x, world.y, world.z)))
   }
 
+  /// A world transform as seen from the marker: put under the marker with this local transform, a thing stays on the
+  /// same real spot however the marker's pose is corrected later.
+  static func local(_ world: simd_float4x4, in marker: simd_float4x4) -> simd_float4x4 {
+    marker.inverse * world
+  }
+
   /// `point`, or the point `limit` metres from `centre` towards it if it's farther. An area's far corners meet the
   /// table a long way off when the box is drawn from an angle; pulled in, the box stays a sane frame round the laptop.
   static func pulledIn(_ point: SIMD3<Float>, toward centre: SIMD3<Float>, limit: Float) -> SIMD3<Float> {

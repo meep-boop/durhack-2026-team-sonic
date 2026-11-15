@@ -1,10 +1,11 @@
 import CoreGraphics
+import Foundation
 import simd
 
 /// The laptop's own coordinate frame on the table, from two tapped corners. Positions in a layout are millimetres
 /// from the top-left corner (x along the top edge, the one with the U-shaped notches; y down the cover), so once the
 /// frame is known every screw lands where it really is, with no marker.
-struct LaptopFrame: Equatable {
+struct LaptopFrame: Equatable, Codable {
   /// The top-left corner, in world space.
   var origin: SIMD3<Float>
   /// Unit vector along the top edge.
@@ -15,6 +16,29 @@ struct LaptopFrame: Equatable {
   var normal: SIMD3<Float>
   /// The laptop's footprint, metres.
   var size: SIMD2<Float>
+
+  /// This frame as seen from the marker: what's saved as the laptop's calibration. The laptop and the printed marker
+  /// stay put for the demo, so once the corners are tapped the next run only needs to see the marker.
+  func relative(to marker: simd_float4x4) -> LaptopFrame {
+    moved(by: marker.inverse)
+  }
+
+  /// A saved calibration back in the world, from where the marker is now.
+  func inWorld(marker: simd_float4x4) -> LaptopFrame {
+    moved(by: marker)
+  }
+
+  private func moved(by m: simd_float4x4) -> LaptopFrame {
+    func point(_ p: SIMD3<Float>) -> SIMD3<Float> { let w = m * SIMD4(p.x, p.y, p.z, 1); return SIMD3(w.x, w.y, w.z) }
+    func direction(_ v: SIMD3<Float>) -> SIMD3<Float> { let w = m * SIMD4(v.x, v.y, v.z, 0); return simd_normalize(SIMD3(w.x, w.y, w.z)) }
+    return LaptopFrame(origin: point(origin), xAxis: direction(xAxis), yAxis: direction(yAxis), normal: direction(normal), size: size)
+  }
+
+  /// The laptop's position next to the marker, kept between runs.
+  static var savedNextToMarker: LaptopFrame? {
+    get { UserDefaults.standard.data(forKey: "laptopInMarker").flatMap { try? JSONDecoder().decode(LaptopFrame.self, from: $0) } }
+    set { UserDefaults.standard.set(newValue.flatMap { try? JSONEncoder().encode($0) }, forKey: "laptopInMarker") }
+  }
 
   enum Problem: Error, Equatable {
     case tooClose, tooFar, sameSpot
