@@ -79,7 +79,8 @@ and the walking skeleton is the next one. Anything new for you is in the block a
   labelling, which also needs Anthropic credentials on that laptop. *Done when:* the phone, the dashboard and the rig
   all connect to it on the hotspot. `[with @ahmed]`
 - B. ⬜ **Merge PR #6 with the `ship` skill before the walking skeleton** (`PROJECT.md` → Clock), and merge or close
-  PR #1.
+  PR #1. Pre-check by @ahmed (2026-11-15 00:54, read-only): `max-scene` at `6a6753b` with today's `main` merged in has no
+  conflicts; 8 tests, the type-check and `npm run build` all pass.
 - C. Scanning the laptop: **nobody sprays it** (Ahmed); your correction that it was never your request is noted.
 
 1. 🟡 **Dashboard shell with a splat on screen, and the scene API**

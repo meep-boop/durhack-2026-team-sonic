@@ -68,6 +68,19 @@ splats until that's settled. Training splats in the app (the scan is taken in Sc
   Swift struct requires `port` and `cable`, any guide carrying the new `expect` fails to decode, the sample guide
   included. *Done when:* after `git merge origin/main`, every example in `fixtures/messages.json` and
   `fixtures/sample-guide.json` decodes in your tests.
+  **Pre-check by @ahmed (2026-11-15 00:54, read-only, `salman-ios` at `73ea7cf` with today's `main` merged in a throwaway copy):
+  no merge conflicts, but four things break. Not compiled: Swift can't build on Windows, so this is from reading.**
+  1. `struct Expect` requires `port` and `cable` (`Protocol/Protocol.swift`). The sample guide's steps 3 and 4 and
+     the `guide.set` example now carry `{ region, present }`, so the whole guide fails to decode: on the phone that's
+     a blank screen. Make it `region: String`, `present: Bool`.
+  2. `GuideDecodingTests` asserts the old sample: id `sample-cable-move`, a `cablePlug` last object at
+     (0.075, 0.012, 0.11). The sample is now `sample-ssd-swap`; its last object is a `hand` doing `push` at
+     (0.28, 0.01, 0.03).
+  3. `fixtures/messages.json` now has `labels.request` and `labels.result`; your decoder throws "unknown message
+     type", so `MessageCodingTests` fails. The phone never receives either, so only the test needs to skip or decode them.
+  4. Only the relay URL is saved (`UserDefaults`), not the current step. A reconnect keeps the place (`GuidePlayer`
+     keeps the step on a same-id `guide.set`), but an app restart mid-guide goes back to step 1 (item B).
+  Coming next: once Laura adds the `ssd` model, `enum ModelName` needs `case ssd` or a guide using it won't decode.
 - B. ⬜ **The phone owns its place.** Since 23:09 the relay no longer replays the current step to phones on reconnect:
   keep your position and your queued taps across reconnects and app restarts. *Done when:* kill the relay mid-guide,
   tap on, restart it, and the fake expert logs every tap in order while the phone stays on its step.
