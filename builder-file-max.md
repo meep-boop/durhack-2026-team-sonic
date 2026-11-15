@@ -86,7 +86,7 @@ and the walking skeleton is the next one. Anything new for you is in the block a
   catch-up, and the screen reads without the debug text.
   `[⚠ conflicts with @laura: GuidePanel.css restyle, colours and spacing only, once she agrees]`
 - B. ⬜ **Cut-outs** (task 5 below), after A.
-- C. ⏸ (04:30: Hunyuan's licence excludes the UK; model being re-picked, ledger § 19) (04:05, Max's call; `PROJECT.md` → Decision log) **AI-made props on the DGX Spark.** Hunyuan3D 2.1
+- C. 🟡 **Now Pixal3D, cut-off 07:30** (04:32, Max's call; Hunyuan's licence excludes the UK; ledger § 19; building in `~/pixal3d` on the Spark) (04:05, Max's call; `PROJECT.md` → Decision log) **AI-made props on the DGX Spark.** Hunyuan3D 2.1
   (`dr-vij/Hunyuan3D-2.1-DGX-Docker`) builds over SSH in the background. Then one clean photo each of the SSD and the
   #0 screwdriver → textured GLB → scaled to the real size (SSD 22 × 80 mm) → shown on the dashboard, labelled
   "AI-generated from a photo". Phone (USDZ, § 15) only with Salman, only if there's time. *Done when:* the SSD prop

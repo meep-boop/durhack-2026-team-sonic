@@ -49,9 +49,10 @@ Source: `EVENT.md` §1 (one notes file, not yet checked against Devpost). The 02
 
 | Date | Decision |
 |---|---|
+| 2026-11-15 | AI-made props use **Pixal3D** (MIT, SIGGRAPH 2026), not Hunyuan3D 2.1, whose licence excludes the UK. Ungated parts only: the `camenduru` copy of DINOv3 (DINOv3 licence, which Max accepted) and BiRefNet (MIT) in place of Meta's hand-approved DINOv3 and the non-commercial RMBG-2.0. Built in Max's home folder on the Spark (no Docker or sudo). Props on the dashboard first, labelled "AI-generated from a photo"; cut-off moved to **07:30** (Max, 04:32; `research/ledger.md` § 19) |
 | 2026-11-15 | The phone's demo build is the plain one: PR #8 (`salman-ios-polish`) to `main` first; the camera freeze on `salman-ios-ar` is found by halving the commits; extras come across one at a time (Ahmed, 04:10) |
 | 2026-11-15 | Max may build dashboard features until 10:00; the phone, relay, rig and message shapes still freeze at 07:00 (Ahmed, 04:10) |
-| 2026-11-15 | ⏸ **On hold (04:30): Hunyuan3D 2.1's licence excludes the UK, so the model is being re-picked (`research/ledger.md` § 19).** AI-made props: Hunyuan3D 2.1 runs on the team's DGX Spark (Docker fork), building in the background; one photo of a part (the SSD, the screwdriver) becomes a textured 3D model, scaled by hand to its real size, shown on the dashboard first, the phone only if there's time; labelled "AI-generated from a photo" wherever it shows; dropped if it hasn't built by about 06:30 (Max, 04:05; `research/ledger.md` § 18) |
+| 2026-11-15 | ↑ **Superseded 04:32 by the Pixal3D row above (Hunyuan3D 2.1's licence excludes the UK).** AI-made props: Hunyuan3D 2.1 runs on the team's DGX Spark (Docker fork), building in the background; one photo of a part (the SSD, the screwdriver) becomes a textured 3D model, scaled by hand to its real size, shown on the dashboard first, the phone only if there's time; labelled "AI-generated from a photo" wherever it shows; dropped if it hasn't built by about 06:30 (Max, 04:05; `research/ledger.md` § 18) |
 | 2026-11-15 | The expert's dashboard becomes a finished product screen before cut-outs: a header with relay / phone / rig lights and a Call button that opens Salman's call page in its own window, a live strip that shows the person's step and the offline moment, plain prompts with the debug text behind a key, one calm dark look on both halves (Laura's panel restyled by Max's agent once she agrees, colours and spacing only); cut-outs follow it (Max, 03:40) |
 | 2026-11-15 | Scans are kept in git (`dashboard/public/scans/`), not per machine, so the team and the judges see the same files; a scan's file name is its calibration id, so never overwrite one (Max, 02:39; reverses the git-ignored folder in Ahmed's 01:45 plan) |
 | 2026-11-15 | The dashboard loads both splat and mesh scans from Scaniverse; we demo whichever scan of the set comes out better, and the pitch names the kind honestly (Max, 02:32) |
@@ -178,7 +179,7 @@ SSD-swap demo (23:03).
 |---|---|
 | Ahmed | The tap receipt and a calibration per scan in the relay; the dashboard's relay connection and calibration maths; the rung-0 guide file; the rig on its hardware |
 | Salman | Merge `salman-ios-polish`; the smoke test on the real phone; post the +X/+Z edges; the tap receipt; measure alignment |
-| Max | The dashboard as a product screen (header and lights, live strip, one look) ✅ 03:55; then cut-outs; AI-made props building on the DGX Spark in the background (§ 18); the two rescans once Laura's board is ready |
+| Max | The dashboard as a product screen (header and lights, live strip, one look) ✅ 03:55; then cut-outs; AI-made props with Pixal3D building on the DGX Spark in the background (ledger § 19; cut-off 07:30); the two rescans once Laura's board is ready |
 | Laura | The board with corner stops; the real SSD-swap steps; the guide panel; README, video, Devpost |
 
 Asked for by Max (19:40 board entry): "Pick and get the demo objects" is Laura's task 3. "Check we have a Mac with
@@ -329,6 +330,25 @@ The diagram, components, alignment maths and draft protocol are in `docs/remote-
 
 ## Decision log
 *Full records, newest first. NOW → Decisions in force holds the one-line versions.*
+
+## 2026-11-15 04:32 — Pixal3D replaces Hunyuan for the AI-made props
+- Context: Hunyuan3D 2.1's licence excludes the UK (04:30 update below). Max asked for a better model; the research is
+  `research/ledger.md` § 19.
+- Chose (Max): **Pixal3D** (Tencent ARC, SIGGRAPH 2026, MIT for code and weights). It's the newest, it's ahead of
+  Hunyuan3D 2.1 and TRELLIS in its own paper, and it's the only one with a timed DGX Spark run (3–6 min per model).
+- Chose (Max): **only ungated parts.** Pixal3D's code already loads `camenduru/dinov3-vitl16-pretrain-lvd1689m`, a copy
+  of Meta's DINOv3 shipped under the DINOv3 licence (worldwide, sharing allowed; Max accepted it), and its background
+  remover takes `ZhengPeng7/BiRefNet` (MIT). Only the local `pipeline.json` changes, not the code.
+- How: built in `~/pixal3d` on the Spark with Python 3.12, torch 2.9.1 for CUDA 13, and the TRELLIS.2 extensions,
+  using PyTorch's own attention (`ATTN_BACKEND=sdpa`) so FlashAttention isn't compiled. Single-image weights only
+  (about 24 GB of the 46 GB).
+- Cut-off moved from 06:30 to **07:30**, since Ahmed agreed Max builds dashboard features until 10:00. Recommended with
+  the pick; Max said yes to the package.
+- Rejected: TRELLIS.2 (also needs DINOv3, no Spark timing, likely below Pixal3D); Step1X-3D (no gated parts, but only
+  Hunyuan-class quality and no ARM report); dropping it.
+- Honesty: "AI-generated from a photo" wherever a prop shows. Keep "better than Hunyuan" out of the pitch (the
+  authors' own numbers).
+- Revisit if: the build hasn't produced a model by 07:30, or the first SSD prop looks wrong.
 
 ## 2026-11-15 04:05 — AI-made props on the DGX Spark
 - Context: the team's DGX Spark was idle. Max asked whether it could turn pictures of a thing into 3D models.
