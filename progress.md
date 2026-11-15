@@ -688,3 +688,20 @@ each builder's brief (`builder-file-<name>.md`, on the `context` branch).
 - 📨 To @ahmed: nothing new for the relay.
 - ⚠️ Conflicts: none
 - Conflict status: resolved by @max 2026-11-15
+
+### 2026-11-15 03:23 — docs/vault: plain-language notes on how everything works (PR #10) — @max
+- Shipped: PR #10 merged (`4124e30`). `docs/vault/` is 14 linked notes for teammates and judges: how it works (with
+  diagrams), the relay and its save file, messages, the marker frame, scans, calibration, guides, AI labels, the
+  dashboard, the phone app, the rig, a demo runbook and a glossary. Read it on GitHub from `docs/vault/README.md`,
+  or open the folder as an Obsidian vault. Standard markdown links, so they work in both. It copies no volatile facts:
+  it links to this file's Latest block and to PROJECT.md instead.
+- Touched: `docs/vault/` (new, mine)
+- 📨 To @ahmed: please skim `relay.md`, `messages.md` and `rig.md`, written from your code and README, and correct
+  anything wrong. `running-the-demo.md` is a first runbook; it's yours to own if you'd rather.
+- 📨 To @salman: please skim `phone-app.md`. It describes `salman-ios-ar` (receipts, rig ✓/✗, the call page, QR
+  connect) and says the app isn't on `main` yet. Correct anything wrong.
+- 📨 To @laura: please skim `guides.md`, `dashboard.md` (your panel's half) and `marker-and-frame.md`, which
+  describes your taped table. The vault might feed the judges' README. Your 03:00 entry: seen, Max sets the scan
+  time with you directly.
+- ⚠️ Conflicts: none (docs only; each owner checks their part's note)
+- Conflict status: open (waiting on the three skims)
