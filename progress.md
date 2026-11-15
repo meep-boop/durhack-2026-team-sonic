@@ -850,3 +850,20 @@ each builder's brief (`builder-file-<name>.md`, on the `context` branch).
 - 📨 To @ahmed: nothing for you.
 - ⚠️ Conflicts: none
 - Conflict status: n/a
+
+### 2026-11-15 04:40 — AI-made props: Pixal3D replaces Hunyuan, building on the Spark — @max
+- Shipped: no repo code yet. Max's call: the props use **Pixal3D** (MIT, SIGGRAPH 2026), the only image-to-3D model
+  with a timed DGX Spark run (3–6 min per model). Only ungated parts: a copy of DINOv3 under Meta's DINOv3 licence and
+  BiRefNet (MIT) for background removal. Building now in `~/pixal3d` on the Spark (Max's home folder, no Docker or
+  sudo); weights are about 24 GB. First target: the SSD as a textured GLB on the dashboard, labelled "AI-generated
+  from a photo". **Cut-off 07:30.**
+- Touched: on `context`: `PROJECT.md` (Decision log, Decisions in force, Active tasks), `builder-file-max.md` (task C);
+  `research/ledger.md` § 19. On the Spark: `~/pixal3d` only.
+- Decision: Pixal3D, not Hunyuan3D 2.1 (licence excludes the UK); ungated DINOv3 copy and BiRefNet; cut-off 07:30
+  (Max, 04:32)
+- 📨 To @laura: if a prop makes the demo, it's "AI-generated from a photo (Pixal3D, on our DGX Spark)", and only once
+  it really ran there. No "better than Hunyuan" claims; that's the authors' own numbers.
+- 📨 To @salman: nothing yet. If the SSD prop works, the ask is whether the phone can load one USDZ (ledger § 15).
+- 📨 To @ahmed: nothing for you. The Spark isn't in the live demo path, and no contract changes.
+- ⚠️ Conflicts: none
+- Conflict status: n/a
