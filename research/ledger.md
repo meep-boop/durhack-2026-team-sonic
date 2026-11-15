@@ -1312,6 +1312,26 @@ no independent ranking was checked.
 - RMBG-2.0 (background removal) is gated with instant approval and non-commercial; BiRefNet, the model it's built on,
   is MIT and not gated [9].
 
+### Measured on our Spark (2026-11-15, Max's agent; first-hand, one machine)
+- **Build: 22 min** (04:37–04:59) in `~/pixal3d`, no Docker or sudo: Python 3.12 venv, torch 2.9.1 for CUDA 13
+  (`2.9.1+cu130`; sees the GB10 as compute 12.1, with a harmless "supported up to 12.0" warning), nvdiffrast,
+  nvdiffrec, CuMesh, FlexGEMM, o-voxel, natten 0.21.0 (under 8 min), the utils3d wheel. No FlashAttention:
+  `ATTN_BACKEND=sdpa` works for dense and sparse attention. Single-image weights only: about 24 GB in 5 min.
+- **Three fixes the guides don't mention:** Pixal3D installs MoGe from git with no pin, and MoGe 3.0.0 (Aug 2026)
+  clashes with its `trimesh==4.10.1`, so pin MoGe to `07444410f1` (its tip when Pixal3D set its requirements).
+  o-voxel needs TRELLIS.2's Eigen submodule (clone with submodules). BiRefNet's model code needs `einops`.
+- **Config swap works:** `pipeline.json` pointed at `camenduru/dinov3-vitl16-pretrain-lvd1689m` and
+  `ZhengPeng7/BiRefNet` ran with Hugging Face offline, so no gated model is used.
+- **One run-time download:** Pixal3D fetches the NAF upsampler (valeoai/NAF, Apache 2.0) through `torch.hub` from
+  GitHub on first use (code plus a 2.6 MB checkpoint, cached in `~/.cache/torch/hub`). Hugging Face's offline flag
+  doesn't cover it.
+- **Time per model, 1024 resolution, low-VRAM off:** 421 s end to end with model loading; generation itself about
+  3 min (structure 14 s, shape 14 s + 70 s, texture 39 s, mesh finishing 49 s). The same image at prop size: 290 s.
+- **Size:** the default export is 949k faces with a 4096² texture (36 MB GLB). With `decimation_target` and
+  `texture_size` exposed (`PIXAL3D_FACES`, `PIXAL3D_TEXTURE`; defaults 100k and 2048 for props): 95k faces, 2048²,
+  4.9 MB, and no visible difference at dashboard distance. Both load in our dashboard as a mesh scan.
+- **Memory:** about 30 GB while running, next to eaby's vLLM (41 GB); about 31 GB stayed free. One run at a time.
+
 ## Community consensus
 Guides and forums call TRELLIS.2 the quality leader among fully open models and Hunyuan3D 2.1 the best open PBR
 texturer outside the EU, UK and South Korea (sources: [W2], [W3]). Pixal3D is too new for much community view; its one
