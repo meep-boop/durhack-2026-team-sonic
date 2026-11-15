@@ -23,7 +23,7 @@ any 3D at all.
 **What would make us revisit it:** a step with so many objects that redrawing the whole step on every edit is
 visibly slow. That's unlikely: a step has a handful of objects.
 
-## Open question: where positions are measured from before calibration (not decided)
+## Decided: nothing is placed before calibration (Max, 2026-11-15)
 **Question:** every object needs an address in 3D, measured from some fixed point.
 - **The phone and the protocol already measure from the printed marker** (`contracts/protocol.ts`, decided by
   Ahmed). So the addresses stored in a guide are "from the marker", and the guide builder copies them from the 3D
@@ -32,15 +32,13 @@ visibly slow. That's unlikely: a step has a handful of objects.
   The 3D view converts scan addresses to marker addresses once the expert has clicked the marker's corners
   (Max's task 3, calibration).
 
-What isn't decided is what happens **before** calibration:
+The question was what happens **before** calibration:
 - **A, nothing can be placed until calibration is done.** Safe: every saved address is right. Costs the expert one
   step up front.
 - **B, placing works straight away using scan addresses, and they are converted once calibration is done.**
   Smoother, but a guide built before calibration holds addresses the phone would read wrongly, and a rescan breaks
   them.
 
-**Owner:** Max, with Ahmed. **Decide once** calibration (task 3) works and we've seen how long it takes in practice.
-
-**Built to change:** the guide builder never converts anything, whichever we pick. Only code inside
-`dashboard/src/scene/` changes. Until it's decided, development uses scan addresses as if they were marker
-addresses, which is only safe for testing, never for a guide sent to a real phone.
+**Picked: A** (Max, 2026-11-15, as Ahmed recommended). Until the scan on screen is calibrated, `pickPoint()`
+resolves to null and no objects are drawn, so no address measured from nothing can reach a phone. Each scan keeps
+its own calibration, saved through the relay, so the step costs four clicks once per scan, not per session.
