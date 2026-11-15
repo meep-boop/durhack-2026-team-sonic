@@ -986,3 +986,24 @@ each builder's brief (`builder-file-<name>.md`, on the `context` branch).
 - 📨 To @laura: keep it out of the pitch and README until a real scan has worked.
 - ⚠️ Conflicts: @salman — Max's code in `ios/` on a branch (a new folder plus three small hooks in his files), not merged
 - Conflict status: open
+
+### 2026-11-15 09:00 — guide marks land across the room on the phone: the dashboard's data is right — @ahmed
+- Shipped: no code. Ahmed calibrated both new scans on Max's dashboard and placed a guide; on the phone the marks
+  appear on the other side of the room. Read from the relay on Max's laptop (a read-only expert connection):
+  - both calibrations are good: `scan-0801.usdz` residual 0.3 mm, `scan-0809.usdz` 0.8 mm, marker edges 0.178–0.182
+    in scan units, so the scans are in metres;
+  - the guide (`sample-ssd-swap`, rev 31) has every object within 0.5 m of the marker and about 2 cm above its
+    plane, on the marker's −X side: where the laptop is. One stray screw sits at 0, 0, 0 ("Add at marker"), and step
+    4's object is 3 cm below the marker's plane;
+  - the iPhone is connected and all four steps were tapped.
+  So the positions leaving the dashboard are right, and the fault is where the phone puts its marker anchor.
+- Not proven, the leading suspect from the code: the phone anchors the guide to the **first** marker image it sees
+  (`ARSessionController.attach`, only on a new image anchor) and scales it by ARKit's size estimate
+  (`markerRoot.scale`). A second copy of the marker in view (a spare print, or the marker inside the scan on the
+  dashboard's screen) would anchor the whole guide there.
+- Touched: nothing
+- 📨 To @salman: on the phone, is the green outline on the taped marker, or somewhere else? Suggested fix in
+  `receive`: ignore an image anchor whose `estimatedScaleFactor` is outside about 0.8–1.2 (not our 180 mm print),
+  and consider turning scale estimation off. Yours to decide and test.
+- ⚠️ Conflicts: @salman — a suspected fault in how the phone anchors the guide
+- Conflict status: open
