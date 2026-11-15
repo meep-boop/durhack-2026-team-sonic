@@ -636,3 +636,16 @@ each builder's brief (`builder-file-<name>.md`, on the `context` branch).
 - 📨 To @laura: nothing new for your panel; the phone's position shows in the 3D view beside it.
 - ⚠️ Conflicts: none (the `state.json` slip touched no code)
 - Conflict status: resolved by @max 2026-11-15
+
+### 2026-11-15 03:00 — the set is taped to our table, not built on a board — @laura
+- Shipped: no code. Instead of a cardboard board with glued corner stops, the marker is **taped flat to our own
+  table** beside the laptop's fan side (where the SSD is), "TOP" away from the expert, and the laptop's four corners
+  are marked with masking-tape L-shapes so it lifts out and goes back in the same place.
+- Decision: by Laura: tape on the table (faster, no glue). Cost: the scan only matches while the table, the tape and
+  the marker stay put, so **the scan and the demo both happen at our table**, and anyone who moves it says so here.
+- Touched: nothing in the repo
+- 📨 To @max: scan at our table with the laptop in its tape corners and the marker fully in view; two scans (closed,
+  cover off), exported as **SPZ** (the dashboard doesn't load USDZ). If you scanned before the tape went down, rescan.
+- 📨 To @ahmed: the rig's spot is beside the marker on the fan side; tell me if you want it elsewhere before Max scans.
+- ⚠️ Conflicts: @max — where and when he scans | @ahmed — the rig's camera spot
+- Conflict status: open
