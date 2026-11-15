@@ -451,10 +451,13 @@ body,
   z-index: 1;
   right: 12px;
   bottom: 12px;
+  /* Wraps instead of running under the labels panel (280 px wide, bottom-left) on a narrow window. */
+  max-width: calc(100% - 320px);
   margin: 0;
   padding: 4px 10px;
-  border-radius: var(--radius-pill);
+  border-radius: var(--radius-m);
   background: rgb(17 19 24 / 0.75);
+  text-align: right;
   color: var(--ink-muted);
   font-size: 12px;
   pointer-events: none;
