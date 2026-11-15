@@ -22,6 +22,11 @@ final class RelayClient {
   private(set) var unreadChat = 0
   /// Ids of messages typed here that haven't reached the relay yet.
   private(set) var pendingChatIds: Set<String> = []
+  /// Ids of every message typed on this phone. "Mine" is decided by this, never by the `from` a message claims:
+  /// anyone on the relay can send `from: "user"`.
+  private(set) var sentChatIds: Set<String> = [] {
+    didSet { Persistence.save(sentChatIds, as: Self.chatSentFile) }
+  }
   /// The relay refused a chat message: it's an older relay without the (proposed) chat message.
   private(set) var chatUnsupported = false
 
@@ -60,6 +65,8 @@ final class RelayClient {
   private static let outboxFile = "outbox"
   private static let chatFile = "chat"
   private static let chatOutboxFile = "chat-outbox"
+  private static let chatSentFile = "chat-sent"
+  private static let chatLimit = 100
   private let encoder = JSONEncoder()
   private let decoder = JSONDecoder()
 
@@ -70,11 +77,14 @@ final class RelayClient {
     outbox = Persistence.load([StepDone].self, from: Self.outboxFile) ?? []
     chat = Persistence.load([ChatMessage].self, from: Self.chatFile) ?? []
     chatOutbox = Persistence.load([ChatMessage].self, from: Self.chatOutboxFile) ?? []
+    sentChatIds = Persistence.load(Set<String>.self, from: Self.chatSentFile) ?? []
   }
 
   // MARK: Connection
 
   func connect(to url: URL) {
+    // A different relay is a different session: its expert mustn't see (or receive) chat meant for the last one.
+    if let old = self.url, old != url { clearChat() }
     UserDefaults.standard.set(url.absoluteString, forKey: Self.urlKey)
     self.url = url
     attempt = 0
@@ -230,9 +240,27 @@ final class RelayClient {
     let trimmed = text.trimmingCharacters(in: .whitespacesAndNewlines)
     guard !trimmed.isEmpty else { return }
     let message = ChatMessage(id: UUID().uuidString.lowercased(), from: .user, text: String(trimmed.prefix(500)), at: Int64(Date().timeIntervalSince1970 * 1000))
-    chat.append(message)
+    sentChatIds.insert(message.id)
+    appendChat(message)
     chatOutbox.append(message)
     flushChat()
+  }
+
+  func isMine(_ message: ChatMessage) -> Bool {
+    sentChatIds.contains(message.id)
+  }
+
+  private func clearChat() {
+    chat = []
+    chatOutbox = []
+    sentChatIds = []
+    unreadChat = 0
+  }
+
+  /// Arrival order, not the sender's clock (which anyone can set), and a bounded history.
+  private func appendChat(_ message: ChatMessage) {
+    chat.append(message)
+    if chat.count > Self.chatLimit { chat.removeFirst(chat.count - Self.chatLimit) }
   }
 
   func markChatRead() {
@@ -242,9 +270,10 @@ final class RelayClient {
   private func receiveChat(_ message: ChatMessage) {
     // The relay replays recent chat on every connect, and may echo ours back: ids make that harmless.
     guard !chat.contains(where: { $0.id == message.id }) else { return }
-    chat.append(message)
-    chat.sort { $0.at < $1.at }
-    guard message.from != .user else { return }
+    var message = message
+    message.text = String(message.text.prefix(500))
+    appendChat(message)
+    guard !isMine(message) else { return }
     unreadChat += 1
     onChat?(message)
   }

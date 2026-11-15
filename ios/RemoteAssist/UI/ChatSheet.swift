@@ -92,7 +92,7 @@ struct ChatSheet: View {
   }
 
   private func bubble(_ message: ChatMessage) -> some View {
-    let mine = message.from == .user
+    let mine = relay.isMine(message)
     let pending = relay.pendingChatIds.contains(message.id)
     return HStack {
       if mine { Spacer(minLength: 48) }
@@ -101,6 +101,12 @@ struct ChatSheet: View {
           .padding(.horizontal, 14)
           .padding(.vertical, 9)
           .background(mine ? Color.accentColor : Color.secondary.opacity(0.2), in: RoundedRectangle(cornerRadius: 18, style: .continuous))
+          .overlay(alignment: .topLeading) {
+            // Another phone on the relay (or anyone claiming to be one) is labelled, never shown as "you".
+            if !mine, message.from != .expert {
+              Text(message.from == .user ? "Another phone" : "Rig").font(.caption2).offset(y: -14)
+            }
+          }
           .foregroundStyle(mine ? .black : .primary)
         Text(pending ? "Waiting to send" : Date(timeIntervalSince1970: Double(message.at) / 1000).formatted(date: .omitted, time: .shortened))
           .font(.caption2)
