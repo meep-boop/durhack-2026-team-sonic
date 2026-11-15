@@ -90,6 +90,12 @@ final class ARSessionController: NSObject, ARSessionDelegate {
   @ObservationIgnored private var lostTimer: Task<Void, Never>?
   @ObservationIgnored private var thermalObserver: NSObjectProtocol?
   @ObservationIgnored private var memoryObserver: NSObjectProtocol?
+  @ObservationIgnored private var watchdog: Timer?
+  @ObservationIgnored private var watchdogRestarts = 0
+  /// When the session was last (re)started, so silence is measured from then, not from boot.
+  @ObservationIgnored private var runStartedAt: TimeInterval = 0
+  /// Set when the camera stopped sending frames and a restart didn't bring it back.
+  private(set) var cameraStalled = false
   /// Set on the first memory warning: people occlusion stays off for the rest of the run.
   @ObservationIgnored private var lowMemory = false
 
@@ -105,6 +111,8 @@ final class ARSessionController: NSObject, ARSessionDelegate {
     /// The newest marker state waiting for main, and whether a hop to main is already queued.
     var pending: MarkerSample?
     var hopQueued = false
+    /// When the last camera frame arrived (system uptime), for the watchdog.
+    var lastFrameAt: TimeInterval = 0
     /// The last ~2.5 s of camera poses, so an expert's tap on a video frame that left the phone a moment ago is
     /// projected through the camera that filmed it.
     var cameraHistory: [CameraContext] = []
@@ -165,13 +173,19 @@ final class ARSessionController: NSObject, ARSessionDelegate {
       .disableAREnvironmentLighting,
     ])
     if !Self.handsInFront { arView.renderOptions.insert(.disablePersonOcclusion) }
-    // 2× instead of the screen's 3×: about 55% fewer pixels per frame, invisible at arm's length.
-    arView.contentScaleFactor = 2
-    arView.layer.contentsScale = 2
+    // Never override ARView's contentScaleFactor or layer scale: RealityKit sizes its own drawables, and forcing 2x
+    // made every drawable allocation fail (a black, frozen camera).
     arView.session.delegateQueue = sessionQueue
     arView.session.delegate = self
     arView.session.run(config, options: [.resetTracking, .removeExistingAnchors])
     isRunning = true
+    runStartedAt = ProcessInfo.processInfo.systemUptime
+    startWatchdog()
+    DispatchQueue.main.asyncAfter(deadline: .now() + 1) { [weak self] in
+      guard let self else { return }
+      let b = self.arView.bounds
+      Self.log.notice("AR started: view \(Int(b.width), privacy: .public)×\(Int(b.height), privacy: .public) pt at \(self.arView.contentScaleFactor, privacy: .public)x")
+    }
 
     // Apple's own "move your phone" guidance whenever tracking is poor.
     coaching.session = arView.session
@@ -202,6 +216,39 @@ final class ARSessionController: NSObject, ARSessionDelegate {
     }
   }
 
+  /// If no camera frame arrives for 2 s while running, re-run the session once; if that fails too, say so plainly
+  /// rather than leave a frozen picture.
+  private func startWatchdog() {
+    watchdog?.invalidate()
+    watchdog = Timer.scheduledTimer(withTimeInterval: 1, repeats: true) { [weak self] _ in
+      guard let self, self.isRunning, UIApplication.shared.applicationState == .active, let configuration = self.configuration else { return }
+      let last = self.shared.withLock { $0.lastFrameAt }
+      let silent = ProcessInfo.processInfo.systemUptime - max(last, self.runStartedAt)
+      guard silent > 2 else {
+        if self.cameraStalled { self.cameraStalled = false }
+        self.watchdogRestarts = 0
+        return
+      }
+      if self.watchdogRestarts < 1 {
+        self.watchdogRestarts += 1
+        Self.log.error("No camera frames for \(Int(silent), privacy: .public) s: restarting the AR session")
+        self.runStartedAt = ProcessInfo.processInfo.systemUptime
+        self.arView.session.run(configuration)
+      } else if !self.cameraStalled {
+        Self.log.error("Camera still silent after a restart")
+        self.cameraStalled = true
+      }
+    }
+  }
+
+  /// Makes sure a live session is running, e.g. when SwiftUI rebuilds the camera view.
+  func ensureRunning() {
+    guard let configuration, isRunning else { return }
+    arView.isHidden = false
+    runStartedAt = ProcessInfo.processInfo.systemUptime
+    arView.session.run(configuration)
+  }
+
   /// Also hides the view: a paused session doesn't stop ARView's render loop, and a hidden view asks the GPU for
   /// nothing (a backgrounded app asking for drawables is what floods "nextDrawable returning nil").
   func pause() {
@@ -218,6 +265,7 @@ final class ARSessionController: NSObject, ARSessionDelegate {
     guard let configuration, !isRunning else { return }
     isRunning = true
     arView.isHidden = false
+    runStartedAt = ProcessInfo.processInfo.systemUptime
     arView.session.run(configuration)
     Self.log.notice("AR resumed")
   }
@@ -498,7 +546,9 @@ final class ARSessionController: NSObject, ARSessionDelegate {
     let timestamp = frame.timestamp
     let cameraTransform = frame.camera.transform
     let cameraContext = CameraContext(frame)
+    let now = ProcessInfo.processInfo.systemUptime
     shared.withLock { state in
+      state.lastFrameAt = now
       state.cameraHistory.append(cameraContext)
       if state.cameraHistory.count > 150 { state.cameraHistory.removeFirst(state.cameraHistory.count - 150) }
     }

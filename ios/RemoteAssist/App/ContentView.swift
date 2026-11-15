@@ -82,6 +82,13 @@ struct ContentView: View {
           CaptionStrip(call: call)
         }
 
+        if ar.cameraStalled {
+          Label("The camera isn't responding. Close the app and open it again.", systemImage: "camera.badge.exclamationmark")
+            .font(.footnote.weight(.semibold))
+            .padding(10)
+            .glassBackground(in: RoundedRectangle(cornerRadius: 14))
+        }
+
         if let error = ar.errorMessage {
           Label(error, systemImage: "exclamationmark.triangle.fill")
             .font(.footnote)
