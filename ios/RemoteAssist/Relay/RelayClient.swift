@@ -3,7 +3,7 @@ import Observation
 import UIKit
 
 /// The phone's websocket to Ahmed's relay. The guide never depends on it: when it's down the app keeps playing what
-/// it has, and finished steps wait in the outbox until the link is back.
+/// it has, and finished steps wait in the outbox until the relay sends each one back as its receipt.
 @Observable
 final class RelayClient {
   enum State: Equatable {
@@ -27,13 +27,12 @@ final class RelayClient {
   @ObservationIgnored private var generation = 0
   @ObservationIgnored private var attempt = 0
   /// Saved on every change, so steps finished offline still reach the expert after the app is killed.
-  @ObservationIgnored private var outbox: [StepDone] = [] {
+  @ObservationIgnored private var outbox = Outbox() {
     didSet {
       outboxCount = outbox.count
-      Persistence.save(outbox, as: Self.outboxFile)
+      if outbox.items != oldValue.items { Persistence.save(outbox.items, as: Self.outboxFile) }
     }
   }
-  @ObservationIgnored private var flushing = false
   @ObservationIgnored private var pingTimer: Timer?
   /// False after the user taps Disconnect, so coming back from the background doesn't reconnect behind their back.
   @ObservationIgnored private var wantsConnection = false
@@ -48,7 +47,7 @@ final class RelayClient {
     if let saved = UserDefaults.standard.string(forKey: Self.urlKey), let url = URL(string: saved) {
       self.url = url
     }
-    outbox = Persistence.load([StepDone].self, from: Self.outboxFile) ?? []
+    outbox = Outbox(items: Persistence.load([StepDone].self, from: Self.outboxFile) ?? [])
   }
 
   // MARK: Connection
@@ -124,6 +123,8 @@ final class RelayClient {
   private func startPinging(_ socket: URLSessionWebSocketTask, gen: Int) {
     pingTimer?.invalidate()
     pingTimer = Timer.scheduledTimer(withTimeInterval: 5, repeats: true) { [weak self] _ in
+      // Also the resend clock: a tap with no receipt after 4 s goes again.
+      self?.flush()
       socket.sendPing { error in
         guard let error else { return }
         DispatchQueue.main.async {
@@ -139,6 +140,8 @@ final class RelayClient {
     state = .connected
     attempt = 0
     lastError = nil
+    // Anything written to the old socket may have died with it: resend the whole queue, in order.
+    outbox.forgetSends()
     flush()
   }
 
@@ -148,7 +151,6 @@ final class RelayClient {
     task = nil
     pingTimer?.invalidate()
     expertOnline = false
-    flushing = false
     lastError = error.localizedDescription
     state = .connecting
 
@@ -179,13 +181,15 @@ final class RelayClient {
     case .stepSet(let m): onStepSet?(m)
     case .rtcSignal(let m): onSignal?(m.signal)
     case .stepVerified(let m): onStepVerified?(m)
+    // The relay sends our own tap back once it's saved: that's the receipt, and only then does it leave the queue.
+    case .stepDone(let m): outbox.receipt(m.doneId)
     case .presence(let m): expertOnline = m.clients.contains { $0.role == .expert }
     case .error(let m): lastError = "Relay refused \(m.about ?? "a message"): \(m.message)"
     default: break
     }
   }
 
-  /// Queued, then sent in tap order; a step stays queued until the relay has taken it.
+  /// Queued, then sent in tap order; a step stays queued until its receipt comes back.
   func sendStepDone(guide: Guide, stepId: String) {
     let done = StepDone(
       guideId: guide.id,
@@ -194,7 +198,7 @@ final class RelayClient {
       doneId: UUID().uuidString.lowercased(),
       at: Int64(Date().timeIntervalSince1970 * 1000)
     )
-    outbox.append(done)
+    outbox.enqueue(done)
     flush()
   }
 
@@ -210,19 +214,11 @@ final class RelayClient {
     send(.rtcSignal(RtcSignalMessage(signal: signal)), on: task)
   }
 
+  /// Writes every tap that's due, in tap order. One socket keeps them in order; receipts take them off the queue.
   private func flush() {
-    guard state == .connected, !flushing, let socket = task, let next = outbox.first else { return }
-    flushing = true
-    let gen = generation
-    send(.stepDone(next), on: socket) { [weak self] error in
-      DispatchQueue.main.async {
-        guard let self, gen == self.generation else { return }
-        self.flushing = false
-        if error == nil, self.outbox.first?.doneId == next.doneId {
-          self.outbox.removeFirst()
-          self.flush()
-        }
-      }
+    guard state == .connected, let socket = task else { return }
+    for tap in outbox.due() {
+      send(.stepDone(tap), on: socket)
     }
   }
 
