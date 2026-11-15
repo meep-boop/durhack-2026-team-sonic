@@ -1,72 +1,72 @@
 {
-  "id": "sample-cable-move",
+  "id": "sample-ssd-swap",
   "rev": 1,
-  "title": "SAMPLE: move a cable from port 14 to port 17",
+  "title": "SAMPLE: take a laptop's SSD out and put the same one back",
   "marker": { "name": "marker", "width": 0.18, "height": 0.18 },
   "steps": [
     {
       "id": "s1",
-      "text": "Undo the top-left screw on the cover",
+      "text": "Undo the screws on the bottom cover",
       "objects": [
         {
           "id": "o1",
           "model": "screw",
-          "pos": [-0.1, 0.004, -0.09],
+          "pos": [0.16, 0.012, -0.07],
           "rot": [0, 0, 0, 1],
           "size": [0.012, 0.008, 0.012],
           "action": "unscrew",
           "axis": [0, 1, 0],
-          "label": "Cover screw, top left"
+          "label": "Cover screw"
         }
       ]
     },
     {
       "id": "s2",
-      "text": "Undo the top-right screw on the cover",
+      "text": "Lift the bottom cover off",
       "objects": [
         {
           "id": "o2",
-          "model": "screw",
-          "pos": [0.1, 0.004, -0.09],
+          "model": "hand",
+          "pos": [0.27, 0.02, 0],
           "rot": [0, 0, 0, 1],
-          "size": [0.012, 0.008, 0.012],
-          "action": "unscrew",
+          "size": [0.3, 0.02, 0.2],
+          "action": "pull",
           "axis": [0, 1, 0],
-          "label": "Cover screw, top right"
+          "label": "Bottom cover"
         }
       ]
     },
     {
       "id": "s3",
-      "text": "Pull the cable out of port 14",
+      "text": "Slide the SSD out of its slot",
       "objects": [
         {
           "id": "o3",
-          "model": "cable-plug",
-          "pos": [0.03, 0.012, 0.11],
+          "model": "hand",
+          "pos": [0.28, 0.01, 0.03],
           "rot": [0, 0, 0, 1],
-          "size": [0.014, 0.016, 0.012],
+          "size": [0.08, 0.006, 0.022],
           "action": "pull",
-          "axis": [0, 1, 0],
-          "label": "Port 14",
-          "expect": { "port": "14", "cable": "out" }
+          "axis": [1, 0, 0],
+          "label": "SSD",
+          "expect": { "region": "ssd-bay", "present": false }
         }
       ]
     },
     {
       "id": "s4",
-      "text": "Plug it into port 17",
+      "text": "Slide the same SSD back in",
       "objects": [
         {
           "id": "o4",
-          "model": "cable-plug",
-          "pos": [0.075, 0.012, 0.11],
+          "model": "hand",
+          "pos": [0.28, 0.01, 0.03],
           "rot": [0, 0, 0, 1],
-          "size": [0.014, 0.016, 0.012],
+          "size": [0.08, 0.006, 0.022],
           "action": "push",
-          "axis": [0, -1, 0],
-          "label": "Port 17",
-          "expect": { "port": "17", "cable": "in" }
+          "axis": [-1, 0, 0],
+          "label": "SSD",
+          "expect": { "region": "ssd-bay", "present": true }
         }
       ]
     }

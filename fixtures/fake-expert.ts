@@ -1,14 +1,17 @@
-// Stands in for the expert dashboard, so the phone app can be built and tested without it: it sends a guide (the
-// sample one by default) and prints everything the phone and rig send back.
-// Run: node fixtures/fake-expert.ts [ws://host:8080] [path/to/guide.json]
+// Stands in for the expert dashboard, so the phone app and the UNO Q rig can be built and tested without it: it
+// sends a guide (the sample one by default), optionally jumps to a step, and prints everything sent back.
+// Run: node fixtures/fake-expert.ts [ws://host:8080] [--guide path/to/guide.json] [--step s4]
 import { readFileSync } from "node:fs";
+import { parseArgs } from "node:util";
 import type { Guide, Message } from "../contracts/protocol.ts";
 import { parseMessage } from "../relay/validate.ts";
 
 export type FakeExpert = { received: Message[]; close: () => void };
 
+type FakeExpertOptions = { url: string; guide: Guide; stepId?: string; log?: (line: string) => void };
+
 // Resolves once connected and the guide is sent; `received` keeps filling until `close`.
-export function startFakeExpert({ url, guide, log = console.log }: { url: string; guide: Guide; log?: (line: string) => void }) {
+export function startFakeExpert({ url, guide, stepId, log = console.log }: FakeExpertOptions) {
   return new Promise<FakeExpert>((resolve, reject) => {
     const socket = new WebSocket(url);
     const send = (message: Message) => socket.send(JSON.stringify(message));
@@ -19,6 +22,10 @@ export function startFakeExpert({ url, guide, log = console.log }: { url: string
       send({ type: "hello", protocol: 1, role: "expert", client: "fake expert" });
       send({ type: "guide.set", guide });
       log(`sent guide "${guide.title}" rev ${guide.rev}`);
+      if (stepId) {
+        send({ type: "step.set", guideId: guide.id, stepId });
+        log(`jumped to ${stepId}`);
+      }
       resolve({ received, close: () => socket.close() });
     });
     socket.addEventListener("error", () => reject(new Error(`couldn't connect to ${url}`)));
@@ -56,7 +63,10 @@ export function startFakeExpert({ url, guide, log = console.log }: { url: string
 }
 
 if (import.meta.main) {
-  const guidePath = process.argv[3] ?? new URL("./sample-guide.json", import.meta.url);
-  const guide = JSON.parse(readFileSync(guidePath, "utf8")) as Guide;
-  await startFakeExpert({ url: process.argv[2] ?? "ws://localhost:8080", guide });
+  const { values, positionals } = parseArgs({
+    options: { guide: { type: "string" }, step: { type: "string" } },
+    allowPositionals: true,
+  });
+  const guide = JSON.parse(readFileSync(values.guide ?? new URL("./sample-guide.json", import.meta.url), "utf8")) as Guide;
+  await startFakeExpert({ url: positionals[0] ?? "ws://localhost:8080", guide, stepId: values.step });
 }
