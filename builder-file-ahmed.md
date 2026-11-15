@@ -65,6 +65,14 @@ but all three teammates build on them, so every change after the first version i
 ## 3. ▶ Current tasks (2026-11-14), in order
 *Status: ⬜ not started · 🟡 in progress · ⏸ blocked · ✅ done*
 
+**▶ The last stretch (from @ahmed, 2026-11-15 07:37), ahead of everything below.** Why boxes hover on the phone: no guide has real
+positions yet (the only scan has no marker; the prepared guide has placeholders). Decided by Ahmed: rescan and place
+in the scan, with a ruler photo as the fallback; bigger animations; the demo is "expert builds, user follows".
+1. ⬜ **Back up the laptop** (the BitLocker key is done), push, then hand it over for the scans.
+2. ⬜ **At the table:** be the user's hands in the first real run and the run-throughs; keep the Nicla, the tape
+   corners and the lamp where they are.
+3. ⬜ If the scan route fails: positions from Laura's ruler photos into `fixtures/ssd-swap-guide.json`.
+
 **▶ What's left (from @ahmed, 2026-11-15 04:12), ahead of the 01:45 block below.** 
 1. ✅ (04:50, reported by Ahmed at the board: the SSD shows as `ssd-bay` and the checks work end to end; the Nicla script's example colour and region fitted the green sticker unchanged) P0 **Tune the rig on the real SSD** (task 9): sticker colour, the `ssd-bay` region, a tick on the LED matrix,
    and a `step.verified` seen on the dashboard's live strip.

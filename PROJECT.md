@@ -49,6 +49,10 @@ Source: `EVENT.md` §1 (one notes file, not yet checked against Devpost). The 02
 
 | Date | Decision |
 |---|---|
+| 2026-11-15 | The demo is "expert builds, user follows": click a screw in the scan, it lands on the real screw, taps and ticks, offline and sync, the rig's ✓; extras last, only if they work (Ahmed, 07:40) |
+| 2026-11-15 | Guide positions come from two rescans with the marker in view, placed by clicking in the scan; a top-down ruler photo is the fallback (Ahmed, 07:40) |
+| 2026-11-15 | Animations get bigger, same five actions, no message change; the one phone change allowed after the freeze (Ahmed, 07:40) |
+| 2026-11-15 | Salman's #11 on `main` is the demo build, replacing "the plain build first" (Ahmed, 07:40) |
 | 2026-11-15 | AI-made props use **Pixal3D** (MIT, SIGGRAPH 2026), not Hunyuan3D 2.1, whose licence excludes the UK. Ungated parts only: the `camenduru` copy of DINOv3 (DINOv3 licence, which Max accepted) and BiRefNet (MIT) in place of Meta's hand-approved DINOv3 and the non-commercial RMBG-2.0. Built in Max's home folder on the Spark (no Docker or sudo). Props on the dashboard first, labelled "AI-generated from a photo"; cut-off moved to **07:30** (Max, 04:32; `research/ledger.md` § 19) |
 | 2026-11-15 | The phone's demo build is the plain one: PR #8 (`salman-ios-polish`) to `main` first; the camera freeze on `salman-ios-ar` is found by halving the commits; extras come across one at a time (Ahmed, 04:10) |
 | 2026-11-15 | Max may build dashboard features until 10:00; the phone, relay, rig and message shapes still freeze at 07:00 (Ahmed, 04:10) |

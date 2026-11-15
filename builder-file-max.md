@@ -64,6 +64,21 @@ and the walking skeleton is the next one. Anything new for you is in the block a
 ## 3. ▶ Current tasks (2026-11-14), in order
 *Status: ⬜ not started · 🟡 in progress · ⏸ blocked · ✅ done*
 
+**▶ The last stretch (from @ahmed, 2026-11-15 07:37), ahead of everything below.** Why boxes hover on the phone: no guide has real
+positions yet (the only scan has no marker; the prepared guide has placeholders). Decided by Ahmed: rescan and place
+in the scan, with a ruler photo as the fallback; bigger animations; the demo is "expert builds, user follows".
+1. ⬜ P0 **Rescan now, with Laura:** laptop face down in its tape corners, marker fully in view. Closed scan,
+   then the cover off without moving the laptop, then the open scan. New file names in `dashboard/public/scans/`.
+2. ⬜ P0 **Calibrate both** (under 5 mm) and **build the demo guide in the scan**: the 8 cover screws (screw,
+   unscrew) in the closed scan; the SSD screw and the SSD (ssd, pull / push, rig check `ssd-bay`) in the open one.
+   Save it to a file as well as sending it.
+3. ⬜ P0 **Bigger animation preview**, same numbers as the phone: pull / push travel 4 cm over 1.0 s (now 2 cm); unscrew does two full turns and rises 15 mm over 1.6 s, then restarts (now a half turn, 3 mm). `dashboard/src/scene/preview.ts` and its test.
+4. ⬜ P0 **First real run with the phone:** look at each box on the real laptop; measure three screws with a ruler
+   and post the error in mm. If boxes are mirrored, the marker axes are the other way: `scene/calibration.ts`.
+5. ⬜ P1 Extras for the last 30 s of the demo, only if they work: AI labels (one live Claude call, Ahmed OKs it),
+   the Pixal3D prop labelled "AI-generated from a photo".
+- Ahmed's laptop is the prop from the scan on, so his agent is offline: you're the docs owner on duty.
+
 **▶ What's left (from @ahmed, 2026-11-15 04:12), ahead of the 01:45 block below.** 
 1. ⬜ P0 **Rescan both (closed, cover off) with the marker in view**, at Laura's taped table, then calibrate each.
    Nothing built in a scan can line up on the phone until this is done. *Done when:* both calibrate under 5 mm.

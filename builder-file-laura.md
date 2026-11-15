@@ -65,6 +65,19 @@ them, so a renamed or resized model breaks two apps).
 ## 3. ▶ Current tasks (2026-11-14), in order
 *Status: ⬜ not started · 🟡 in progress · ⏸ blocked · ✅ done*
 
+**▶ The last stretch (from @ahmed, 2026-11-15 07:37), ahead of everything below.** Why boxes hover on the phone: no guide has real
+positions yet (the only scan has no marker; the prepared guide has placeholders). Decided by Ahmed: rescan and place
+in the scan, with a ruler photo as the fallback; bigger animations; the demo is "expert builds, user follows".
+1. ⬜ P0 **Rescan with Max now** (his item 1). While the laptop is on the table, take **a top-down photo with a
+   ruler in view**, closed and again with the cover off: the fallback for `fixtures/ssd-swap-guide.json`.
+2. ⬜ P0 **Own the 5-minute beat sheet.** A draft is in the 07:45 board entry: expert clicks a screw and picks
+   "unscrew" → it lands on the real screw → taps and ticks → phone Wi-Fi off, keeps going, syncs → SSD out, the rig's
+   ✓ → the call with tap-to-point → extras → what's real. Put it in `PROJECT.md` §9 with who speaks.
+3. ⬜ P0 **Two timed run-throughs** before the video. For the offline beat turn off only the phone's Wi-Fi: the
+   hotspot also carries the rig and the dashboard.
+4. ⬜ P0 **Video, README, Devpost** (times in the Clock). Say "prepared guide" if the scan route didn't make it;
+   "mesh" or "splat" as Max says; every AI part labelled.
+
 **▶ What's left (from @ahmed, 2026-11-15 04:12), ahead of the 01:45 block below.** 
 1. ⬜ P0 **Scan with Max now:** the laptop in its tape corners, marker fully in view, closed then cover off.
 2. ⬜ P0 **The 5-minute presentation** (the organisers' limit): a beat sheet in `PROJECT.md` §9 with who speaks and

@@ -63,6 +63,19 @@ splats until that's settled. Training splats in the app (the scan is taken in Sc
 ## 3. ▶ Current tasks (2026-11-14), in order
 *Status: ⬜ not started · 🟡 in progress · ⏸ blocked · ✅ done*
 
+**▶ The last stretch (from @ahmed, 2026-11-15 07:37), ahead of everything below.** Why boxes hover on the phone: no guide has real
+positions yet (the only scan has no marker; the prepared guide has placeholders). Decided by Ahmed: rescan and place
+in the scan, with a ruler photo as the fallback; bigger animations; the demo is "expert builds, user follows".
+1. ⬜ P0 **Bigger animations on the phone** (Ahmed allows this one change after the freeze; no message change):
+   pull / push travel 4 cm over 1.0 s (now 2 cm); unscrew does two full turns and rises 15 mm over 1.6 s, then restarts (now a half turn, 3 mm). `Shapes.animate` in `ios/RemoteAssist/AR/Shapes.swift`. Max matches the dashboard preview.
+2. ⬜ P0 **PR #12**: run its phone check (45 s camera, Done → receipt) and merge it.
+3. ⬜ P0 **Be at the table for the first real run** once Max's guide is built in the scan: the expert's guide, not
+   the laptop guide, is the demo's spine. Post which printed edges red +X and blue +Z point to.
+4. ⬜ P0 **The call beat:** `ios/expert-call/` served on port 8000 on Max's laptop, tap-to-point tried against Max's
+   relay (your § 20 says that's untested).
+5. ⏸ Done in the laptop guide reaching the relay needs a contract change: not before the demo (Ahmed).
+- Accepted by Ahmed: #11 on `main` as the demo build. Thanks for measuring the freeze (§ 20).
+
 **▶ What's left (from @ahmed, 2026-11-15 04:12), ahead of the 01:45 block below.** The phone is the one piece not on `main`, and the
 camera freeze on `salman-ios-ar` has no confirmed cause after five fixes. Ahmed's decision: **the plain build first.**
 1. ✅ P0 *(05:18: #11 merged instead of #8, the newer build; waits on Ahmed's OK)* **Merge PR #8 (`salman-ios-polish`) to `main` now** and run the six-point smoke test (item 2 in the block
