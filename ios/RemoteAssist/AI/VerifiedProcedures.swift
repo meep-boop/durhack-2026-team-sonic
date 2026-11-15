@@ -1,29 +1,21 @@
 import Foundation
 
-/// Step lists checked against the maker's own service manual, used instead of Gemini's plan when the AI recognises
-/// the laptop. The demo laptop is Ahmed's Dell Latitude 5530; its steps come from the team's research, `research/ledger.md`
+/// Step lists checked against the maker's own service manual. The demo laptop is Ahmed's Dell Latitude 5530; its
+/// steps come from the team's research, `research/ledger.md`
 /// § 17 (context branch, 2026-11-15), which read Dell's service manual:
 /// - Before working inside: https://www.dell.com/support/manuals/en-us/latitude-15-5530-laptop/latitude_5530_sm/before-working-inside-your-computer
 /// - Removing the base cover (eight captive screws, scribe): …/latitude_5530_sm/removing-the-base-cover
 /// - Screw list (#0 Phillips): …/latitude_5530_sm/screw-list
 /// - Removing the M.2 2280 SSD (one M2x4, or a bracket with two M2x3): …/latitude_5530_sm/removing-the-m2-2280-solid-state-drive
 /// Laura then checked the steps on the laptop itself (no bracket, one screw), and that check wins.
-/// Gemini still finds the parts on camera and checks the work; it just doesn't write these steps.
 enum VerifiedProcedures {
   struct Procedure {
+    var device: String
     /// Shown on the step card and in the report, e.g. "Dell's service manual".
     var source: String
     /// The base cover's screws stay in the cover when loosened.
     var captiveScrews: Bool
-    /// Told to the locator so it looks for the right number of screws.
-    var locateHint: String
-    var steps: [LaptopAssistant.PlannedStep]
-  }
-
-  static func match(_ id: LaptopAssistant.Identification) -> Procedure? {
-    let make = id.make.lowercased(), model = id.model.lowercased()
-    if make.contains("dell") && model.contains("5530") { return latitude5530 }
-    return nil
+    var steps: [LaptopGuide.Instruction]
   }
 
   private static let coverScrews = "the eight base cover screws"
@@ -32,9 +24,9 @@ enum VerifiedProcedures {
   /// Laura's list, checked on Ahmed's laptop (progress.md 2026-11-15 02:11, ledger § 17): 8 captive screws on the base
   /// cover, no bracket over the SSD, one screw on it. Same SSD out and back in.
   static let latitude5530 = Procedure(
+    device: "Dell Latitude 5530",
     source: "Dell's service manual, checked on the demo laptop",
     captiveScrews: true,
-    locateHint: "This is a Dell Latitude 5530: its base cover has eight captive screws, and its SSD is in the M.2 slot next to the fan.",
     steps: [
       step("Shut down and unplug", "Save your work, shut down, and unplug the charger and anything else.", "the charger port"),
       step("Enter Service Mode", "Hold B and press the power button for 3 seconds. After 3 beeps it switches off in Service Mode, with the power cut.", "the power button",
@@ -54,7 +46,7 @@ enum VerifiedProcedures {
     ]
   )
 
-  private static func step(_ title: String, _ detail: String, _ lookFor: String, caution: String? = nil, phase: String = "other") -> LaptopAssistant.PlannedStep {
-    LaptopAssistant.PlannedStep(title: title, detail: detail, lookFor: lookFor, caution: caution, phase: phase)
+  private static func step(_ title: String, _ detail: String, _ lookFor: String, caution: String? = nil, phase: String = "other") -> LaptopGuide.Instruction {
+    LaptopGuide.Instruction(title: title, detail: detail, lookFor: lookFor, caution: caution, phase: phase)
   }
 }

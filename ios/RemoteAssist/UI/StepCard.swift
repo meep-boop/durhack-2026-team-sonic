@@ -50,7 +50,7 @@ struct StepCard: View {
             }
             .buttonStyle(.plain)
             .foregroundStyle(handsFree.on ? Theme.accent : .secondary)
-            .accessibilityLabel(handsFree.on ? "Stop hands-free commands" : "Hands-free: say next, back, check my work")
+            .accessibilityLabel(handsFree.on ? "Stop hands-free commands" : "Hands-free: say next, back, show me")
             Button {
               voiceOn.toggle()
             } label: {
@@ -73,7 +73,7 @@ struct StepCard: View {
         if let problem = handsFree.problem {
           Label(problem, systemImage: "mic.badge.xmark").font(.footnote).foregroundStyle(.orange)
         } else if handsFree.on, handsFree.heard == nil {
-          Text("Say “next”, “back”, “show me where”, “check my work” or “repeat”")
+          Text("Say “next”, “back”, “show me”, “repeat” or “call the expert”")
             .font(.caption)
             .foregroundStyle(.secondary)
         }

@@ -5,24 +5,16 @@ struct ContentView: View {
   @State private var ar = ARSessionController()
   @State private var relay = RelayClient()
   @State private var call = CallManager()
-  @State private var assistant = LaptopAssistant()
+  @State private var laptop = LaptopGuide()
   @State private var voice = VoiceGuide()
   @State private var showingConnection = false
-  @State private var showingAssistant = false
+  @State private var showingLaptop = false
   @State private var showingTranscript = false
-  @State private var aiBusy = false
   @State private var pinMessage: String?
   @State private var verified: [String: StepVerified] = [:]
-  /// The AI's "check my work" verdict per step id, for the report.
-  @State private var aiChecks: [String: LaptopAssistant.Check] = [:]
   @State private var reportURL: URL?
   @State private var syncedToast: String?
-  @State private var locateTask: Task<Void, Never>?
-  /// The last AI locate on this step: the photo (for the screw map) and the notes per part.
-  @State private var lastLocate: (snapshot: ARSessionController.Snapshot, located: LaptopAssistant.Located)?
   @State private var screwMemory = ScrewMemory()
-  /// Notes the AI gave per part ("longer screw"), by pin id, for screw memory.
-  @State private var pinNotes: [UUID: String] = [:]
   @State private var pinTicks = 0
   @State private var spotlight = SpotlightTracker()
   @State private var commands = VoiceCommands()
@@ -32,7 +24,7 @@ struct ContentView: View {
   @AppStorage("voiceOn") private var voiceOn = true
   @Environment(\.scenePhase) private var scenePhase
 
-  private var isAIGuide: Bool { player.guide.id.hasPrefix("ai-") }
+  private var isLaptopGuide: Bool { player.guide.id == LaptopGuide.guideId }
 
   var body: some View {
     ZStack {
@@ -41,11 +33,11 @@ struct ContentView: View {
 
       SpotlightOverlay(tracker: spotlight)
 
-      if !ar.markerSeen && !isAIGuide {
-        FindMarkerHint { showingAssistant = true }.transition(.opacity)
+      if !ar.markerSeen && !isLaptopGuide {
+        FindMarkerHint { showingLaptop = true }.transition(.opacity)
       }
 
-      if ar.markerLostForAWhile && !isAIGuide && player.currentStep != nil {
+      if ar.markerLostForAWhile && !isLaptopGuide && player.currentStep != nil {
         Label("Marker out of view: the guide is holding where it was", systemImage: "pin.fill")
           .font(.footnote.weight(.semibold))
           .padding(.horizontal, 14)
@@ -95,17 +87,17 @@ struct ContentView: View {
 
         Spacer()
 
-        if isAIGuide, currentPhase == "refit", let group = screwMemory.group(for: currentLookFor) {
-          ScrewMapCard(entries: screwMemory.entries(in: group), photo: screwMemory.photos[group], captive: assistant.captiveScrews)
+        if isLaptopGuide, currentPhase == "refit", let group = screwMemory.group(for: currentLookFor) {
+          ScrewMapCard(entries: screwMemory.entries(in: group), photo: screwMemory.photos[group], captive: laptop.captiveScrews)
             .transition(.move(edge: .bottom).combined(with: .opacity))
         }
 
         StepCard(
           player: player,
-          canAdvance: ar.markerSeen || isAIGuide,
+          canAdvance: ar.markerSeen || isLaptopGuide,
           outboxCount: relay.outboxCount,
           voiceOn: $voiceOn,
-          tools: isAIGuide && player.currentStep != nil ? AnyView(aiTools) : nil,
+          tools: isLaptopGuide && player.currentStep != nil ? AnyView(LaptopStepTools(laptop: laptop, ghostToolOn: $ghostToolOn)) : nil,
           pinProgress: pinProgress,
           handsFree: (commands.isOn, commands.heard, commands.problem),
           onToggleHandsFree: commands.toggle,
@@ -144,20 +136,16 @@ struct ContentView: View {
       }
     }
     .sheet(isPresented: $showingConnection) {
-      ConnectionSheet(relay: relay, assistant: assistant, voice: voice, pauseAR: ar.pause, resumeAR: ar.resume)
+      ConnectionSheet(relay: relay, voice: voice, pauseAR: ar.pause, resumeAR: ar.resume)
         .presentationDetents([.medium, .large])
     }
-    .sheet(isPresented: $showingAssistant) {
-      LaptopAssistantSheet(
-        assistant: assistant,
-        snapshot: { ar.snapshotJPEG() },
-        onStart: { guide in
-          screwMemory.reset()
-          player.replace(with: guide)
-        },
-        onAskExpert: { showingAssistant = false; showingConnection = true }
-      )
-      .presentationDetents([.medium, .large])
+    .sheet(isPresented: $showingLaptop) {
+      LaptopGuideSheet(laptop: laptop) { guide in
+        screwMemory.reset()
+        player.replace(with: guide)
+        player.restart()
+      }
+      .presentationDetents([.large])
     }
     .sheet(isPresented: $showingTranscript) {
       TranscriptSheet(call: call).presentationDetents([.medium, .large])
@@ -181,7 +169,6 @@ struct ContentView: View {
     .onChange(of: player.startedAt) {
       // A new guide or a restart: verdicts belong to the run they were given in.
       verified = [:]
-      aiChecks = [:]
     }
     .onChange(of: player.isFinished) { _, finished in
       reportURL = nil
@@ -192,9 +179,7 @@ struct ContentView: View {
     .onChange(of: voiceOn) { voiceOn ? speakCurrentStep() : voice.stop() }
     .onChange(of: call.state) { updateListening() }
     .onChange(of: call.state) { old, new in
-      // AI pins are for working alone; when the expert joins they point at things themselves.
-      if old == .ringing, new == .connecting { ar.clearPins(kinds: [.ai], focus: true); pinMessage = nil }
-      if new == .idle { ar.clearPins(kinds: [.expert], focus: false) }
+      if new == .idle, !isLaptopGuide { ar.clearPins(kinds: [.expert]) }
     }
     .onChange(of: relay.state) {
       // A call can't survive losing its signalling path for long; end it rather than leave it hanging.
@@ -205,17 +190,12 @@ struct ContentView: View {
   private var topBar: some View {
     HStack(spacing: 10) {
       StatusCapsule(ar: ar, relay: relay, call: call) { showingConnection = true }
-      // Always shown: with no key its sheet says how to turn the AI on, instead of the feature silently vanishing.
-      Button { showingAssistant = true } label: {
+      Button { showingLaptop = true } label: {
         Image(systemName: "laptopcomputer").font(.headline).frame(width: 44, height: 44)
       }
       .glassBackground(in: Circle())
-      .accessibilityLabel("Laptop assistant")
+      .accessibilityLabel("Laptop guide")
     }
-  }
-
-  private var aiTools: some View {
-    AIStepTools(assistant: assistant, busy: aiBusy, ghostToolOn: $ghostToolOn, onShowWhere: showWhere, onCheck: checkWork)
   }
 
   private func wire() {
@@ -243,7 +223,7 @@ struct ContentView: View {
       pinMessage = "The expert marked: \(tap.label)"
       return true
     }
-    call.onExpertClear = { ar.clearPins(kinds: [.expert], focus: false) }
+    call.onExpertClear = { ar.clearPins(kinds: [.expert]) }
     voice.onSpeakingChanged = { speaking in
       appSpeaking = speaking
       updateListening()
@@ -276,17 +256,15 @@ struct ContentView: View {
 
   private func next() {
     guard let step = player.currentStep else { return }
-    // An AI guide lives only on this phone; the relay has no copy, so it would refuse the tap.
-    if !isAIGuide { relay.sendStepDone(guide: player.guide, stepId: step.id) }
+    // The laptop guide lives only on this phone; the relay has no copy, so it would refuse the tap.
+    if !isLaptopGuide { relay.sendStepDone(guide: player.guide, stepId: step.id) }
     player.next()
   }
 
   private func makeReport() {
-    let id = assistant.identification
     let input = RepairReport.Input(
       title: player.guide.title,
-      device: isAIGuide ? id.map { "\($0.make) \($0.model)" } : nil,
-      deviceConfidence: isAIGuide ? id?.confidence : nil,
+      device: isLaptopGuide ? laptop.device : nil,
       startedAt: player.startedAt,
       finishedAt: Date(),
       steps: player.guide.steps.enumerated().map { index, step in
@@ -294,15 +272,13 @@ struct ContentView: View {
           number: index + 1,
           text: step.text,
           doneAt: player.doneAt[step.id].map { Date(timeIntervalSince1970: Double($0) / 1000) },
-          rig: verified[step.id],
-          aiCheck: aiChecks[step.id]
+          rig: verified[step.id]
         )
       },
-      safety: isAIGuide ? assistant.safety : nil,
-      safetyOverridden: assistant.safetyOverridden,
-      aiGenerated: isAIGuide,
+      safety: isLaptopGuide ? LaptopGuide.safetyItems.map { ($0.text, laptop.safetyChecked.contains($0.id)) } : nil,
+      safetyOverridden: laptop.safetyOverridden,
       photo: ar.snapshotJPEG(maxSide: 1200).flatMap(UIImage.init(data:)),
-      stepSource: isAIGuide ? assistant.stepSource : nil,
+      stepSource: isLaptopGuide ? laptop.stepSource : nil,
       transcript: call.transcript
     )
     reportURL = try? RepairReport.render(input)
@@ -316,13 +292,11 @@ struct ContentView: View {
   private func run(_ command: VoiceCommands.Command) {
     switch command {
     case .next:
-      if ar.markerSeen || isAIGuide { next() }
+      if ar.markerSeen || isLaptopGuide { next() }
     case .back:
       player.back()
-    case .rescan:
-      if isAIGuide { showWhere() } else { spotlight.enabled = true }
-    case .check:
-      if isAIGuide { checkWork() }
+    case .showMe:
+      spotlight.enabled = true
     case .repeatStep:
       if let step = player.currentStep { voice.speak(step.text) }
     case .callExpert:
@@ -335,45 +309,44 @@ struct ContentView: View {
     voice.speak(step.text)
   }
 
-  /// Pins still to do on this step (AI or refit), for "3 of 8 removed" on the step card.
+  /// Pins still to tick on this step, for "3 of 8 done" on the step card. On the laptop guide the expert's pins are
+  /// the parts to work on; on a marker guide they're just pointers.
   private var pinProgress: StepCard.PinProgress? {
-    let relevant = ar.pins.filter { $0.kind != .expert }
+    let relevant = isLaptopGuide ? ar.pins : ar.pins.filter { $0.kind != .expert }
     guard !relevant.isEmpty else { return nil }
     let refit = relevant.contains { $0.kind == .refit }
     return StepCard.PinProgress(done: relevant.filter(\.done).count, total: relevant.count, verb: refit ? "put back" : "done")
   }
 
   private var currentPhase: String? {
-    player.currentIndex.flatMap { assistant.phase(stepIndex: $0) }
+    isLaptopGuide ? player.currentIndex.flatMap { laptop.phase(stepIndex: $0) } : nil
   }
 
   private var currentLookFor: String? {
-    player.currentIndex.flatMap { assistant.lookFor(stepIndex: $0) }
+    isLaptopGuide ? player.currentIndex.flatMap { laptop.lookFor(stepIndex: $0) } : nil
   }
 
   private func stepChanged() {
-    locateTask?.cancel()
-    locateTask = nil
-    aiBusy = false
-    ar.clearPins(kinds: [.ai, .refit], focus: true)
-    lastLocate = nil
-    pinNotes = [:]
+    // On the laptop guide pins belong to the step they were placed for; on a marker guide expert pins stay up.
+    ar.clearPins(kinds: isLaptopGuide ? [.expert, .refit] : [.refit])
     pinMessage = nil
     spotlight.enabled = true
     updateGhost()
-    guard isAIGuide, player.currentStep != nil else { return }
+    guard isLaptopGuide, player.currentStep != nil else { return }
 
     if currentPhase == "refit", let group = screwMemory.group(for: currentLookFor) {
       // Screw memory: the same holes come back, last out first in, so each screw returns where it came from.
       ar.placeStoredPins(screwMemory.entries(in: group).reversed().map { ($0.number, $0.label, $0.transform) }, kind: .refit)
-      pinMessage = assistant.captiveScrews ? "Tighten each screw as you go" : "Put each screw back in its numbered hole"
-    } else {
-      showWhere()
+      pinMessage = laptop.captiveScrews ? "Tighten each screw as you go" : "Put each screw back in its numbered hole"
+    } else if currentPhase == "remove", let part = currentLookFor {
+      pinMessage = call.state == .live
+        ? "Ask the expert to tap \(part) on their screen"
+        : "Call the expert to have \(part) pinned, or just follow the step"
     }
   }
 
   private func updateGhost() {
-    guard isAIGuide, ghostToolOn else { ar.ghostTurnsAnticlockwise = nil; return }
+    guard isLaptopGuide, ghostToolOn else { ar.ghostTurnsAnticlockwise = nil; return }
     switch currentPhase {
     case "remove": ar.ghostTurnsAnticlockwise = true
     case "refit": ar.ghostTurnsAnticlockwise = false
@@ -383,87 +356,12 @@ struct ContentView: View {
 
   private func pinToggled(_ pin: ARSessionController.PinInfo) {
     pinTicks += 1
-    guard pin.kind == .ai, currentPhase == "remove" else { return }
+    guard pin.kind == .expert, currentPhase == "remove" else { return }
     if pin.done {
-      screwMemory.remember(pin, group: currentLookFor ?? "screws", note: pinNotes[pin.id], photo: lastLocate?.snapshot.image)
+      screwMemory.remember(pin, group: currentLookFor ?? "screws", note: nil, photo: nil)
     } else {
       screwMemory.forget(pin.id)
     }
   }
 
-  /// Finds the step's parts on the real laptop and pins them there. Runs by itself when an AI step opens.
-  private func showWhere() {
-    guard let index = player.currentIndex, let step = player.currentStep, let target = assistant.lookFor(stepIndex: index) else { return }
-    locateTask?.cancel()
-    let stepId = step.id
-    aiBusy = true
-    locateTask = Task {
-      defer { if player.currentStepId == stepId { aiBusy = false } }
-      // Pins land on surfaces ARKit has found; without one they'd float or fall to the floor.
-      var waited = 0.0
-      while !ar.hasHorizontalSurface, waited < 8 {
-        pinMessage = "Move the phone slowly around the laptop so I can see its surface"
-        try? await Task.sleep(for: .milliseconds(400))
-        if Task.isCancelled { return }
-        waited += 0.4
-      }
-      pinMessage = "Hold still: looking for \(target)…"
-      guard let snapshot = ar.captureSnapshot() else {
-        pinMessage = "The camera isn't ready yet. Try Re-scan."
-        return
-      }
-      do {
-        var ids: [UUID?] = []
-        let located = try await assistant.locate(
-          target, step: step.text, snapshot: snapshot, hint: assistant.verified?.locateHint,
-          firstPass: { first in
-            // Pins show from the first look straight away; the zoomed second look then nudges each into place.
-            guard !Task.isCancelled, player.currentStepId == stepId else { return }
-            ar.clearPins(kinds: [.ai], focus: true)
-            ids = ar.placePins(first.items.map { ($0.point, $0.label) }, focus: first.focus, focusLabel: first.focusLabel, camera: snapshot.camera)
-            pinNotes = Dictionary(uniqueKeysWithValues: zip(ids, first.items).compactMap { id, item in
-              guard let id, let note = item.note else { return nil }
-              return (id, note)
-            })
-            let placed = ids.compactMap { $0 }.count
-            if placed > 0 {
-              pinMessage = "Found \(placed). Fine-tuning each one…"
-            } else if first.focus != nil {
-              pinMessage = "Work in the highlighted area"
-            } else {
-              pinMessage = "Couldn't spot \(target). Move closer and tap Re-scan."
-            }
-          },
-          refined: { index, point in
-            guard player.currentStepId == stepId, ids.indices.contains(index), let id = ids[index] else { return }
-            ar.movePin(id, to: point, camera: snapshot.camera)
-          }
-        )
-        guard !Task.isCancelled, player.currentStepId == stepId else { return }
-        lastLocate = (snapshot, located)
-        let placed = ids.compactMap { $0 }.count
-        if placed > 0, currentPhase == "remove" {
-          pinMessage = assistant.captiveScrews
-            ? "\(placed) found. These stay in the cover: loosen each until it's free, and tap its pin."
-            : "\(placed) found. Tap each as it comes out, and lay the screws down in order 1 to \(placed)."
-        } else if placed > 0 {
-          pinMessage = "\(placed) × \(target). Tap each one as you go."
-        }
-      } catch {
-        guard !Task.isCancelled else { return }
-        pinMessage = "Couldn't look: \(error.localizedDescription)"
-      }
-    }
-  }
-
-  private func checkWork() {
-    guard let step = player.currentStep, let jpeg = ar.snapshotJPEG() else { return }
-    aiBusy = true
-    Task {
-      await assistant.check(step: step.text, jpeg: jpeg)
-      aiBusy = false
-      if let result = assistant.lastCheck { aiChecks[step.id] = result }
-      if voiceOn, let feedback = assistant.lastCheck?.feedback { voice.speak(feedback) }
-    }
-  }
 }

@@ -20,7 +20,7 @@ final class ARSessionController: NSObject, ARSessionDelegate {
   /// True while the marker was found once but isn't visible right now, for long enough to be worth saying.
   private(set) var markerLostForAWhile = false
 
-  /// A pin on the real surface: from the AI, from the expert tapping the video, or a screw going back in.
+  /// A pin on the real surface: from the expert tapping the video, or a screw going back in.
   struct PinInfo: Identifiable, Equatable {
     let id: UUID
     let number: Int
@@ -35,7 +35,6 @@ final class ARSessionController: NSObject, ARSessionDelegate {
   }
 
   private(set) var pins: [PinInfo] = []
-  private(set) var hasFocusArea = false
   /// Set while the ghost screwdriver should show on the next pin: the way to turn, or nil to hide it.
   var ghostTurnsAnticlockwise: Bool? {
     didSet { if ghostTurnsAnticlockwise != oldValue { updateGhost(rebuild: true) } }
@@ -69,9 +68,6 @@ final class ARSessionController: NSObject, ARSessionDelegate {
   @ObservationIgnored private var isRunning = false
   @ObservationIgnored private let coaching = ARCoachingOverlayView()
   @ObservationIgnored private var pinEntities: [UUID: (anchor: AnchorEntity, arAnchor: ARAnchor, entity: Entity)] = [:]
-  @ObservationIgnored private var focusAnchor: AnchorEntity?
-  @ObservationIgnored private var focusCorners: [SIMD3<Float>] = []
-  @ObservationIgnored private var focusLabel = ""
   @ObservationIgnored private var ghost: Entity?
   @ObservationIgnored private var ghostPinId: UUID?
   @ObservationIgnored private let imageContext = CIContext()
@@ -136,7 +132,7 @@ final class ARSessionController: NSObject, ARSessionDelegate {
     let config = ARWorldTrackingConfiguration()
     config.detectionImages = [reference]
     config.maximumNumberOfTrackedImages = 1
-    // Surfaces are what AI pins and expert taps land on. Without them, raycasts guessed (often the desk, or air).
+    // Surfaces are what expert taps land on. Without them, raycasts guessed (often the desk, or air).
     config.planeDetection = [.horizontal, .vertical]
     config.automaticImageScaleEstimationEnabled = true
     configuration = config
@@ -191,36 +187,14 @@ final class ARSessionController: NSObject, ARSessionDelegate {
     }
   }
 
-  // MARK: Snapshots (main)
 
-  /// A photo plus the camera that took it. Points found in the photo later are projected through `camera`.
-  struct Snapshot {
-    let camera: CameraContext
-    /// Full resolution, upright for a phone held in portrait. Crops for the zoomed second pass come from this.
-    let image: CGImage
-    /// Scaled to at most `maxSide`, for Gemini's first pass.
-    let jpeg: Data
-  }
-
-  func captureSnapshot(maxSide: CGFloat = 1536) -> Snapshot? {
-    guard isRunning, let frame = arView.session.currentFrame else { return nil }
-    let camera = CameraContext(frame)
-    let upright = CIImage(cvPixelBuffer: frame.capturedImage).oriented(.right)
-    guard let image = imageContext.createCGImage(upright, from: upright.extent) else { return nil }
-    let scale = min(1, maxSide / max(upright.extent.width, upright.extent.height))
-    let scaled = upright.transformed(by: CGAffineTransform(scaleX: scale, y: scale))
-    guard let jpeg = imageContext.jpegRepresentation(of: scaled, colorSpace: CGColorSpaceCreateDeviceRGB(), options: [:]) else { return nil }
-    return Snapshot(camera: camera, image: image, jpeg: jpeg)
-  }
-
-  /// The current camera image as a JPEG, for the AI's identify and check calls.
+  /// The current camera image, upright for a phone held in portrait, as a JPEG (the report's closing photo).
   func snapshotJPEG(maxSide: CGFloat = 1024) -> Data? {
-    captureSnapshot(maxSide: maxSide)?.jpeg
-  }
-
-  /// True once ARKit has found a horizontal surface (the desk or the laptop's underside) to put pins on.
-  var hasHorizontalSurface: Bool {
-    arView.session.currentFrame?.anchors.contains { ($0 as? ARPlaneAnchor)?.alignment == .horizontal } ?? false
+    guard isRunning, let buffer = arView.session.currentFrame?.capturedImage else { return nil }
+    let upright = CIImage(cvPixelBuffer: buffer).oriented(.right)
+    let scale = min(1, maxSide / max(upright.extent.width, upright.extent.height))
+    let image = upright.transformed(by: CGAffineTransform(scaleX: scale, y: scale))
+    return imageContext.jpegRepresentation(of: image, colorSpace: CGColorSpaceCreateDeviceRGB(), options: [:])
   }
 
   /// The camera as it was `secondsAgo`, from the last ~2.5 s.
@@ -239,67 +213,7 @@ final class ARSessionController: NSObject, ARSessionDelegate {
     var normal: SIMD3<Float>
   }
 
-  /// Places numbered pins (and the "Work here" area) for points in a photo, through the camera that took it.
-  /// Returns each point's pin id, in the order given; nil where the point missed every surface.
-  @discardableResult
-  func placePins(
-    _ points: [(point: UprightPoint, label: String)],
-    focus: [UprightPoint]? = nil,
-    focusLabel: String = "Work here",
-    camera: CameraContext,
-    kind: Shapes.PinKind = .ai
-  ) -> [UUID?] {
-    var surfaces = points.map { surfacePoint(for: $0.point, camera: camera) }
-    // The laptop's underside is flat: a point the raycast missed goes onto the plane of one that hit.
-    let reference = surfaces.compactMap { $0 }.first
-    for i in surfaces.indices where surfaces[i] == nil {
-      surfaces[i] = fallbackSurfacePoint(for: points[i].point, camera: camera, reference: reference)
-    }
 
-    // Reading order (top to bottom, then left to right), so "screw 1" is where a person would start.
-    let ordered = points.indices
-      .filter { surfaces[$0] != nil }
-      .sorted { a, b in
-        let rowA = (points[a].point.y / 0.08).rounded(), rowB = (points[b].point.y / 0.08).rounded()
-        return rowA == rowB ? points[a].point.x < points[b].point.x : rowA < rowB
-      }
-    var ids = [UUID?](repeating: nil, count: points.count)
-    let firstNumber = (pins.filter { $0.kind == kind }.map(\.number).max() ?? 0) + 1
-    for (offset, index) in ordered.enumerated() {
-      guard let surface = surfaces[index] else { continue }
-      ids[index] = addPin(
-        number: firstNumber + offset, label: points[index].label, kind: kind,
-        transform: PinMath.standing(at: surface.position, normal: surface.normal), photoPoint: points[index].point
-      )
-    }
-
-    if let focus, focus.count == 4 {
-      let corners = focus.map { surfacePoint(for: $0, camera: camera) ?? fallbackSurfacePoint(for: $0, camera: camera, reference: reference) }
-      if corners.allSatisfy({ $0 != nil }) {
-        showFocus(corners: corners.compactMap { $0 }, label: focusLabel)
-      }
-    }
-    updateGhost(rebuild: false)
-    return ids
-  }
-
-  /// The zoomed-in second look found a pin's exact spot: glide it there.
-  func movePin(_ id: UUID, to point: UprightPoint, camera: CameraContext) {
-    guard let index = pins.firstIndex(where: { $0.id == id }), let entity = pinEntities[id]?.entity else { return }
-    let pin = pins[index]
-    let normal = SIMD3(pin.transform.columns.1.x, pin.transform.columns.1.y, pin.transform.columns.1.z)
-    // The pin already sits on the right surface; a miss falls back to that same plane.
-    guard let surface = surfacePoint(for: point, camera: camera)
-      ?? fallbackSurfacePoint(for: point, camera: camera, reference: SurfacePoint(position: pin.position, normal: normal)) else { return }
-    // A refined point that jumps far is the second look finding a different part: keep the first.
-    guard simd_distance(surface.position, pin.position) < 0.05 else { return }
-    let transform = PinMath.standing(at: surface.position, normal: surface.normal)
-    entity.move(to: Transform(matrix: transform), relativeTo: nil, duration: 0.3, timingFunction: .easeOut)
-    pins[index].transform = transform
-    pins[index].photoPoint = point
-  }
-
-  /// Puts back pins at transforms saved earlier (screw memory), numbered as given.
   func placeStoredPins(_ stored: [(number: Int, label: String, transform: simd_float4x4)], kind: Shapes.PinKind) {
     for item in stored {
       addPin(number: item.number, label: item.label, kind: kind, transform: item.transform, photoPoint: nil)
@@ -317,8 +231,8 @@ final class ARSessionController: NSObject, ARSessionDelegate {
     return true
   }
 
-  /// Clears pins of the given kinds (all by default) and the "Work here" area.
-  func clearPins(kinds: Set<Shapes.PinKind> = [.ai, .expert, .refit], focus: Bool = true) {
+  /// Clears pins of the given kinds (all by default).
+  func clearPins(kinds: Set<Shapes.PinKind> = [.expert, .refit]) {
     for pin in pins where kinds.contains(pin.kind) {
       if let entry = pinEntities.removeValue(forKey: pin.id) {
         arView.scene.removeAnchor(entry.anchor)
@@ -326,12 +240,6 @@ final class ARSessionController: NSObject, ARSessionDelegate {
       }
     }
     pins.removeAll { kinds.contains($0.kind) }
-    if focus {
-      focusAnchor.map { arView.scene.removeAnchor($0) }
-      focusAnchor = nil
-      focusCorners = []
-      hasFocusArea = false
-    }
     updateGhost(rebuild: false)
   }
 
@@ -348,18 +256,6 @@ final class ARSessionController: NSObject, ARSessionDelegate {
     pinEntities[info.id] = (anchor, arAnchor, entity)
     pins.append(info)
     return info.id
-  }
-
-  private func showFocus(corners: [SurfacePoint], label: String) {
-    focusAnchor.map { arView.scene.removeAnchor($0) }
-    let normal = simd_normalize(corners.map(\.normal).reduce(.zero, +))
-    let anchor = AnchorEntity(world: matrix_identity_float4x4)
-    anchor.addChild(Shapes.focusArea(corners: corners.map(\.position), normal: normal, label: label))
-    arView.scene.addAnchor(anchor)
-    focusAnchor = anchor
-    focusCorners = corners.map(\.position)
-    focusLabel = label
-    hasFocusArea = true
   }
 
   private func surfacePoint(for point: UprightPoint, camera: CameraContext) -> SurfacePoint? {
@@ -410,9 +306,9 @@ final class ARSessionController: NSObject, ARSessionDelegate {
     onPinToggled?(pin)
   }
 
-  /// The ghost screwdriver sits on the first pin not yet done (AI or refit pins only).
+  /// The ghost screwdriver sits on the first pin not yet done.
   private func updateGhost(rebuild: Bool) {
-    let target = pins.first { !$0.done && $0.kind != .expert }
+    let target = pins.first { !$0.done }
     // On the pin entity itself (not its anchor), so it follows the pin when a refined point moves it.
     guard let anticlockwise = ghostTurnsAnticlockwise, let target, let anchor = pinEntities[target.id]?.entity else {
       ghost?.removeFromParent()
@@ -439,14 +335,8 @@ final class ARSessionController: NSObject, ARSessionDelegate {
     var label: String
   }
 
-  /// The expert's newest pin first, then the "Work here" area, then the pins still to do, then the marker step.
+  /// The pins still to do (the expert's newest alone when it's the only one), then the marker step.
   func spotlightTarget() -> SpotlightTarget? {
-    if let expert = pins.last(where: { $0.kind == .expert && !$0.done }) {
-      return SpotlightTarget(points: [expert.position], label: "Expert: \(expert.label)")
-    }
-    if !focusCorners.isEmpty, pins.contains(where: { !$0.done }) || pins.isEmpty {
-      return SpotlightTarget(points: focusCorners, label: focusLabel)
-    }
     let pending = pins.filter { !$0.done }
     if !pending.isEmpty {
       let label = pending.count == 1 ? "\(pending[0].number) · \(pending[0].label)" : "\(pending.count) left"

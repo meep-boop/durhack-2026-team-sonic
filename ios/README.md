@@ -8,7 +8,7 @@ guide to it, and plays the steps with **Next**. Owner: @salman.
 brew install xcodegen          # once
 cd ios
 ./scripts/fetch-webrtc.sh      # once: Google's WebRTC (46 MB, checksum-checked) into ios/Vendor/
-cp Secrets.xcconfig.example Secrets.xcconfig   # once; add Gemini / ElevenLabs keys to turn those features on
+cp Secrets.xcconfig.example Secrets.xcconfig   # once; add your ElevenLabs key for the voice and the call transcript
 xcodegen                       # makes RemoteAssist.xcodeproj from project.yml (git-ignored, never commit it)
 open RemoteAssist.xcodeproj
 ```
@@ -56,15 +56,15 @@ bar, the whole call behind the captions button, and in the report. The expert pa
 voices); the phone hands it single-use tokens over the call's data channel, so the key never leaves the phone.
 
 ## Check before a demo
-Tap the status capsule, then **System check** at the bottom: **Test** next to Gemini and ElevenLabs shows the exact
-error if a key is missing or a model name is wrong. Without a Gemini key the laptop button explains how to add one.
+Tap the status capsule, then **System check** at the bottom: **Test** next to ElevenLabs plays a voice check, or shows
+the exact error if the key is missing or wrong.
 
-## Laptop assistant and voice (optional)
-With `GEMINI_API_KEY` set, the laptop button identifies the laptop from the camera (on Ahmed's Dell Latitude 5530 it
-uses the team's checked steps from Dell's manual, `research/ledger.md` § 17; on other laptops it writes the steps), pins
-parts ("Show me where") and checks each step ("Check my work"). Everything it says is labelled AI-generated, and it
-refuses to guide when the storage is soldered. With `ELEVENLABS_API_KEY` set, steps are read aloud by ElevenLabs;
-without it (or offline) the built-in iOS voice reads them.
+## Laptop guide and voice
+The laptop button starts the SSD swap for Ahmed's Dell Latitude 5530, with no marker: the team's checked steps from
+Dell's manual (`research/ledger.md` § 17, checked on the laptop by Laura). Tick the safety checklist, then on a call
+the expert clicks each part on the live video and a pin lands on the real laptop; tap a pin when that part is done.
+The ghost screwdriver shows which way to turn, and the refit steps bring back the same holes. With
+`ELEVENLABS_API_KEY` set, steps are read aloud by ElevenLabs; without it (or offline) the built-in iOS voice reads them.
 
 ## Checks
 ```bash

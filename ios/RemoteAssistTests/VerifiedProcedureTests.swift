@@ -3,13 +3,9 @@ import simd
 @testable import RemoteAssist
 
 final class VerifiedProcedureTests: XCTestCase {
-  private func id(_ make: String, _ model: String) -> LaptopAssistant.Identification {
-    .init(isLaptop: true, make: make, model: model, confidence: 0.9, ssdUserReplaceable: "yes", ssdFormFactor: "M.2 2280", warnings: [], tools: [])
-  }
-
-  /// The demo laptop gets the steps from the team's research (§ 17, Dell's manual), not a generated plan.
+  /// The laptop guide is the team's research (§ 17, Dell's manual, checked on the laptop by Laura).
   func testDellLatitude5530UsesDellsSteps() throws {
-    let procedure = try XCTUnwrap(VerifiedProcedures.match(id("Dell", "Latitude 5530")))
+    let procedure = VerifiedProcedures.latitude5530
     XCTAssertTrue(procedure.captiveScrews)
     let text = procedure.steps.map { "\($0.title) \($0.detail)" }.joined(separator: " ")
     XCTAssertTrue(text.contains("Service Mode"))
@@ -24,15 +20,10 @@ final class VerifiedProcedureTests: XCTestCase {
     XCTAssertEqual(removed, refitted)
   }
 
-  func testOtherLaptopsKeepTheAIPlan() {
-    XCTAssertNil(VerifiedProcedures.match(id("Lenovo", "ThinkPad T14")))
-    XCTAssertNil(VerifiedProcedures.match(id("Dell", "XPS 13")))
-  }
-
   func testScrewMemoryBringsBackTheRightGroup() {
     var memory = ScrewMemory()
     func pin(_ n: Int) -> ARSessionController.PinInfo {
-      .init(id: UUID(), number: n, label: "screw", kind: .ai, done: true, transform: matrix_identity_float4x4, photoPoint: nil)
+      .init(id: UUID(), number: n, label: "screw", kind: .expert, done: true, transform: matrix_identity_float4x4, photoPoint: nil)
     }
     memory.remember(pin(1), group: "cover", note: nil, photo: nil)
     memory.remember(pin(2), group: "cover", note: nil, photo: nil)
@@ -41,5 +32,18 @@ final class VerifiedProcedureTests: XCTestCase {
     XCTAssertEqual(memory.entries(in: "cover").count, 2)
     XCTAssertEqual(memory.group(for: "ssd"), "ssd")
     XCTAssertEqual(memory.group(for: "something else"), "ssd", "an unmatched refit step takes the latest group")
+  }
+
+  /// The laptop guide's steps line up with the player's, so phase and part lookups hit the right step.
+  func testLaptopGuideMatchesItsProcedure() {
+    let laptop = LaptopGuide()
+    let guide = laptop.guide()
+    XCTAssertEqual(guide.id, LaptopGuide.guideId)
+    XCTAssertEqual(guide.steps.count, laptop.steps.count)
+    XCTAssertEqual(laptop.phase(stepIndex: 3), "remove")
+    XCTAssertEqual(laptop.lookFor(stepIndex: 3), laptop.lookFor(stepIndex: 10))
+    XCTAssertFalse(laptop.allSafe)
+    LaptopGuide.safetyItems.forEach { laptop.safetyChecked.insert($0.id) }
+    XCTAssertTrue(laptop.allSafe)
   }
 }

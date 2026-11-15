@@ -64,7 +64,7 @@ struct Onboarding: View {
 
 /// Corner brackets that breathe until the marker is found, so a first-time user knows what to point at.
 struct FindMarkerHint: View {
-  /// Opens the laptop assistant, for anyone pointing at a laptop with no printed marker.
+  /// Opens the laptop guide, for anyone working on the laptop without the printed marker.
   var onUseAI: () -> Void = {}
 
   var body: some View {
@@ -89,7 +89,7 @@ struct FindMarkerHint: View {
         .allowsHitTesting(false)
 
       Button(action: onUseAI) {
-        Label("No marker? Use the AI on your laptop", systemImage: "laptopcomputer")
+        Label("No marker? Start the laptop guide", systemImage: "laptopcomputer")
           .font(.subheadline.weight(.semibold))
           .padding(.horizontal, 14)
           .padding(.vertical, 8)

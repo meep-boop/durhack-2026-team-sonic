@@ -80,34 +80,6 @@ final class PinMathTests: XCTestCase {
     XCTAssertEqual(SIMD3(matrix.columns.3.x, matrix.columns.3.y, matrix.columns.3.z), SIMD3(1, 2, 3))
   }
 
-  func testBox2DIsYFirst() {
-    let rect = try! XCTUnwrap(PinMath.rect(fromBox2D: [100, 200, 300, 600]))
-    XCTAssertEqual(rect.minX, 0.2, accuracy: 1e-9)
-    XCTAssertEqual(rect.minY, 0.1, accuracy: 1e-9)
-    XCTAssertEqual(rect.width, 0.4, accuracy: 1e-9)
-    XCTAssertEqual(rect.height, 0.2, accuracy: 1e-9)
-    XCTAssertNil(PinMath.rect(fromBox2D: [1, 2, 3]))
-  }
-
-  func testCropAroundASmallScrewMapsBack() {
-    let image = CGSize(width: 1440, height: 1920)
-    let screw = CGRect(x: 0.5, y: 0.5, width: 0.01, height: 0.01)
-    let crop = PinMath.cropRect(around: screw, imageSize: image)
-    XCTAssertEqual(crop.width, 256)
-    XCTAssertTrue(crop.contains(CGPoint(x: 0.505 * 1440, y: 0.505 * 1920)))
-    // The centre of the crop maps back to the centre of the crop in the whole image.
-    let point = PinMath.point(fromCropPoint: [500, 500], crop: crop, imageSize: image)
-    XCTAssertEqual(point?.x ?? 0, crop.midX / 1440, accuracy: 1e-9)
-    XCTAssertEqual(point?.y ?? 0, crop.midY / 1920, accuracy: 1e-9)
-  }
-
-  func testCropStaysInsideTheImageAtTheEdge() {
-    let image = CGSize(width: 1440, height: 1920)
-    let crop = PinMath.cropRect(around: CGRect(x: 0.995, y: 0, width: 0.005, height: 0.005), imageSize: image)
-    XCTAssertGreaterThanOrEqual(crop.minX, 0)
-    XCTAssertLessThanOrEqual(crop.maxX, 1440)
-    XCTAssertGreaterThanOrEqual(crop.minY, 0)
-  }
 
   func testEdgeGlowSitsWhereTheDirectionLeavesTheScreen() {
     let size = CGSize(width: 400, height: 800)

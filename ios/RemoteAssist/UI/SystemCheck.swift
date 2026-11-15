@@ -1,39 +1,21 @@
 import SwiftUI
 
-/// Before a demo: is the AI really reachable, and is the voice really ElevenLabs? One tap each, with the exact error,
-/// so a missing key or a wrong model name shows up here instead of as "nothing happens" on stage.
+/// Before a demo: is the voice really ElevenLabs (it also mints the call transcript's tokens)? One tap, with the
+/// exact error, so a missing or wrong key shows up here instead of as "nothing happens" on stage.
 struct SystemCheckSection: View {
-  let assistant: LaptopAssistant
   let voice: VoiceGuide
 
   private enum Status: Equatable {
     case idle, running, ok(String), failed(String)
   }
 
-  @State private var gemini: Status = .idle
   @State private var eleven: Status = .idle
 
   var body: some View {
     Section {
       row(
-        title: "Gemini",
-        detail: assistant.modelName.map { "Key set · \($0)" } ?? "No key: add GEMINI_API_KEY to ios/Secrets.xcconfig, run xcodegen, rebuild",
-        status: gemini,
-        enabled: assistant.isAvailable
-      ) {
-        gemini = .running
-        Task {
-          do {
-            let seconds = try await assistant.ping()
-            gemini = .ok(String(format: "Answered in %.1f s", seconds))
-          } catch {
-            gemini = .failed(error.localizedDescription)
-          }
-        }
-      }
-      row(
         title: "ElevenLabs voice",
-        detail: voice.usesElevenLabs ? "Key set" : "No key: steps use the iOS voice. Add ELEVENLABS_API_KEY to ios/Secrets.xcconfig",
+        detail: voice.usesElevenLabs ? "Key set: voice and call transcript" : "No key: steps use the iOS voice and there's no transcript. Add ELEVENLABS_API_KEY to ios/Secrets.xcconfig",
         status: eleven,
         enabled: voice.usesElevenLabs
       ) {

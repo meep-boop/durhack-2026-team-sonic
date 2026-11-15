@@ -3,14 +3,14 @@ import Observation
 import Speech
 import os
 
-/// Hands-free control: "next", "back", "show me where", "check my work", "repeat", "call the expert", for when both
+/// Hands-free control: "next", "back", "show me", "repeat", "call the expert", for when both
 /// hands are on a screwdriver. Apple's speech recogniser, on the device when it supports that (so it works offline
 /// and nothing leaves the phone). Paused while the app is talking, so it doesn't hear itself, and during a call,
 /// when WebRTC owns the mic.
 @Observable
 final class VoiceCommands {
   enum Command: Equatable {
-    case next, back, rescan, check, repeatStep, callExpert
+    case next, back, showMe, repeatStep, callExpert
   }
 
   private(set) var isOn = false
@@ -32,15 +32,14 @@ final class VoiceCommands {
   @ObservationIgnored private var consumed = 0
   @ObservationIgnored private var lastFired = Date.distantPast
 
-  /// Phrases checked longest first, so "check my work" isn't read as something shorter.
+  /// Phrases checked longest first, so "call the expert" isn't read as something shorter.
   private static let phrases: [(String, Command)] = [
     ("call the expert", .callExpert), ("call expert", .callExpert),
-    ("check my work", .check), ("show me where", .rescan), ("scan again", .rescan),
+    ("show me where", .showMe), ("show me", .showMe),
     ("next step", .next), ("go back", .back), ("say again", .repeatStep),
     ("next", .next), ("done", .next), ("finished", .next),
-    ("back", .back), ("previous", .back),
-    ("rescan", .rescan), ("where", .rescan),
-    ("check", .check), ("repeat", .repeatStep), ("help", .callExpert),
+    ("back", .back), ("previous", .back), ("where", .showMe),
+    ("repeat", .repeatStep), ("help", .callExpert),
   ]
 
   func toggle() {
