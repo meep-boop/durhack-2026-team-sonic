@@ -151,15 +151,23 @@ final class ARSessionController: NSObject, ARSessionDelegate {
     let config = ARWorldTrackingConfiguration()
     config.detectionImages = [reference]
     config.maximumNumberOfTrackedImages = 1
-    // Surfaces are what expert taps land on. Without them, raycasts guessed (often the desk, or air).
-    config.planeDetection = [.horizontal, .vertical]
+    // Surfaces are what expert taps and the laptop's corners land on. Only horizontal: the laptop and desk are flat,
+    // and vertical plane detection was work for nothing.
+    config.planeDetection = [.horizontal]
     config.automaticImageScaleEstimationEnabled = true
     configuration = config
     applyThermalLimits(to: config)
 
     // RealityKit's camera effects allocate several full-screen textures every frame and add nothing to a repair
     // guide; with people occlusion on top they're what runs the GPU out of drawables.
-    arView.renderOptions.formUnion([.disableMotionBlur, .disableDepthOfField, .disableCameraGrain, .disableHDR, .disableGroundingShadows])
+    arView.renderOptions.formUnion([
+      .disableMotionBlur, .disableDepthOfField, .disableCameraGrain, .disableHDR, .disableGroundingShadows,
+      .disableAREnvironmentLighting,
+    ])
+    if !Self.handsInFront { arView.renderOptions.insert(.disablePersonOcclusion) }
+    // 2× instead of the screen's 3×: about 55% fewer pixels per frame, invisible at arm's length.
+    arView.contentScaleFactor = 2
+    arView.layer.contentsScale = 2
     arView.session.delegateQueue = sessionQueue
     arView.session.delegate = self
     arView.session.run(config, options: [.resetTracking, .removeExistingAnchors])
@@ -214,10 +222,24 @@ final class ARSessionController: NSObject, ARSessionDelegate {
     Self.log.notice("AR resumed")
   }
 
-  /// Hands and arms in front of the boxes hide them, as a real object would, unless the phone is running hot.
+  /// People occlusion (hands hiding the guide, as a real object would) runs a neural network on every frame. Off
+  /// unless the user turns it on in the system check, and off again when the phone is hot or short of memory.
+  static var handsInFront: Bool {
+    get { UserDefaults.standard.bool(forKey: "handsInFront") }
+    set { UserDefaults.standard.set(newValue, forKey: "handsInFront") }
+  }
+
+  func setHandsInFront(_ on: Bool) {
+    Self.handsInFront = on
+    if on { arView.renderOptions.remove(.disablePersonOcclusion) } else { arView.renderOptions.insert(.disablePersonOcclusion) }
+    guard let configuration else { return }
+    applyThermalLimits(to: configuration)
+    if isRunning { arView.session.run(configuration) }
+  }
+
   private func applyThermalLimits(to config: ARWorldTrackingConfiguration) {
     let hot = ProcessInfo.processInfo.thermalState.rawValue >= ProcessInfo.ThermalState.serious.rawValue
-    if !hot, !lowMemory, ARWorldTrackingConfiguration.supportsFrameSemantics(.personSegmentationWithDepth) {
+    if Self.handsInFront, !hot, !lowMemory, ARWorldTrackingConfiguration.supportsFrameSemantics(.personSegmentationWithDepth) {
       config.frameSemantics.insert(.personSegmentationWithDepth)
     } else {
       config.frameSemantics.remove(.personSegmentationWithDepth)

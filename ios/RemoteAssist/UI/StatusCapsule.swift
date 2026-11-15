@@ -63,13 +63,11 @@ struct StatusCapsule: View {
 }
 
 extension View {
-  /// Liquid Glass on iOS 26, the system material before it.
-  @ViewBuilder
+  /// Solid translucent black with a hairline edge. Not Liquid Glass or a material: those re-blur the live camera
+  /// behind them every frame, and with a dozen of them over ARView the GPU ran out of drawables.
   func glassBackground<S: Shape>(in shape: S) -> some View {
-    if #available(iOS 26.0, *) {
-      self.glassEffect(.regular, in: shape)
-    } else {
-      self.background(.ultraThinMaterial, in: shape)
-    }
+    self
+      .background(Color.black.opacity(0.62), in: shape)
+      .overlay(shape.stroke(Color.white.opacity(0.12), lineWidth: 1))
   }
 }
