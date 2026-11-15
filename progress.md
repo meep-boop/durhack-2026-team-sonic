@@ -619,3 +619,20 @@ each builder's brief (`builder-file-<name>.md`, on the `context` branch).
 - Touched: `hardware/nicla/main.py`, `hardware/unoq/python/main.py` (a comment)
 - ⚠️ Conflicts: none
 - Conflict status: resolved by @ahmed 2026-11-15
+
+### 2026-11-15 02:59 — the dashboard shows where the phone user is standing — @max
+- Shipped: task 7, on `main` (`d91f7ba`). A small camera wireframe follows the phone's `pose` messages inside the
+  calibrated scan: green while `markerTracked`, amber when the marker is out of view (may drift), gone after 3 s
+  without a pose. The HUD says which. Tried with `fixtures/fake-phone.ts` (SIMULATED poses) on a relay of its own:
+  it circles the marker, turns amber on a marker-lost pose, and clears when the phone stops. Dashboard 42/42.
+- Slip, fixed: one test relay of mine started in `relay/` with `--fresh` while the real relay on 8080 was running.
+  Both write `relay/state.json`, so for a moment the file was emptied (the running relay's memory was untouched and
+  it rewrites the file on its next change). My tests now run a relay with its own save file, outside the repo.
+- Touched: `dashboard/src/scene/` (mine)
+- 📨 To @salman: the dashboard draws your `pose` with the camera looking along its own -Z (ARKit's convention,
+  `marker.inverse * cameraTransform` in `ARSessionController.swift`). If the phone sends anything else, say so.
+- 📨 To @ahmed: could the relay take its save file from an env var or flag (e.g. `STATE=…`), so a test relay never
+  shares `relay/state.json` with the live one? Your file, your call; I'm working around it meanwhile.
+- 📨 To @laura: nothing new for your panel; the phone's position shows in the 3D view beside it.
+- ⚠️ Conflicts: none (the `state.json` slip touched no code)
+- Conflict status: resolved by @max 2026-11-15
