@@ -70,11 +70,12 @@
   #transcript li.user b { color: #cbd5e1; }
   /* The guiding tools float on the video, where the technician's eyes already are. Only shown in a call. */
   .toolbar { position: absolute; left: 50%; bottom: 18px; transform: translateX(-50%); display: none; align-items: center; gap: 8px;
+    flex-wrap: wrap; justify-content: center; max-width: calc(100% - 32px); width: max-content;
     padding: 8px; border-radius: 16px; background: rgba(12,14,20,.82); border: 1px solid rgba(255,255,255,.12); box-shadow: 0 10px 30px rgba(0,0,0,.45); z-index: 3; }
   .stage.live .toolbar { display: flex; }
-  .toolbar .tools { margin: 0; }
+  .toolbar .tools { margin: 0; flex-wrap: wrap; justify-content: center; }
   .toolbar .tools button { flex: none; padding: 9px 16px; }
-  .toolbar input { width: 220px; padding: 9px 12px; }
+  .toolbar input { flex: 1 1 160px; min-width: 120px; width: auto; padding: 9px 12px; }
   .toolbar #clearPins { flex: none; padding: 9px 14px; }
   .toolbar .sep { width: 1px; align-self: stretch; background: rgba(255,255,255,.12); }
   .toolhint { position: absolute; left: 50%; bottom: 76px; transform: translateX(-50%); display: none; font-size: 12px; color: #cbd5e1;
@@ -83,7 +84,9 @@
   .callrow { display: flex; gap: 8px; }
   .callrow > * { flex: 1; }
   #callBtn { padding: 14px; font-size: 16px; }
-  @media (max-width: 900px) { main { grid-template-columns: 1fr; height: auto; } .stage { min-height: 50vh; } .toolbar input { width: 140px; } }
+  .rigtoast { position: absolute; top: 16px; left: 50%; transform: translateX(-50%); padding: 10px 18px; border-radius: 14px; font-weight: 700; z-index: 4; color: #fff; box-shadow: 0 8px 24px rgba(0,0,0,.4); }
+  .rigtoast.ok { background: rgba(22,163,74,.95); } .rigtoast.bad { background: rgba(220,38,38,.95); }
+  @media (max-width: 900px) { main { grid-template-columns: 1fr; height: auto; } .stage { min-height: 50vh; } }
 </style>
 </head>
 <body>
@@ -91,6 +94,7 @@
   <h1>Remote Assist · Technician</h1>
   <span class="pill"><span class="dot" id="relayDot"></span><span id="relayText">Relay offline</span></span>
   <span class="pill"><span class="dot" id="phoneDot"></span><span id="phoneText">No phone online</span></span>
+  <span class="pill" title="The UNO Q + Nicla Vision rig: it checks the SSD is where the step says"><span class="dot" id="rigDot"></span><span id="rigText">No rig</span></span>
   <span class="spacer"></span>
   <span class="pill"><span class="dot" id="markerDot"></span><span id="markerText">Marker: unknown</span></span>
 </header>
@@ -247,6 +251,9 @@ function connect(url) {
 function handle(message) {
   switch (message.type) {
     case "presence": {
+      // The rig (UNO Q + Nicla Vision) joins the relay by itself: on the UNO Q, python main.py --relay ws://<this relay>.
+      const rig = message.clients.find((c) => c.role === "rig");
+      setPill("rigDot", "rigText", rig ? "green" : "", rig ? "Rig online" : "No rig");
       const phone = message.clients.find((c) => c.role === "user");
       if (phone && !phoneOnline) log(`${phone.client} is online`);
       phoneOnline = !!phone;
@@ -262,7 +269,14 @@ function handle(message) {
       setPill("markerDot", "markerText", message.markerTracked ? "green" : "amber", message.markerTracked ? "Marker tracked" : "Marker out of view");
       if (message.t - lastPoseLog > 5000) { lastPoseLog = message.t; log(`Phone camera ${message.camera.p.map((n) => n.toFixed(2)).join(", ")} m from the marker`); }
       break;
-    case "step.verified": log(`Rig on ${message.stepId}: ${message.ok ? "✓ correct" : "✗ " + (message.detail || "wrong")}`); break;
+    case "step.verified": {
+      const text = `Rig, step ${message.stepId}: ${message.ok ? "✓ correct" : "✗ " + (message.detail || "wrong")}`;
+      log(text);
+      const toast = Object.assign(document.createElement("div"), { className: "rigtoast " + (message.ok ? "ok" : "bad"), textContent: text });
+      document.querySelector(".stage").append(toast);
+      setTimeout(() => toast.remove(), 6000);
+      break;
+    }
     case "rtc.signal": onSignal(message.signal); break;
     case "error": log(`Relay refused ${message.about || "a message"}: ${message.message}`); break;
   }
