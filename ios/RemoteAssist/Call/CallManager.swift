@@ -51,6 +51,10 @@ final class CallManager: NSObject {
   @ObservationIgnored private var pendingOffer: String?
   @ObservationIgnored private var pendingCandidates: [RTCIceCandidate] = []
   @ObservationIgnored private var expertSendsVideo = false
+  /// Each token is billed to Salman's ElevenLabs key, and the page asks for them: at most one per voice every 20 s,
+  /// and 10 per call, whatever the page does. Main thread only.
+  @ObservationIgnored private var lastMint: [String: Date] = [:]
+  @ObservationIgnored private var mintsThisCall = 0
 
   var isSendingVideo: Bool { state == .connecting || state == .live || state == .reconnecting }
 
@@ -96,6 +100,8 @@ final class CallManager: NSObject {
     transcript = []
     caption = nil
     transcriptProblem = nil
+    lastMint = [:]
+    mintsThisCall = 0
     state = .connecting
     audioSession.beginCall(speakerOn: isSpeakerOn)
 
@@ -251,14 +257,19 @@ extension CallManager: RTCPeerConnectionDelegate {
       Self.send(["kind": "stt-off", "reason": "no ElevenLabs key on the phone"], on: channel)
       return
     }
+    onMain { [weak self] in
+      self?.mintsThisCall += 2
+      self?.lastMint = ["expert": Date(), "phone": Date()]
+    }
     Task {
       do {
         async let expert = TranscriptService.mintToken()
         async let phone = TranscriptService.mintToken()
         Self.send(["kind": "stt-tokens", "expert": try await expert, "phone": try await phone], on: channel)
       } catch {
+        // The detail (status, body) stays on the phone; the page only needs to know it's off.
         DispatchQueue.main.async { [weak self] in self?.transcriptProblem = "Transcript off: \(error.localizedDescription)" }
-        Self.send(["kind": "stt-off", "reason": error.localizedDescription], on: channel)
+        Self.send(["kind": "stt-off", "reason": "transcription unavailable"], on: channel)
       }
     }
   }
@@ -305,9 +316,15 @@ extension CallManager: RTCDataChannelDelegate {
     case "stt-token-request":
       // A transcription session ended (time limit, network): the page asks for a fresh token for that voice.
       guard let which = message["which"] as? String, which == "expert" || which == "phone" else { return }
-      Task {
-        guard let token = try? await TranscriptService.mintToken() else { return }
-        Self.send(["kind": "stt-token", "which": which, "token": token], on: dataChannel)
+      onMain { [weak self] in
+        guard let self, self.mintsThisCall < 10,
+              Date().timeIntervalSince(self.lastMint[which] ?? .distantPast) >= 20 else { return }
+        self.mintsThisCall += 1
+        self.lastMint[which] = Date()
+        Task {
+          guard let token = try? await TranscriptService.mintToken() else { return }
+          Self.send(["kind": "stt-token", "which": which, "token": token], on: dataChannel)
+        }
       }
     case "transcript", "caption":
       guard let speaker = (message["speaker"] as? String).flatMap(TranscriptLine.Speaker.init(rawValue:)),
@@ -316,7 +333,8 @@ extension CallManager: RTCDataChannelDelegate {
         id: message["id"] as? String ?? UUID().uuidString,
         speaker: speaker,
         text: String(text.prefix(600)),
-        at: (message["at"] as? Double).map { Date(timeIntervalSince1970: $0 / 1000) } ?? Date()
+        // The phone's own clock, when the line arrived: the page's timestamp is only its claim.
+        at: Date()
       )
       onMain { [weak self] in
         guard let self else { return }

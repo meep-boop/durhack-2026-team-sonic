@@ -261,6 +261,7 @@ registerProcessor("pcm16", Pcm16);`;
 const workletUrl = URL.createObjectURL(new Blob([PCM_WORKLET], { type: "application/javascript" }));
 const scribes = {};
 let lastCaptionAt = 0;
+const scribeRetries = { expert: 0, phone: 0 };
 
 function startScribe(which, token) {
   scribes[which]?.stop();
@@ -307,9 +308,14 @@ function startScribe(which, token) {
       log(`Transcript (${speaker === "expert" ? "you" : "phone"}): ${m.message_type}: ${m.error}`);
     }
   };
+  ws.onopen = () => { scribeRetries[which] = 0; };
   ws.onclose = () => {
-    // A session ends at its time limit or on a network blip: ask the phone for a fresh token while the call lasts.
-    if (!stopped && control?.readyState === "open") setTimeout(() => sendControl({ kind: "stt-token-request", which }), 1000);
+    // A session ends at its time limit or on a network blip: ask the phone for a fresh token while the call lasts,
+    // backing off, and giving up after six tries (the phone also limits how many tokens it will mint).
+    if (stopped || control?.readyState !== "open") return;
+    const attempt = ++scribeRetries[which];
+    if (attempt > 6) return log(`Transcript stopped for ${which === "expert" ? "you" : "the phone"} after repeated failures`);
+    setTimeout(() => sendControl({ kind: "stt-token-request", which }), Math.min(30000, 1000 * 2 ** attempt));
   };
 
   scribes[which] = {
@@ -426,7 +432,7 @@ function endCall(reason) {
   if (!pc) return;
   try { control?.close(); } catch {}
   clearInterval(pingTimer); $("clearPins").disabled = true;
-  stopScribes();
+  stopScribes(); scribeRetries.expert = scribeRetries.phone = 0;
   document.querySelector(".stage").classList.remove("live");
   document.querySelectorAll(".tapdot").forEach((d) => d.remove());
   pc.close(); pc = null; control = null; pendingCandidates = [];

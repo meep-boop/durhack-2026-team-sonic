@@ -95,7 +95,7 @@ enum RepairReport {
 
       if !input.transcript.isEmpty {
         y += 6
-        write("Call with the expert (transcribed live by ElevenLabs)", .systemFont(ofSize: 14, weight: .semibold))
+        write("Call with the expert (transcribed live by ElevenLabs on the expert's page; times as received by the phone)", .systemFont(ofSize: 14, weight: .semibold))
         for line in input.transcript {
           write("\(line.at.formatted(time))  \(line.speaker == .expert ? "Expert" : "On-site"): \(line.text)", .systemFont(ofSize: 10), gap: 3)
         }
