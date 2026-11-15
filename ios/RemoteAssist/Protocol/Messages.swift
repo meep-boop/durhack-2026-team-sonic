@@ -131,6 +131,17 @@ struct LabelsResult: Codable, Equatable {
   var labels: [Label]
 }
 
+/// PROPOSED, not yet in contracts/protocol.ts (Salman → Ahmed, 2026-11-15): text chat between the phone and the
+/// expert. The relay would keep the last 50, replay them on connect and drop repeats by `id`. Until it does, the relay
+/// answers `error` about "chat" and the app says chat needs the relay update.
+struct ChatMessage: Codable, Equatable, Identifiable {
+  var id: String
+  var from: Role
+  var text: String
+  /// Sender's clock, ms since the epoch, when it was typed (it can arrive much later).
+  var at: Int64
+}
+
 struct Presence: Codable, Equatable {
   struct Client: Codable, Equatable {
     var role: Role
@@ -155,6 +166,7 @@ enum Message: Codable, Equatable {
   case rtcSignal(RtcSignalMessage)
   case labelsRequest(LabelsRequest)
   case labelsResult(LabelsResult)
+  case chat(ChatMessage)
   case presence(Presence)
   case error(ErrorMessage)
   /// A type this build doesn't know yet (the contract grew). Ignored rather than treated as a broken message.
@@ -174,6 +186,7 @@ enum Message: Codable, Equatable {
     case .rtcSignal: "rtc.signal"
     case .labelsRequest: "labels.request"
     case .labelsResult: "labels.result"
+    case .chat: "chat"
     case .presence: "presence"
     case .error: "error"
     case .unknown(let type): type
@@ -194,6 +207,7 @@ enum Message: Codable, Equatable {
     case "rtc.signal": self = .rtcSignal(try RtcSignalMessage(from: decoder))
     case "labels.request": self = .labelsRequest(try LabelsRequest(from: decoder))
     case "labels.result": self = .labelsResult(try LabelsResult(from: decoder))
+    case "chat": self = .chat(try ChatMessage(from: decoder))
     case "presence": self = .presence(try Presence(from: decoder))
     case "error": self = .error(try ErrorMessage(from: decoder))
     default: self = .unknown(type)
@@ -214,6 +228,7 @@ enum Message: Codable, Equatable {
     case .rtcSignal(let m): try m.encode(to: encoder)
     case .labelsRequest(let m): try m.encode(to: encoder)
     case .labelsResult(let m): try m.encode(to: encoder)
+    case .chat(let m): try m.encode(to: encoder)
     case .presence(let m): try m.encode(to: encoder)
     case .error(let m): try m.encode(to: encoder)
     case .unknown: break

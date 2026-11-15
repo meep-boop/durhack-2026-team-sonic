@@ -121,4 +121,13 @@ final class MessageCodingTests: XCTestCase {
     Persistence.save(done, as: name)
     XCTAssertEqual(Persistence.load([StepDone].self, from: name), done)
   }
+
+  /// The proposed chat message: flat beside "type", like every other message.
+  func testChatRoundTrips() throws {
+    let json = #"{"type":"chat","id":"c1","from":"expert","text":"Undo the top-left screw first","at":1731628800000}"#
+    let message = try JSONDecoder().decode(Message.self, from: Data(json.utf8))
+    XCTAssertEqual(message, .chat(ChatMessage(id: "c1", from: .expert, text: "Undo the top-left screw first", at: 1731628800000)))
+    let back = try XCTUnwrap(JSONSerialization.jsonObject(with: JSONEncoder().encode(message)) as? NSDictionary)
+    XCTAssertEqual(back, try XCTUnwrap(JSONSerialization.jsonObject(with: Data(json.utf8)) as? NSDictionary))
+  }
 }
