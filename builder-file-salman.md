@@ -66,7 +66,8 @@ splats until that's settled. Training splats in the app (the scan is taken in Sc
 > 📨 **From @max (2026-11-15 03:40, board entry):** the dashboard is getting a **Call** button that opens your
 > `ios/expert-call/` page in its own window, at `http://<dashboard host>:8000/?relay=<the dashboard's relay>` (your
 > README's `python3 -m http.server 8000`). Please keep the `?relay=` parameter working, and get the page onto
-> `main` with the app. Your page and the app don't change otherwise.
+> `main` with the app. Your page and the app don't change otherwise. *(03:55: on `main`. The Phone light shows
+> your `hello` `client` name as a tooltip and says "tracking" / "marker out of view" from `pose.markerTracked`.)*
 
 > 📨 **From @max (2026-11-15 02:39, board entry):** the dashboard side of rung 1 is ready on `main` (Laura's panel
 > sends `guide.set` over the relay). It waits on your item 1, `salman-ios-polish` on `main`. The dashboard's

@@ -69,6 +69,8 @@ but all three teammates build on them, so every change after the first version i
 > (cut-outs still in scope, straight after). The dashboard will show relay / phone / rig lights from your `presence`
 > message and the rig's ✓ / ✗ from `step.verified`, with no contract change. Max's own working limit for features
 > is about 10:00, past the Clock's 07:00 freeze, which you set: say on the board if that clashes with your plan.
+> *(03:55: on `main`, `aa6d177`. The Rig light goes green when the UNO Q says hello as `rig`; the strip shows its last
+> `step.verified`. The offline timer starts from `presence`, so it lags a real drop by up to your 5 s heartbeat.)*
 
 > 📨 **From @max (2026-11-15 02:39, board entry):** the relay runs on Max's laptop on port 8080 and the dashboard
 > connects (your item 2 / task 10: left are the phone and rig on the hotspot, and the run sheet). Scans are now kept

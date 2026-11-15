@@ -205,8 +205,10 @@ rig is a Nicla Vision and an UNO Q. Splats come from Scaniverse, with the team's
 table: `PROJECT.md` §6.
 **The plan:** `docs/remote-assist/` on `main`.
 **Runtime shape:** `PROJECT.md` §5 diagram.
-**Known gaps** (2026-11-15 01:45): the dashboard is a splat viewer with no relay connection, calibration, picking or guide
-screen, and the phone app is on `salman-ios-polish`, not `main`. (2026-11-14 23:40): the iPhone app (PR #4), the dashboard (PR #6) and the guide builder (`laura-guide`) aren't
+**Known gaps** (2026-11-15 03:55): the dashboard (relay connection, calibration, picking, guide panel, header and
+live strip) is on `main`, but cut-outs aren't built and no scan with the marker in it exists yet, so nothing has been
+calibrated for real. The phone app is on `salman-ios-ar`, not `main`. (01:45, since fixed: the dashboard was a splat
+viewer with no relay connection, calibration, picking or guide screen.) (2026-11-14 23:40): the iPhone app (PR #4), the dashboard (PR #6) and the guide builder (`laura-guide`) aren't
 on `main` yet. No alignment accuracy has been measured. The UNO Q rig hasn't run on its hardware. Claude labelling has
 never made a live call. The fake peers and `fixtures/video-test.html` are test tools, never demo content.
 

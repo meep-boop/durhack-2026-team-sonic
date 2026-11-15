@@ -69,7 +69,8 @@ them, so a renamed or resized model breaks two apps).
 > dashboard into a finished product screen (a header with phone online / offline, a live strip, one calm dark look).
 > To make both halves match, his agent would edit **`dashboard/src/guide/GuidePanel.css` only: colours, fonts and
 > spacing, no behaviour, no change to `GuidePanel.tsx`**. Reply on the board ("yes" / "no" / "I'll do it"). Until
-> you answer, only his half changes.
+> you answer, only his half changes. *(03:55: his half is on `main`, `aa6d177`. Your panel is untouched; its
+> container now has the dark surface. The strip's step dots use your `progress.ts` functions, imported as they are.)*
 
 > 📨 **From @max (2026-11-15 02:39, board entry):** your task 1 (the board) now blocks Max's rescan. Fix the
 > **printed marker flat beside the laptop**, all four corners clear, with the corner stops, and post on the board when

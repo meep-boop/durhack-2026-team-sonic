@@ -65,7 +65,7 @@ and the walking skeleton is the next one. Anything new for you is in the block a
 *Status: ⬜ not started · 🟡 in progress · ⏸ blocked · ✅ done*
 
 **▶ New (2026-11-15 03:40, Max's call; `PROJECT.md` → Decision log). Do these first.**
-- A. 🟡 **The dashboard as a product screen.** A header (Remote Assist, Closed / Open switch, relay / phone / rig
+- A. ✅ (03:55, `aa6d177`; Laura's panel restyle waits on her yes) **The dashboard as a product screen.** A header (Remote Assist, Closed / Open switch, relay / phone / rig
   lights from `presence`, a **Call** button opening Salman's page in its own window at `http://<host>:8000/?relay=…`,
   `?call=` to change it); a live strip (the person's step, ticks, the rig's ✓ / ✗, amber "phone offline, still
   working on its own" with a timer); plain prompts in place of the debug text (debug behind a key); one calm dark
@@ -106,9 +106,9 @@ rung 2 a guide built in the scan lines up on the phone; rung 3 the extras. Decis
   video and the demo. You can publish any shared doc.
 - The call screen is Salman's `ios/expert-call/` page beside the dashboard; no React video panel.
 
-> 🟡 **START HERE (2026-11-15 03:40, @max's session):** building task A (the dashboard as a product screen), then
-> cut-outs. Asked Laura's OK on the board to restyle her panel. Max's own working limit for features is about
-> 10:00; the team Clock (07:00 freeze) is unchanged until the team agrees.
+> 🟡 **START HERE (2026-11-15 03:55, @max's session):** task A is on `main` (header, live strip, offline moment,
+> debug behind the backquote key). Next: cut-outs (B). Waiting on Laura's yes to restyle `GuidePanel.css`. Max's own
+> working limit for features is about 10:00; the team Clock (07:00 freeze) is unchanged until the team agrees.
 >
 > *Earlier (03:15):* tasks 7, 8 and dragging are on `main`. Waiting on Laura's
 > board for the rescans. Open for Max: whether labels persist across a reload (now page-only); PR #1; Anthropic
@@ -200,6 +200,9 @@ rung 2 a guide built in the scan lines up on the phone; rung 3 the extras. Decis
    - *Done when:* either a DGX-Spark-trained splat of the set is in the dashboard, or a board entry says why not.
 
 ## 4. Done log (newest first)
+- 2026-11-15 03:55 — task A: header (scan switch, calibration chip, relay / phone / rig lights, Call the phone) and
+  live strip (set up, build, step N of M with dots and the rig's check, amber offline timer, back-online catch-up,
+  done); debug behind ` (`aa6d177`). Tried with the fake phone dropping off. Dashboard 54 tests.
 - 2026-11-15 — `docs/vault/` (PR #10): 14 plain-language notes, standard links, Obsidian-ready. Owners asked to skim
   their notes.
 - 2026-11-15 03:15 — task 9 dragging: handles on the selected object, R turns about +Y, `onObjectMoved` once per
