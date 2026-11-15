@@ -11,6 +11,7 @@ dashboard's four corner clicks then only confirm it lines up. ARKit's poses are 
 
 import argparse
 import json
+import sys
 import tempfile
 import time
 import zipfile
@@ -154,7 +155,7 @@ def train(root: Path, frames: list, points: np.ndarray, args) -> None:
     for frame in frames:
         width, height = frame["w"] // args.downscale, frame["h"] // args.downscale
         image = Image.open(root / frame["file_path"]).convert("RGB").resize((width, height), Image.Resampling.BILINEAR)
-        images.append(torch.from_numpy(np.asarray(image)).to(device))
+        images.append(torch.from_numpy(np.array(image)).to(device))
         Ks.append(intrinsics(frame, args.downscale))
         viewmats.append(view_matrix(frame["transform_matrix"]))
     Ks = torch.from_numpy(np.stack(Ks)).to(device)
@@ -250,6 +251,8 @@ def main() -> None:
     parser.add_argument("--crop", type=float, default=1.5, help="drop splats further than this (m) from the marker")
     parser.add_argument("--check", action="store_true", help="only read the scan and print what's in it")
     args = parser.parse_args()
+    # Runs are usually left in the background with output to a log; line buffering lets the log show progress live.
+    sys.stdout.reconfigure(line_buffering=True)
 
     with tempfile.TemporaryDirectory() as work:
         meta, root, frames, points = load_scan(open_scan(args.scan, Path(work)))

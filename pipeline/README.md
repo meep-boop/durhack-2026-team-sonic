@@ -32,7 +32,7 @@ Copy the zip across (FTP or `scp`), then once, in its own folder so `~/pixal3d` 
 ```bash
 python3 -m venv ~/scan && source ~/scan/bin/activate
 pip install torch==2.9.1 --index-url https://download.pytorch.org/whl/cu130   # the build ~/pixal3d already runs
-pip install numpy pillow ninja gsplat==1.5.3
+pip install numpy pillow ninja packaging gsplat==1.5.3   # gsplat needs packaging but doesn't declare it
 ```
 
 gsplat compiles its CUDA code on first use (set `TORCH_CUDA_ARCH_LIST="12.0"` for the GB10; ledger § 9). Then:
