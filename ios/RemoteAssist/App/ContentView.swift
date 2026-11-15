@@ -13,6 +13,9 @@ struct ContentView: View {
   @State private var aiBusy = false
   @State private var pinMessage: String?
   @State private var verified: [String: StepVerified] = [:]
+  /// The AI's "check my work" verdict per step id, for the report.
+  @State private var aiChecks: [String: LaptopAssistant.Check] = [:]
+  @State private var reportURL: URL?
   @State private var syncedToast: String?
   @State private var locateTask: Task<Void, Never>?
   /// The last AI locate on this step: the photo (for the screw map) and the notes per part.
@@ -52,17 +55,7 @@ struct ContentView: View {
       }
 
       VStack(spacing: 12) {
-        HStack(spacing: 10) {
-          StatusCapsule(ar: ar, relay: relay, call: call) { showingConnection = true }
-          ChatButton(unread: relay.unreadChat) { showingChat = true }
-          if assistant.isAvailable {
-            Button { showingAssistant = true } label: {
-              Image(systemName: "laptopcomputer").font(.headline).frame(width: 44, height: 44)
-            }
-            .glassBackground(in: Circle())
-            .accessibilityLabel("Laptop assistant")
-          }
-        }
+        topBar
 
         if call.state == .ringing {
           IncomingCallBanner(call: call)
@@ -113,6 +106,7 @@ struct ContentView: View {
           pinProgress: pinProgress,
           handsFree: (commands.isOn, commands.heard, commands.problem),
           onToggleHandsFree: commands.toggle,
+          reportURL: reportURL,
           verification: player.currentStepId.flatMap { verified[$0] },
           onNext: next,
           onBack: player.back
@@ -181,6 +175,10 @@ struct ContentView: View {
       stepChanged()
     }
     .onChange(of: ghostToolOn) { updateGhost() }
+    .onChange(of: player.isFinished) { _, finished in
+      reportURL = nil
+      if finished { makeReport() }
+    }
     .sensoryFeedback(.success, trigger: pinTicks)
     .sensoryFeedback(.selection, trigger: spotlight.arrivals)
     .onChange(of: voiceOn) { voiceOn ? speakCurrentStep() : voice.stop() }
@@ -193,6 +191,20 @@ struct ContentView: View {
     .onChange(of: relay.state) {
       // A call can't survive losing its signalling path for long; end it rather than leave it hanging.
       if relay.state == .off, call.state != .idle { call.hangUp() }
+    }
+  }
+
+  private var topBar: some View {
+    HStack(spacing: 10) {
+      StatusCapsule(ar: ar, relay: relay, call: call) { showingConnection = true }
+      ChatButton(unread: relay.unreadChat) { showingChat = true }
+      if assistant.isAvailable {
+        Button { showingAssistant = true } label: {
+          Image(systemName: "laptopcomputer").font(.headline).frame(width: 44, height: 44)
+        }
+        .glassBackground(in: Circle())
+        .accessibilityLabel("Laptop assistant")
+      }
     }
   }
 
@@ -264,6 +276,31 @@ struct ContentView: View {
     guard let step = player.currentStep else { return }
     relay.sendStepDone(guide: player.guide, stepId: step.id)
     player.next()
+  }
+
+  private func makeReport() {
+    let id = assistant.identification
+    let input = RepairReport.Input(
+      title: player.guide.title,
+      device: isAIGuide ? id.map { "\($0.make) \($0.model)" } : nil,
+      deviceConfidence: isAIGuide ? id?.confidence : nil,
+      startedAt: player.startedAt,
+      finishedAt: Date(),
+      steps: player.guide.steps.enumerated().map { index, step in
+        RepairReport.StepLine(
+          number: index + 1,
+          text: step.text,
+          doneAt: player.doneAt[step.id].map { Date(timeIntervalSince1970: Double($0) / 1000) },
+          rig: verified[step.id],
+          aiCheck: aiChecks[step.id]
+        )
+      },
+      safety: isAIGuide ? assistant.safety : nil,
+      safetyOverridden: assistant.safetyOverridden,
+      aiGenerated: isAIGuide,
+      photo: ar.snapshotJPEG(maxSide: 1200).flatMap(UIImage.init(data:))
+    )
+    reportURL = try? RepairReport.render(input)
   }
 
   /// The mic listens for commands only when nothing else is using the audio: not while the app talks, not in a call.
@@ -399,6 +436,7 @@ struct ContentView: View {
     Task {
       await assistant.check(step: step.text, jpeg: jpeg)
       aiBusy = false
+      if let result = assistant.lastCheck { aiChecks[step.id] = result }
       if voiceOn, let feedback = assistant.lastCheck?.feedback { voice.speak(feedback) }
     }
   }

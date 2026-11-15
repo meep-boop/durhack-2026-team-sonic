@@ -18,6 +18,8 @@ struct StepCard: View {
   /// Hands-free voice commands: on or off, the command just heard, and why it can't run.
   var handsFree: (on: Bool, heard: String?, problem: String?) = (false, nil, nil)
   var onToggleHandsFree: () -> Void = {}
+  /// The finished guide's PDF report, once it's made.
+  var reportURL: URL? = nil
   /// Ahmed's UNO Q rig's verdict on this step, when it checks it.
   var verification: StepVerified? = nil
   let onNext: () -> Void
@@ -134,7 +136,7 @@ struct StepCard: View {
             .foregroundStyle(.secondary)
         }
       } else {
-        CompletionView(title: player.guide.title, onRestart: player.restart)
+        CompletionView(title: player.guide.title, reportURL: reportURL, onRestart: player.restart)
       }
     }
     .padding(20)
@@ -165,6 +167,7 @@ private struct ProgressSegments: View {
 
 private struct CompletionView: View {
   let title: String
+  let reportURL: URL?
   let onRestart: () -> Void
   @State private var appeared = false
 
@@ -179,9 +182,17 @@ private struct CompletionView: View {
         .font(.subheadline)
         .foregroundStyle(.secondary)
         .multilineTextAlignment(.center)
-      Button("Start again", action: onRestart)
-        .buttonStyle(.bordered)
-        .padding(.top, 4)
+      HStack(spacing: 10) {
+        if let reportURL {
+          ShareLink(item: reportURL, preview: SharePreview("Repair report", image: Image(systemName: "doc.richtext"))) {
+            Label("Share report", systemImage: "square.and.arrow.up")
+          }
+          .buttonStyle(.borderedProminent)
+        }
+        Button("Start again", action: onRestart)
+          .buttonStyle(.bordered)
+      }
+      .padding(.top, 4)
     }
     .frame(maxWidth: .infinity)
     .onAppear { appeared = true }
