@@ -16,6 +16,8 @@ final class LaptopAssistant {
     var ssdFormFactor: String
     var warnings: [String]
     var tools: [String]
+    /// The base cover's screws stay in it when loosened. Optional so an older answer still decodes.
+    var captiveScrews: Bool?
   }
 
   struct PlannedStep: Codable, Equatable {
@@ -68,13 +70,26 @@ final class LaptopAssistant {
   private(set) var phase: Phase = .idle
   private(set) var identification: Identification?
   private(set) var plan: [PlannedStep] = []
+  /// Set when the steps come from a maker's manual (VerifiedProcedures) rather than Gemini.
+  private(set) var verified: VerifiedProcedures.Procedure?
+  var stepSource: String { verified.map { "Steps from \($0.source)" } ?? "AI-generated steps" }
+  var captiveScrews: Bool { verified?.captiveScrews ?? identification?.captiveScrews ?? false }
   private(set) var lastCheck: Check?
   private(set) var safety: SafetyCheck?
   /// True when the user started despite the AI not seeing everything as safe (they confirmed they'd checked).
   private(set) var safetyOverridden = false
 
   var isAvailable: Bool { client != nil }
+  var modelName: String? { client?.model }
   private let client = GeminiClient.fromBundle()
+
+  /// For the system check: one tiny call, so a bad key or a wrong model name shows up before the demo, not during.
+  func ping() async throws -> TimeInterval {
+    guard let client else { throw GeminiClient.Failure.empty("no GEMINI_API_KEY in ios/Secrets.xcconfig") }
+    let start = Date()
+    _ = try await client.generate(PingEnvelope.self, prompt: "Reply with ok set to true.", jpeg: nil, schema: Self.pingSchema)
+    return Date().timeIntervalSince(start)
+  }
 
   // MARK: Identify and plan
 
@@ -90,6 +105,7 @@ final class LaptopAssistant {
         confidence is 0 to 1 for the identification. ssdUserReplaceable is "yes", "no" (soldered storage, e.g. most
         MacBooks since 2016), or "unknown". ssdFormFactor e.g. "M.2 2280 NVMe", "2.5-inch SATA", "soldered", "unknown".
         warnings: short, concrete safety notes (unplug the charger, battery, static, warranty). tools: what they need.
+        captiveScrews: true if this model's base cover screws stay in the cover when loosened.
         If the photo does not show a laptop, set isLaptop false.
         """,
         jpeg: jpeg,
@@ -100,6 +116,14 @@ final class LaptopAssistant {
         phase = .failed("I can't see a laptop. Point the camera at the whole laptop and try again.")
         return
       }
+      // A laptop the team has checked against its maker's manual gets those steps, not a generated plan.
+      if let procedure = VerifiedProcedures.match(found) {
+        verified = procedure
+        plan = procedure.steps
+        phase = .identified
+        return
+      }
+      verified = nil
       phase = .working("Planning the steps…")
       plan = try await client.generate(
         PlanEnvelope.self,
@@ -152,7 +176,16 @@ final class LaptopAssistant {
   /// - Pass 1, whole photo: a box per part plus the area to work on, in Gemini's own `box_2d` format.
   /// - Pass 2, small parts only (screws): a zoomed crop around each box, asking for the exact centre. At 1536 px a
   ///   laptop screw is a handful of pixels; in a 256 px crop it fills the frame.
-  func locate(_ target: String, step: String, snapshot: ARSessionController.Snapshot) async throws -> Located {
+  /// `firstPass` gets the pass-1 result straight away, so pins can show in a couple of seconds; `refined` then gets
+  /// each zoomed-in point as it comes back, by item index. Both run on the main actor.
+  func locate(
+    _ target: String,
+    step: String,
+    snapshot: ARSessionController.Snapshot,
+    hint: String? = nil,
+    firstPass: @escaping @MainActor (Located) -> Void = { _ in },
+    refined: @escaping @MainActor (Int, UprightPoint) -> Void = { _, _ in }
+  ) async throws -> Located {
     guard let client else { return Located(items: [], focus: nil, focusLabel: "") }
     let found = try await client.generate(
       LocateEnvelope.self,
@@ -162,7 +195,7 @@ final class LaptopAssistant {
       box_2d is [ymin, xmin, ymax, xmax], each normalised to 0-1000 over the image height and width. label is 1 to 3
       words. note only when this part differs from the others (for example "longer screw" or "under a rubber foot").
       focus is the box around the whole area the person should work on for this step (for example the bottom panel).
-      If you can't see any, return an empty list. Never invent a part.
+      If you can't see any, return an empty list. Never invent a part.\(hint.map { "\n" + $0 } ?? "")
       """,
       jpeg: snapshot.jpeg,
       schema: Self.locateSchema
@@ -171,31 +204,32 @@ final class LaptopAssistant {
     let imageSize = CGSize(width: snapshot.image.width, height: snapshot.image.height)
     let boxes = found.items.prefix(16).compactMap { item in PinMath.rect(fromBox2D: item.box_2d).map { (item, $0) } }
 
-    var items: [LocatedItem] = Array(repeating: LocatedItem(point: .zero, label: ""), count: boxes.count)
-    // Four crops at a time: quick, without tripping Gemini's rate limit.
-    for chunk in stride(from: 0, to: boxes.count, by: 4) {
-      try await withThrowingTaskGroup(of: (Int, LocatedItem).self) { group in
-        for index in chunk..<min(chunk + 4, boxes.count) {
-          let (item, rect) = boxes[index]
-          group.addTask {
-            let centre = CGPoint(x: rect.midX, y: rect.midY)
-            var located = LocatedItem(point: centre, label: item.label, note: item.note)
-            if max(rect.width, rect.height) < 0.12,
-               let refined = try? await self.refine(item.label, box: rect, image: snapshot.image, imageSize: imageSize, client: client) {
-              located.point = refined
-            }
-            return (index, located)
-          }
-        }
-        for try await (index, item) in group { items[index] = item }
-      }
-    }
-
+    var items = boxes.map { item, rect in LocatedItem(point: CGPoint(x: rect.midX, y: rect.midY), label: item.label, note: item.note) }
     let focusRect = found.focus.flatMap { PinMath.rect(fromBox2D: $0.box_2d) }
     let corners = focusRect.map { r in
       [CGPoint(x: r.minX, y: r.minY), CGPoint(x: r.maxX, y: r.minY), CGPoint(x: r.maxX, y: r.maxY), CGPoint(x: r.minX, y: r.maxY)]
     }
-    return Located(items: items, focus: corners, focusLabel: found.focus?.label ?? "Work here")
+    let first = Located(items: items, focus: corners, focusLabel: found.focus?.label ?? "Work here")
+    await firstPass(first)
+
+    // Eight crops at a time: quick, without tripping Gemini's rate limit. Each pin moves as soon as its own crop answers.
+    let small = boxes.indices.filter { max(boxes[$0].1.width, boxes[$0].1.height) < 0.12 }
+    for chunk in stride(from: 0, to: small.count, by: 8) {
+      await withTaskGroup(of: (Int, UprightPoint?).self) { group in
+        for index in small[chunk..<min(chunk + 8, small.count)] {
+          let (item, rect) = boxes[index]
+          group.addTask {
+            (index, try? await self.refine(item.label, box: rect, image: snapshot.image, imageSize: imageSize, client: client))
+          }
+        }
+        for await (index, point) in group {
+          guard let point, !Task.isCancelled else { continue }
+          items[index].point = point
+          await refined(index, point)
+        }
+      }
+    }
+    return Located(items: items, focus: corners, focusLabel: first.focusLabel)
   }
 
   private func refine(_ label: String, box: CGRect, image: CGImage, imageSize: CGSize, client: GeminiClient) async throws -> UprightPoint? {
@@ -261,6 +295,7 @@ final class LaptopAssistant {
   func reset() {
     phase = .idle
     identification = nil
+    verified = nil
     plan = []
     lastCheck = nil
     safety = nil
@@ -270,6 +305,10 @@ final class LaptopAssistant {
   // MARK: Schemas
 
   private struct PlanEnvelope: Codable { var steps: [PlannedStep] }
+  private struct PingEnvelope: Codable { var ok: Bool }
+  private static let pingSchema: [String: Any] = [
+    "type": "object", "properties": ["ok": ["type": "boolean"]], "required": ["ok"],
+  ]
   private struct LocateEnvelope: Codable {
     struct Item: Codable {
       var box_2d: [Double]
@@ -299,6 +338,7 @@ final class LaptopAssistant {
       "ssdFormFactor": ["type": "string"],
       "warnings": ["type": "array", "items": ["type": "string"]],
       "tools": ["type": "array", "items": ["type": "string"]],
+      "captiveScrews": ["type": "boolean"],
     ],
     "required": ["isLaptop", "make", "model", "confidence", "ssdUserReplaceable", "ssdFormFactor", "warnings", "tools"],
   ]

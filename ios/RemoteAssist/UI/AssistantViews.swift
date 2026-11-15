@@ -15,6 +15,8 @@ struct LaptopAssistantSheet: View {
       ScrollView {
         VStack(alignment: .leading, spacing: 20) {
           switch assistant.phase {
+          case .idle where !assistant.isAvailable:
+            aiOff
           case .idle:
             intro
           case .working(let message):
@@ -39,6 +41,22 @@ struct LaptopAssistantSheet: View {
       .navigationTitle("Laptop assistant")
       .navigationBarTitleDisplayMode(.inline)
       .toolbar { ToolbarItem(placement: .cancellationAction) { Button("Close") { dismiss() } } }
+    }
+  }
+
+  private var aiOff: some View {
+    VStack(alignment: .leading, spacing: 14) {
+      Image(systemName: "key.slash").font(.system(size: 44)).foregroundStyle(.orange)
+      Text("The AI is off").font(.title2.weight(.bold))
+      Text("This build has no Gemini key, so the app can't recognise the laptop or find its screws. To turn it on:")
+        .foregroundStyle(.secondary)
+      VStack(alignment: .leading, spacing: 6) {
+        Text("1. Put your key in ios/Secrets.xcconfig as GEMINI_API_KEY")
+        Text("2. Run xcodegen in ios/")
+        Text("3. Build and run again from Xcode")
+      }
+      .font(.callout.monospaced())
+      Text("The marker guide and the expert call work without it.").font(.footnote).foregroundStyle(.secondary)
     }
   }
 
@@ -74,6 +92,9 @@ struct LaptopAssistantSheet: View {
   private func result(_ id: LaptopAssistant.Identification) -> some View {
     VStack(alignment: .leading, spacing: 6) {
       Text("\(id.make) \(id.model)").font(.title2.weight(.bold))
+      Label(assistant.stepSource, systemImage: assistant.verified == nil ? "sparkles" : "checkmark.seal.fill")
+        .font(.subheadline.weight(.semibold))
+        .foregroundStyle(assistant.verified == nil ? Color.secondary : Color.green)
       HStack(spacing: 8) {
         ConfidenceBadge(value: id.confidence)
         Text(id.ssdFormFactor).font(.subheadline).foregroundStyle(.secondary)
@@ -188,7 +209,7 @@ struct AIStepTools: View {
       }
 
       HStack {
-        Label("AI-placed: check each one before you unscrew", systemImage: "sparkles")
+        Label("\(assistant.stepSource) · pins AI-placed: check before you turn", systemImage: assistant.verified == nil ? "sparkles" : "checkmark.seal")
           .font(.caption2)
           .foregroundStyle(.secondary)
         Spacer(minLength: 8)

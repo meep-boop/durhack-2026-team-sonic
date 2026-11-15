@@ -20,6 +20,8 @@ struct ContentView: View {
   /// The last AI locate on this step: the photo (for the screw map) and the notes per part.
   @State private var lastLocate: (snapshot: ARSessionController.Snapshot, located: LaptopAssistant.Located)?
   @State private var screwMemory = ScrewMemory()
+  /// Notes the AI gave per part ("longer screw"), by pin id, for screw memory.
+  @State private var pinNotes: [UUID: String] = [:]
   @State private var pinTicks = 0
   @State private var spotlight = SpotlightTracker()
   @State private var commands = VoiceCommands()
@@ -39,7 +41,7 @@ struct ContentView: View {
       SpotlightOverlay(tracker: spotlight)
 
       if !ar.markerSeen && !isAIGuide {
-        FindMarkerHint().transition(.opacity)
+        FindMarkerHint { showingAssistant = true }.transition(.opacity)
       }
 
       if ar.markerLostForAWhile && !isAIGuide && player.currentStep != nil {
@@ -91,8 +93,8 @@ struct ContentView: View {
 
         Spacer()
 
-        if isAIGuide, currentPhase == "refit", !screwMemory.isEmpty {
-          ScrewMapCard(memory: screwMemory)
+        if isAIGuide, currentPhase == "refit", let group = screwMemory.group(for: currentLookFor) {
+          ScrewMapCard(entries: screwMemory.entries(in: group), photo: screwMemory.photos[group], captive: assistant.captiveScrews)
             .transition(.move(edge: .bottom).combined(with: .opacity))
         }
 
@@ -140,7 +142,7 @@ struct ContentView: View {
       }
     }
     .sheet(isPresented: $showingConnection) {
-      ConnectionSheet(relay: relay, pauseAR: ar.pause, resumeAR: ar.resume)
+      ConnectionSheet(relay: relay, assistant: assistant, voice: voice, pauseAR: ar.pause, resumeAR: ar.resume)
         .presentationDetents([.medium, .large])
     }
     .sheet(isPresented: $showingAssistant) {
@@ -198,13 +200,12 @@ struct ContentView: View {
   private var topBar: some View {
     HStack(spacing: 10) {
       StatusCapsule(ar: ar, relay: relay, call: call) { showingConnection = true }
-      if assistant.isAvailable {
-        Button { showingAssistant = true } label: {
-          Image(systemName: "laptopcomputer").font(.headline).frame(width: 44, height: 44)
-        }
-        .glassBackground(in: Circle())
-        .accessibilityLabel("Laptop assistant")
+      // Always shown: with no key its sheet says how to turn the AI on, instead of the feature silently vanishing.
+      Button { showingAssistant = true } label: {
+        Image(systemName: "laptopcomputer").font(.headline).frame(width: 44, height: 44)
       }
+      .glassBackground(in: Circle())
+      .accessibilityLabel("Laptop assistant")
     }
   }
 
@@ -339,21 +340,26 @@ struct ContentView: View {
     player.currentIndex.flatMap { assistant.phase(stepIndex: $0) }
   }
 
+  private var currentLookFor: String? {
+    player.currentIndex.flatMap { assistant.lookFor(stepIndex: $0) }
+  }
+
   private func stepChanged() {
     locateTask?.cancel()
     locateTask = nil
     aiBusy = false
     ar.clearPins(kinds: [.ai, .refit], focus: true)
     lastLocate = nil
+    pinNotes = [:]
     pinMessage = nil
     spotlight.enabled = true
     updateGhost()
     guard isAIGuide, player.currentStep != nil else { return }
 
-    if currentPhase == "refit", !screwMemory.isEmpty {
+    if currentPhase == "refit", let group = screwMemory.group(for: currentLookFor) {
       // Screw memory: the same holes come back, last out first in, so each screw returns where it came from.
-      ar.placeStoredPins(screwMemory.entries.reversed().map { ($0.number, $0.label, $0.transform) }, kind: .refit)
-      pinMessage = "Put each screw back in its numbered hole"
+      ar.placeStoredPins(screwMemory.entries(in: group).reversed().map { ($0.number, $0.label, $0.transform) }, kind: .refit)
+      pinMessage = assistant.captiveScrews ? "Tighten each screw as you go" : "Put each screw back in its numbered hole"
     } else {
       showWhere()
     }
@@ -372,8 +378,7 @@ struct ContentView: View {
     pinTicks += 1
     guard pin.kind == .ai, currentPhase == "remove" else { return }
     if pin.done {
-      let note = lastLocate?.located.items.first { $0.point == pin.photoPoint }?.note
-      screwMemory.remember(pin, note: note, photo: lastLocate?.snapshot.image)
+      screwMemory.remember(pin, group: currentLookFor ?? "screws", note: pinNotes[pin.id], photo: lastLocate?.snapshot.image)
     } else {
       screwMemory.forget(pin.id)
     }
@@ -401,24 +406,41 @@ struct ContentView: View {
         return
       }
       do {
-        let located = try await assistant.locate(target, step: step.text, snapshot: snapshot)
-        guard !Task.isCancelled, player.currentStepId == stepId else { return }
-        ar.clearPins(kinds: [.ai], focus: true)
-        let placed = ar.placePins(
-          located.items.map { ($0.point, $0.label) },
-          focus: located.focus,
-          focusLabel: located.focusLabel,
-          camera: snapshot.camera
+        var ids: [UUID?] = []
+        let located = try await assistant.locate(
+          target, step: step.text, snapshot: snapshot, hint: assistant.verified?.locateHint,
+          firstPass: { first in
+            // Pins show from the first look straight away; the zoomed second look then nudges each into place.
+            guard !Task.isCancelled, player.currentStepId == stepId else { return }
+            ar.clearPins(kinds: [.ai], focus: true)
+            ids = ar.placePins(first.items.map { ($0.point, $0.label) }, focus: first.focus, focusLabel: first.focusLabel, camera: snapshot.camera)
+            pinNotes = Dictionary(uniqueKeysWithValues: zip(ids, first.items).compactMap { id, item in
+              guard let id, let note = item.note else { return nil }
+              return (id, note)
+            })
+            let placed = ids.compactMap { $0 }.count
+            if placed > 0 {
+              pinMessage = "Found \(placed). Fine-tuning each one…"
+            } else if first.focus != nil {
+              pinMessage = "Work in the highlighted area"
+            } else {
+              pinMessage = "Couldn't spot \(target). Move closer and tap Re-scan."
+            }
+          },
+          refined: { index, point in
+            guard player.currentStepId == stepId, ids.indices.contains(index), let id = ids[index] else { return }
+            ar.movePin(id, to: point, camera: snapshot.camera)
+          }
         )
+        guard !Task.isCancelled, player.currentStepId == stepId else { return }
         lastLocate = (snapshot, located)
+        let placed = ids.compactMap { $0 }.count
         if placed > 0, currentPhase == "remove" {
-          pinMessage = "Found \(placed). Tap each as it comes out, and lay the screws down in order 1 to \(placed)."
+          pinMessage = assistant.captiveScrews
+            ? "\(placed) found. These stay in the cover: loosen each until it's free, and tap its pin."
+            : "\(placed) found. Tap each as it comes out, and lay the screws down in order 1 to \(placed)."
         } else if placed > 0 {
-          pinMessage = "Found \(placed) × \(target). Tap each one as you go."
-        } else if located.focus != nil {
-          pinMessage = "Work in the highlighted area"
-        } else {
-          pinMessage = "Couldn't spot \(target). Move closer and tap Re-scan."
+          pinMessage = "\(placed) × \(target). Tap each one as you go."
         }
       } catch {
         guard !Task.isCancelled else { return }

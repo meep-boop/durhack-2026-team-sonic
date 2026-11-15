@@ -3,7 +3,10 @@ import SwiftUI
 /// On a refit step: the photo the screws were found in, with each hole numbered, and a line for any screw that was
 /// different (say, longer), so every screw goes back where it came from.
 struct ScrewMapCard: View {
-  let memory: ScrewMemory
+  let entries: [ScrewMemory.Entry]
+  let photo: UIImage?
+  /// The screws stayed in the cover, so there's nothing to match up: just tighten every hole.
+  let captive: Bool
   @State private var expanded = false
 
   var body: some View {
@@ -12,7 +15,7 @@ struct ScrewMapCard: View {
         withAnimation(.snappy) { expanded.toggle() }
       } label: {
         HStack {
-          Label("Screw map · \(memory.entries.count) screws", systemImage: "map.fill").font(.subheadline.weight(.semibold))
+          Label(captive ? "Screw map · \(entries.count) captive screws" : "Screw map · \(entries.count) screws", systemImage: "map.fill").font(.subheadline.weight(.semibold))
           Spacer()
           Image(systemName: expanded ? "chevron.up" : "chevron.down").font(.footnote)
         }
@@ -20,13 +23,13 @@ struct ScrewMapCard: View {
       .buttonStyle(.plain)
 
       if expanded {
-        if let photo = memory.photo {
+        if let photo {
           Image(uiImage: photo)
             .resizable()
             .scaledToFit()
             .overlay {
               GeometryReader { proxy in
-                ForEach(memory.entries) { entry in
+                ForEach(entries) { entry in
                   if let point = entry.photoPoint {
                     Text("\(entry.number)")
                       .font(.caption2.weight(.heavy))
@@ -42,12 +45,14 @@ struct ScrewMapCard: View {
             .frame(maxHeight: 220)
             .accessibilityLabel("Photo of the panel with each screw hole numbered")
         }
-        ForEach(memory.entries.filter { $0.note != nil }) { entry in
+        ForEach(entries.filter { $0.note != nil }) { entry in
           Label("Screw \(entry.number) was different (\(entry.note ?? "")): it goes back in hole \(entry.number)", systemImage: "exclamationmark.triangle.fill")
             .font(.footnote)
             .foregroundStyle(.orange)
         }
-        Text("Last out, first in: the pins count down from \(memory.entries.last?.number ?? 0).")
+        Text(captive
+          ? "These screws stayed in the cover: tighten each one as its pin turns green."
+          : "Last out, first in: the pins count down from \(entries.last?.number ?? 0).")
           .font(.footnote)
           .foregroundStyle(.secondary)
       }
