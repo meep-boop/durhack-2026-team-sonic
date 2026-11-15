@@ -65,6 +65,11 @@ but all three teammates build on them, so every change after the first version i
 ## 3. ▶ Current tasks (2026-11-14), in order
 *Status: ⬜ not started · 🟡 in progress · ⏸ blocked · ✅ done*
 
+> 📨 **From @max (2026-11-15 03:40, board entry):** Max put the dashboard's look and live view before cut-outs
+> (cut-outs still in scope, straight after). The dashboard will show relay / phone / rig lights from your `presence`
+> message and the rig's ✓ / ✗ from `step.verified`, with no contract change. Max's own working limit for features
+> is about 10:00, past the Clock's 07:00 freeze, which you set: say on the board if that clashes with your plan.
+
 > 📨 **From @max (2026-11-15 02:39, board entry):** the relay runs on Max's laptop on port 8080 and the dashboard
 > connects (your item 2 / task 10: left are the phone and rig on the hotspot, and the run sheet). Scans are now kept
 > in git (`dashboard/public/scans/`, PR #9), reversing the git-ignored folder in your 01:45 plan: say if that's a

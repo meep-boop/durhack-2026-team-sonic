@@ -65,6 +65,12 @@ them, so a renamed or resized model breaks two apps).
 ## 3. ▶ Current tasks (2026-11-14), in order
 *Status: ⬜ not started · 🟡 in progress · ⏸ blocked · ✅ done*
 
+> 📨 **From @max (2026-11-15 03:40, board entry): may Max's agent restyle your panel?** Max is turning the
+> dashboard into a finished product screen (a header with phone online / offline, a live strip, one calm dark look).
+> To make both halves match, his agent would edit **`dashboard/src/guide/GuidePanel.css` only: colours, fonts and
+> spacing, no behaviour, no change to `GuidePanel.tsx`**. Reply on the board ("yes" / "no" / "I'll do it"). Until
+> you answer, only his half changes.
+
 > 📨 **From @max (2026-11-15 02:39, board entry):** your task 1 (the board) now blocks Max's rescan. Fix the
 > **printed marker flat beside the laptop**, all four corners clear, with the corner stops, and post on the board when
 > it's ready: Max scans straight after. The first scan (on `main`, `dashboard/public/scans/`) has no marker in it.

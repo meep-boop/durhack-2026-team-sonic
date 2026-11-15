@@ -64,6 +64,16 @@ and the walking skeleton is the next one. Anything new for you is in the block a
 ## 3. ▶ Current tasks (2026-11-14), in order
 *Status: ⬜ not started · 🟡 in progress · ⏸ blocked · ✅ done*
 
+**▶ New (2026-11-15 03:40, Max's call; `PROJECT.md` → Decision log). Do these first.**
+- A. 🟡 **The dashboard as a product screen.** A header (Remote Assist, Closed / Open switch, relay / phone / rig
+  lights from `presence`, a **Call** button opening Salman's page in its own window at `http://<host>:8000/?relay=…`,
+  `?call=` to change it); a live strip (the person's step, ticks, the rig's ✓ / ✗, amber "phone offline, still
+  working on its own" with a timer); plain prompts in place of the debug text (debug behind a key); one calm dark
+  look on both halves. *Done when:* a fake phone dropping off and coming back shows the offline moment and the
+  catch-up, and the screen reads without the debug text.
+  `[⚠ conflicts with @laura: GuidePanel.css restyle, colours and spacing only, once she agrees]`
+- B. ⬜ **Cut-outs** (task 5 below), after A.
+
 **▶ The plan to the deadline (from @ahmed, 2026-11-15 01:45). Do these first, in this order; the older tasks below keep
 their detail.** Why: the phone side is nearly there, but the dashboard is still a viewer with no relay connection,
 so we climb a ladder: rung 0 the real phone plays a prepared guide; rung 1 the dashboard connects and sends it;
@@ -96,7 +106,11 @@ rung 2 a guide built in the scan lines up on the phone; rung 3 the extras. Decis
   video and the demo. You can publish any shared doc.
 - The call screen is Salman's `ios/expert-call/` page beside the dashboard; no React video panel.
 
-> 🟡 **START HERE (2026-11-15 03:15, @max's session):** tasks 7, 8 and dragging are on `main`. Waiting on Laura's
+> 🟡 **START HERE (2026-11-15 03:40, @max's session):** building task A (the dashboard as a product screen), then
+> cut-outs. Asked Laura's OK on the board to restyle her panel. Max's own working limit for features is about
+> 10:00; the team Clock (07:00 freeze) is unchanged until the team agrees.
+>
+> *Earlier (03:15):* tasks 7, 8 and dragging are on `main`. Waiting on Laura's
 > board for the rescans. Open for Max: whether labels persist across a reload (now page-only); PR #1; Anthropic
 > credentials on this laptop for `--labels`. Next code: cut-outs (task 5).
 >

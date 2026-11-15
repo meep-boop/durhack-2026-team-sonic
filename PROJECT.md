@@ -48,6 +48,7 @@ Source: `EVENT.md` §1 (one notes file, not yet checked against Devpost). The 02
 
 | Date | Decision |
 |---|---|
+| 2026-11-15 | The expert's dashboard becomes a finished product screen before cut-outs: a header with relay / phone / rig lights and a Call button that opens Salman's call page in its own window, a live strip that shows the person's step and the offline moment, plain prompts with the debug text behind a key, one calm dark look on both halves (Laura's panel restyled by Max's agent once she agrees, colours and spacing only); cut-outs follow it (Max, 03:40) |
 | 2026-11-15 | Scans are kept in git (`dashboard/public/scans/`), not per machine, so the team and the judges see the same files; a scan's file name is its calibration id, so never overwrite one (Max, 02:39; reverses the git-ignored folder in Ahmed's 01:45 plan) |
 | 2026-11-15 | The dashboard loads both splat and mesh scans from Scaniverse; we demo whichever scan of the set comes out better, and the pitch names the kind honestly (Max, 02:32) |
 | 2026-11-15 | No placing before calibration: the dashboard's `pickPoint()` resolves to null and objects aren't drawn until the scan on screen is calibrated (Max, 02:16; Ahmed recommended it) |
@@ -170,7 +171,7 @@ SSD-swap demo (23:03).
 |---|---|
 | Ahmed | The tap receipt and a calibration per scan in the relay; the dashboard's relay connection and calibration maths; the rung-0 guide file; the rig on its hardware |
 | Salman | Merge `salman-ios-polish`; the smoke test on the real phone; post the +X/+Z edges; the tap receipt; measure alignment |
-| Max | Merge PR #6; the app shell; two scans; click-picking; the calibration screen; drawing a step's objects |
+| Max | The dashboard as a product screen (header and lights, live strip, one look); then cut-outs; the two rescans once Laura's board is ready |
 | Laura | The board with corner stops; the real SSD-swap steps; the guide panel; README, video, Devpost |
 
 Asked for by Max (19:40 board entry): "Pick and get the demo objects" is Laura's task 3. "Check we have a Mac with
@@ -321,6 +322,27 @@ The diagram, components, alignment maths and draft protocol are in `docs/remote-
 
 ## Decision log
 *Full records, newest first. NOW → Decisions in force holds the one-line versions.*
+
+## 2026-11-15 03:40 — The expert's dashboard as a product screen
+- Context: the dashboard did nearly everything the plan asked, but read as a test screen: debug text in the corner,
+  no title, the person's progress only as small ticks, and no phone online / offline anywhere, although the relay
+  already sends `presence`. Judges watch this screen for the whole demo, and the whole presentation must be under 5
+  minutes (Laura, 03:30), so it has to read at a glance.
+- Chose (Max): **a finished product screen first, then cut-outs.** A header with relay, phone and rig lights from
+  `presence`, the Closed / Open switch and a **Call** button; a live strip with the person's current step, ticks,
+  the rig's ✓ / ✗, and an amber "phone offline, still working on its own" state with a timer; plain prompts in place
+  of the debug text, which stays behind a key for the team.
+- Chose (Max): **Max's agent restyles Laura's panel** (`GuidePanel.css`, colours and spacing only, no behaviour) once
+  she agrees on the board, so both halves share one look while she works on the board and the judges' material.
+- Chose (Max): **the call stays Salman's page in its own window**, opened by the Call button
+  (`http://<host>:8000/?relay=<relay>` by default, `?call=` to change it). Keeps Ahmed's 01:45 decision.
+- Chose (Max): **a calm control room look**: dark, quiet, one strong element (the live strip, amber when the phone is
+  offline). No new font or package.
+- Rejected: cut-outs first (the screen would stay a test screen, and the phone can't draw cut-outs on iOS 26.3.1);
+  a quick tidy then cut-outs (both thinner); Laura restyling her own panel (two looks if she runs out of time);
+  embedding the call page (reopens Ahmed's decision, and camera / mic permission in an embedded page can fail);
+  an ops-screen look (busier for judges); copying the call page's purple (the most common AI-app look).
+- Revisit if: Laura says no to the restyle (then her panel keeps its look, or she takes the colours herself).
 
 ## 2026-11-15 01:45 — The plan to the deadline
 - Context: a read of every branch found the phone nearly complete (`salman-ios-polish`, not on `main`) and the
