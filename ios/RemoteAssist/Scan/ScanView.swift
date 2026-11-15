@@ -81,7 +81,11 @@ struct ScanView: View {
     HStack(spacing: 10) {
       switch phase {
       case .ready:
-        primary("Start", disabled: !ar.markerSeen, start)
+        if ar.markerSeen {
+          primary("Start", start)
+        } else {
+          waitingForMarker
+        }
         secondary("Back", onClose)
       case .recording:
         primary("Stop and save", stop)
@@ -107,6 +111,18 @@ struct ScanView: View {
     .buttonStyle(.borderedProminent)
     .tint(Theme.accent)
     .disabled(disabled)
+  }
+
+  /// A disabled prominent button all but vanishes on the glass card, so before the marker is seen this says what's
+  /// missing instead, in plain view. The scan still can't start without it: it's lined up from the marker.
+  private var waitingForMarker: some View {
+    Label("Point at the marker to start", systemImage: "viewfinder")
+      .font(.subheadline.weight(.semibold))
+      .foregroundStyle(.white)
+      .frame(maxWidth: .infinity)
+      .padding(.vertical, 12)
+      .background(.white.opacity(0.18), in: Capsule())
+      .accessibilityAddTraits(.isStaticText)
   }
 
   private func secondary(_ title: String, _ action: @escaping () -> Void) -> some View {

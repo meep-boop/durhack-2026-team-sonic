@@ -1077,3 +1077,14 @@ each builder's brief (`builder-file-<name>.md`, on the `context` branch).
 - 📨 To @max: your dashboard still says "Remote Assist" (`dashboard/index.html` title, `src/shell/Header.tsx`).
 - ⚠️ Conflicts: none
 - Conflict status: n/a
+
+### 2026-11-15 11:40 — Scan the room says why it can't start yet — @salman
+- Shipped: on `salman-ios-scan`. Before the marker has been seen, Scan the room's greyed-out Start was close to
+  invisible on the glass card, so Salman couldn't find it. It now shows "Point at the marker to start" in plain view,
+  and becomes the purple Start once the marker is seen. Same rule as before, only clearer.
+- Rig: it joined the relay twice and dropped both times. No code change: the relay's guide already has the rig's
+  checks on s3 (SSD out of the bay) and s4 (SSD in), and the console shows them as pop-ups.
+- Touched: `ios/RemoteAssist/Scan/ScanView.swift`
+- 📨 To @max: a small look change on your scan screen's ready state; the flow is unchanged.
+- ⚠️ Conflicts: @max — `ScanView.swift` is from his `max-ios-scan`
+- Conflict status: open
