@@ -6,7 +6,7 @@ Rules while it's a draft:
 - TODO marks a gap to fill. Don't fill one with a guess.
 -->
 
-# Remote Assist
+# Sonic Assist
 > Step-by-step 3D guidance on a phone, built by a remote expert from a scan of the room, that keeps working when the
 > network drops. Built by Team Sonic at DurHack 2026.
 
