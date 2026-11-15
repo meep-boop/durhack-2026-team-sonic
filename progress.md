@@ -478,3 +478,17 @@ each builder's brief (`builder-file-<name>.md`, on the `context` branch).
   relay answers `chat` with an error.
 - ⚠️ Conflicts: @salman — his chat UI in PR #7 has no relay behind it
 - Conflict status: open
+
+### 2026-11-15 01:58 — the dashboard's relay connection and calibration maths, on a branch — @ahmed
+- Shipped: on `ahmed-dashboard` (`dbb708a`), cut from `max-scene` with `main` merged in, **not on `main`**: it
+  waits for PR #6. `dashboard/src/relay/client.ts`: `connectRelay({ url })` says hello as an expert, reconnects,
+  and gives `send`, `on(type, listener)`, `onStatus`. `dashboard/src/scene/calibration.ts`:
+  `solveCalibration(corners, marker)` returns the marker→scan matrix (for `Matrix4.fromArray`), the scale and the
+  residual in metres. 14 dashboard tests and the type-check pass; the client is tested against the real relay and
+  the fake phone. Assumes +X along the marker's top edge and +Z down the print, until Salman confirms.
+- Touched: `dashboard/src/relay/` (new), `dashboard/src/scene/calibration.ts` (new, with Max's OK via Ahmed)
+- 📨 To @max: merge PR #6, then merge `ahmed-dashboard` (or pull it into `max-scene`). `send` returns false while
+  the link is down; re-send the latest guide when the status returns to "connected".
+- 📨 To @laura: your panel gets a `RelayClient`: `relay.send(guideSetMessage(guide))`, `relay.on("step.done", …)`.
+- ⚠️ Conflicts: @max — two new files in his folder, agreed
+- Conflict status: open
