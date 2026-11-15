@@ -1,8 +1,8 @@
 """Runs on the UNO Q: reads which regions the Nicla Vision sees the stickered part in, follows the guide through the
-relay as the `rig`, and reports `step.verified`.
+relay as the `rig`, reports `step.verified`, and shows a tick or a cross on the board's LED matrix.
 
-    RELAY_URL=ws://<relay laptop>:8080 python main.py            # Nicla on the hub, found automatically
-    python main.py --relay ws://... --nicla /dev/ttyACM0
+    In App Lab: set RELAY_URL below, copy this folder and ../sketch into an app, press Run.
+    RELAY_URL=ws://<relay laptop>:8080 python main.py            # over SSH or on a laptop: no LED matrix
     python main.py --relay ws://... --nicla -                     # type `seen=ssd-bay` lines instead of a Nicla
 """
 
@@ -20,6 +20,23 @@ import serial
 import websocket
 
 from rig import Rig, parse_seen
+
+try:
+    # Only there inside an App Lab app on the UNO Q. Elsewhere the rig runs the same, without the LED matrix.
+    from arduino.app_utils import App, Bridge
+except ImportError:
+    App = Bridge = None
+
+# App Lab can't pass arguments or environment variables, so in App Lab put the relay's address here.
+RELAY_URL = ""
+
+# Codes for show_verdict in ../sketch/sketch.ino.
+BLANK, TICK, CROSS = 0, 1, 2
+
+
+def show(code: int) -> None:
+    if Bridge:
+        Bridge.call("show_verdict", code)
 
 
 def nicla_lines(path: str) -> Iterator[str]:
@@ -44,18 +61,23 @@ def find_nicla() -> str:
 
 def main() -> None:
     parser = argparse.ArgumentParser(description="The UNO Q rig for Remote Assist.")
-    parser.add_argument("--relay", default=os.environ.get("RELAY_URL"), help="e.g. ws://192.168.1.20:8080")
+    parser.add_argument("--relay", default=os.environ.get("RELAY_URL") or RELAY_URL, help="e.g. ws://192.168.1.20:8080")
     parser.add_argument("--nicla", default=os.environ.get("NICLA_PORT"), help="serial port, or - for stdin")
     args = parser.parse_args()
     if not args.relay:
-        sys.exit("Say where the relay is: --relay ws://<laptop address>:8080 (or set RELAY_URL).")
+        sys.exit("Say where the relay is: --relay ws://<laptop address>:8080, or set RELAY_URL (in App Lab, in this file).")
 
     rig = Rig()
     # The relay's thread and the Nicla's thread both change the rig.
     lock = threading.Lock()
 
+    def position() -> tuple[str | None, str | None]:
+        step = rig.current_step()
+        return (rig.guide or {}).get("id"), step and step["id"]
+
     def send(messages: list[dict]) -> None:
         for message in messages:
+            show(TICK if message["ok"] else CROSS)
             try:
                 app.send(json.dumps(message))
                 print(f"sent: {message['stepId']} {'correct' if message['ok'] else message['detail']}", flush=True)
@@ -74,7 +96,12 @@ def main() -> None:
             print(f"relay refused {message.get('about', 'a message')}: {message['message']}", flush=True)
             return
         with lock:
-            send(rig.on_relay(message))
+            before = position()
+            verdicts = rig.on_relay(message)
+            # A new step starts blank: the last step's tick shouldn't look like this step's.
+            if position() != before:
+                show(BLANK)
+            send(verdicts)
 
     def on_close(_app: websocket.WebSocketApp, code: int | None, reason: str | None) -> None:
         print(f"lost the relay ({code} {reason or ''}); retrying", flush=True)
@@ -82,13 +109,22 @@ def main() -> None:
     app = websocket.WebSocketApp(args.relay, on_open=on_open, on_message=on_message, on_close=on_close)
     threading.Thread(target=app.run_forever, kwargs={"reconnect": 2}, daemon=True).start()
 
-    for line in nicla_lines(args.nicla or find_nicla()):
+    def handle(line: str) -> None:
         seen = parse_seen(line.strip())
         if seen is None:
-            continue
+            return
         print(f"nicla sees the part in: {', '.join(sorted(seen)) or 'no region'}", flush=True)
         with lock:
             send(rig.on_seen(seen))
+
+    lines = nicla_lines(args.nicla or find_nicla())
+    if App is None:
+        for line in lines:
+            handle(line)
+    else:
+        show(BLANK)
+        # App Lab owns the main loop; it calls this over and over, and each call reads one line (or times out).
+        App.run(user_loop=lambda: handle(next(lines)))
 
 
 if __name__ == "__main__":

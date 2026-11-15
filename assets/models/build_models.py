@@ -144,6 +144,18 @@ def cable_plug():
     return m
 
 
+def ssd():
+    """An M.2 2280 SSD (22 × 80 mm): contact edge at the origin, so pulling it out of its slot moves it along +Y."""
+    m = Mesh()
+    # The contact edge has the M-key notch, which is what makes it read as an SSD rather than a plain board.
+    m.box(-0.0110, 0.0045, 0.000, 0.004, -0.0004, 0.0004)
+    m.box(0.0065, 0.0110, 0.000, 0.004, -0.0004, 0.0004)
+    m.box(-0.0110, 0.0110, 0.004, 0.080, -0.0004, 0.0004)
+    for y0, y1 in ((0.008, 0.022), (0.028, 0.048), (0.054, 0.074)):
+        m.box(-0.0085, 0.0085, y0, y1, 0.0004, 0.0016)
+    return m
+
+
 # Names must match ModelName in contracts/protocol.ts and are the file names both apps load.
 MODELS = {
     "screw": screw,
@@ -152,6 +164,7 @@ MODELS = {
     "screwdriver": screwdriver,
     "hand": hand,
     "cable-plug": cable_plug,
+    "ssd": ssd,
 }
 
 

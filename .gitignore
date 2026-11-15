@@ -59,3 +59,6 @@ Thumbs.db
 # Docs bundles for teammates (sent on Discord/Drive, never committed) and superseded local docs
 share/
 _archive/
+
+# Scans of the demo set: multi-MB and per-machine (dashboard/src/scene/scans.ts)
+/dashboard/public/scans/

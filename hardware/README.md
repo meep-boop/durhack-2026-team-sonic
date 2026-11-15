@@ -7,8 +7,8 @@ dashboard and on the phone.
 
 ```
 Nicla Vision ──USB──▶ powered hub ──▶ UNO Q ──Wi-Fi──▶ relay ──▶ dashboard + phone
- nicla/main.py                         unoq/main.py
- "seen=ssd-bay"                        "step 4 wanted it in the bay: correct"
+ nicla/main.py                         unoq/python/main.py + unoq/sketch/sketch.ino
+ "seen=ssd-bay"                        "step 4 wanted it in the bay: correct", ✓ on its LED matrix
 ```
 
 ## What you need
@@ -23,17 +23,25 @@ Nicla Vision ──USB──▶ powered hub ──▶ UNO Q ──Wi-Fi──▶
    sticker). The values in the file are examples. Then Tools > Save open script to OpenMV Cam.
 2. **Wire:** hub into the UNO Q, charger into the hub, Nicla into the hub. Fix the Nicla so it can't move: its
    regions are in pixels.
-3. **UNO Q:** run `unoq/main.py` with `pyserial` and `websocket-client` installed (`unoq/requirements.txt`):
-   `RELAY_URL=ws://<relay laptop>:8080 python main.py`. It finds the Nicla on `/dev/ttyACM*` by itself.
+3. **UNO Q, in App Lab:** make a new app. Copy everything in `unoq/python/` into the app's `python` folder
+   (`requirements.txt` must sit there, beside `main.py`, or App Lab installs nothing) and `unoq/sketch/sketch.ino` over
+   the app's sketch. Set `RELAY_URL` near the top of `main.py` to the address the relay prints. Press Run. It finds the
+   Nicla on `/dev/ttyACM*` by itself, and the LED matrix shows ✓ or ✗ for the current step. If the sketch fails to
+   compile on `Arduino_RouterBridge.h`, add that library to the app in App Lab.
+4. **UNO Q, without App Lab** (if the access test shows App Lab can't open the Nicla's port): over SSH,
+   `pip install -r requirements.txt`, then `RELAY_URL=ws://<relay laptop>:8080 python main.py` in `unoq/python/`. The
+   rig works the same; only the LED matrix is off.
 
 ## Test without the hardware
-- Logic: `cd unoq && python -m unittest test_rig`
+- Logic: `cd unoq/python && python -m unittest test_rig`
 - The whole chain with typed-in Nicla lines: start the relay, run `node fixtures/fake-expert.ts --step s3`, then
   `python main.py --relay ws://localhost:8080 --nicla -` and type `seen=ssd-bay`, then `seen=`.
 
 ## Known gaps
 - Whether an App Lab app can open the Nicla's USB port is untested; forum reports conflict
-  (`research/ledger.md` § 10). If it can't, run `unoq/main.py` over SSH, outside App Lab.
+  (`research/ledger.md` § 10). If it can't, run `unoq/python/main.py` over SSH, outside App Lab (step 4).
 - `nicla/main.py` hasn't run on a Nicla yet, and its region and colour are examples.
 - A hand resting over the sticker looks the same as the part being gone, so "take the SSD out" can tick early.
-- The ✓ / ✗ on the UNO Q's LED matrix isn't written yet.
+- The LED matrix code and the App Lab path haven't run on the board: they follow Arduino's own LED Matrix Painter
+  example and were checked here against a stand-in for App Lab's module. If the tick looks scrambled, the matrix lays
+  pixels out column by column (`sketch.ino` says how to flip it).
