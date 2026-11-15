@@ -150,12 +150,24 @@ _TODO: the iPhone app (Xcode steps) and the rig (`hardware/README.md`)._
 | Salman (`salman-abdulrazaq-ali`) | The iPhone app |
 
 ## Open source and acknowledgements
-_TODO: the final list from each package.json and the Swift packages, with licences._ So far: three.js, Spark,
-React, Vite, `ws`, Pixar's USD (`usd-core`, to build the models only), the Anthropic SDK.
+DurHack asks every framework to be listed here. Versions are the ones pinned in each part's package file.
+
+| Part | Libraries | Licence |
+|---|---|---|
+| Dashboard | React 19.3, Vite 8.3, three.js 0.187, Spark 2.4 (`@sparkjsdev/spark`), TypeScript 7 | TODO: check each |
+| Relay | Node 24, `ws` 8.23, Anthropic SDK 1.8 (`@anthropic-ai/sdk`), TypeScript 7 | TODO |
+| iPhone app | Swift, ARKit, RealityKit (Apple); Google's WebRTC framework via `stasel/WebRTC` | TODO |
+| Rig | OpenMV firmware on the Nicla Vision; `pyserial` 3.5, `websocket-client` 1.9.2 on the UNO Q | TODO |
+| 3D models | Pixar's USD (`usd-core` 26.11), only to build the model files | Modified Apache 2.0 (TODO: confirm) |
+
+_TODO: the final check of every package file and Swift package just before submitting, since parts are still landing._
 
 ## AI use
-DurHack asks for AI tools to be credited. We used:
-- **Claude Code** throughout, to write and test code and docs. Every design decision was made by a team member;
-  the decision log in our planning docs records who decided what.
-- **Claude (Anthropic API)** inside the product: it suggests labels for parts in a snapshot of the scan. Labels are
-  marked as made by AI and the expert can fix or delete each one.
+DurHack asks for AI tools to be credited explicitly. We used:
+- **Claude Code (Anthropic)**, throughout the build, to write and test code and docs. Every design decision was made
+  by a team member, and our decision log records who decided what.
+- **Claude (Anthropic API)**, inside the product: it suggests labels for parts in a snapshot of the scan, so the
+  expert can find a part by name. Labels are marked as made by AI, never reach the phone, and the expert can fix or
+  delete each one.
+- **ElevenLabs**, inside the iPhone app as an optional spoken voice. _TODO: keep this line only if ElevenLabs is in the
+  demo build (ask Salman); otherwise delete it._

@@ -17,7 +17,7 @@ bottom, pushed to `main` straight away:
 ```
 
 ## Headline
-**Remote Assist.** Step-by-step 3D guidance on a phone, built by a remote engineer from a scan of the room, that keeps working when the network is down. The plan: `docs/remote-assist/`.
+**Sonic Assist** (working name was Remote Assist). Step-by-step 3D guidance on a phone, built by a remote engineer from a scan of the room, that keeps working when the network is down. The plan: `docs/remote-assist/`.
 
 ## Start here (teammates, first 15 minutes)
 1. **GitHub:** accept the collaborator invite for `github.com/meep-boop/durhack-2026-team-sonic`, then in **Git Bash** on Windows (plain `bash` in
@@ -950,3 +950,95 @@ each builder's brief (`builder-file-<name>.md`, on the `context` branch).
 - 📨 To @max @laura @salman: start at step 1 of your checklist. The scan with the marker in it comes first.
 - ⚠️ Conflicts: none
 - Conflict status: n/a
+
+### 2026-11-15 08:30 — the demo opens with Salman's console, then the guide dashboard — @ahmed
+- Shipped: no code. Two expert tools exist. Salman's technician console (`ios/expert-call/`) marks the real laptop
+  from clicks on the phone's live video, with no scan or calibration, which is why its marks stick. Max and Laura's
+  dashboard builds a guide in a scan and shows ticks, offline and the rig, but nothing is calibrated yet. Two new
+  scans from Ahmed (08:01, 08:09) are on his laptop, not committed.
+- Touched: on `context`: the four briefs (a change note above each checklist), `PROJECT.md`
+- Decision (Ahmed): live console first, guide dashboard second; typed positions and "prepared guide" if the scans
+  aren't calibrated in time.
+- 📨 To @salman: merge **PR #12 only**. `salman-latest` bundles the dropped Expo app (`mobile/`, a 7,600-line
+  lockfile) and old board entries: please don't merge it to `main`.
+- 📨 To @laura: the script's order changed (in your brief). 📨 To @max: the scan route is the second beat now.
+- ⚠️ Conflicts: @laura — the beat sheet order | @salman — which of his branches merges
+- Conflict status: open
+
+### 2026-11-15 08:36 — Scanning inside our own app: built on a branch, trainer proven on the Spark — @max
+- Shipped: on branch `max-ios-scan` (`1576570`), not `main`: a "Scan the room" mode in the phone app that keeps
+  a photo each time the phone moves 4 cm or turns 8°, with ARKit's camera pose already in the marker's frame, and posts
+  the scan as one zip to `pipeline/scan-inbox.ts` on the relay laptop (port 8090). `pipeline/train_scan.py` trains a
+  splat from it on the Spark with gsplat, with no COLMAP step, so the splat comes out lined up with the marker. Tests:
+  inbox 6/6, trainer 5/5. On the Spark (`~/scan`), a made-up scan of 60 photos trained in 168 s for 3,000 steps
+  (error 0.45 → 0.0035), and the splat opens in our dashboard. **The Swift has never been compiled** (no Xcode on
+  Max's laptop), and no real phone scan exists yet, so nothing about real scans is measured. Scaniverse stays the
+  demo's scan.
+- Touched: on `max-ios-scan`: `ios/RemoteAssist/Scan/` (new), `ARSessionController.swift` (a `scanRecorder`
+  that sees each frame), `ContentView.swift`, `HomeView.swift` (a third start-screen choice),
+  `ios/RemoteAssistTests/ScanKeyframePolicyTests.swift`, `pipeline/` (new), `.gitignore`. On the Spark: `~/scan`
+  only. On `context`: `PROJECT.md` (Decision log, Decisions in force, Pending, Active tasks), Max's and Salman's briefs.
+- Decision (Max, 08:00): scanning inside our own app as a side route; its own branch until Salman agrees and builds
+  it; our own gsplat trainer; an upload server on the relay laptop (`PROJECT.md` → Decision log).
+- 📨 To @salman: optional and last, after your checklist and the run-through: yes or no on the board to Max's scan
+  code in your app. If yes, build `max-ios-scan` in Xcode (the last block in your brief). Nothing merges without you.
+- 📨 To @ahmed: nothing in `relay/` changed; scan tests add port 8090 on the relay laptop while they run.
+- 📨 To @laura: keep it out of the pitch and README until a real scan has worked.
+- ⚠️ Conflicts: @salman — Max's code in `ios/` on a branch (a new folder plus three small hooks in his files), not merged
+- Conflict status: open
+
+### 2026-11-15 09:00 — guide marks land across the room on the phone: the dashboard's data is right — @ahmed
+- Shipped: no code. Ahmed calibrated both new scans on Max's dashboard and placed a guide; on the phone the marks
+  appear on the other side of the room. Read from the relay on Max's laptop (a read-only expert connection):
+  - both calibrations are good: `scan-0801.usdz` residual 0.3 mm, `scan-0809.usdz` 0.8 mm, marker edges 0.178–0.182
+    in scan units, so the scans are in metres;
+  - the guide (`sample-ssd-swap`, rev 31) has every object within 0.5 m of the marker and about 2 cm above its
+    plane, on the marker's −X side: where the laptop is. One stray screw sits at 0, 0, 0 ("Add at marker"), and step
+    4's object is 3 cm below the marker's plane;
+  - the iPhone is connected and all four steps were tapped.
+  So the positions leaving the dashboard are right, and the fault is where the phone puts its marker anchor.
+- Not proven, the leading suspect from the code: the phone anchors the guide to the **first** marker image it sees
+  (`ARSessionController.attach`, only on a new image anchor) and scales it by ARKit's size estimate
+  (`markerRoot.scale`). A second copy of the marker in view (a spare print, or the marker inside the scan on the
+  dashboard's screen) would anchor the whole guide there.
+- Touched: nothing
+- 📨 To @salman: on the phone, is the green outline on the taped marker, or somewhere else? Suggested fix in
+  `receive`: ignore an image anchor whose `estimatedScaleFactor` is outside about 0.8–1.2 (not our 180 mm print),
+  and consider turning scale estimation off. Yours to decide and test.
+- ⚠️ Conflicts: @salman — a suspected fault in how the phone anchors the guide
+- Conflict status: open
+
+### 2026-11-15 10:04 — Devpost "About the project" draft — @max
+- Shipped: `docs/devpost-about.md` on `max-scene` (`00d7ba4`), not `main`: all seven Devpost sections (inspiration,
+  what it does, how we built it, challenges, proud of, learned, what's next), checked against this board. It credits
+  AI use (Claude Code, Claude labels, ElevenLabs, Pixal3D), as the rules require. Left out on purpose: the 0.3 mm
+  calibration residual (it isn't alignment accuracy), Gemini (removed), in-app scanning as working, and "trained on
+  the Spark" for the demo scan.
+- Still open (Max): two TODOs, the end of Max's MSP story and whether the marker bug is fixed by submission. The
+  name isn't settled either: Devpost says "Sonic Assist", while the app, repo and README say "Remote Assist".
+- Touched: `docs/devpost-about.md` (new, on `max-scene`)
+- 📨 To @laura: the Devpost text is drafted. Read it on GitHub at `max-scene:docs/devpost-about.md`. Don't paste
+  it until Max fills the two TODOs. The "Claude suggests part labels" line goes if no real Claude call has run.
+- 📨 To @salman: the Challenges section describes the wrong-side-of-the-room bug as not fixed yet. Post on the board
+  if you fix it, so the line gets updated.
+- 📨 To @ahmed: nothing to do. Your relay read-out is told as the "prove which side is wrong" story.
+- ⚠️ Conflicts: @laura — Devpost is hers; this is a draft for her to use or change
+- Conflict status: open
+
+### 2026-11-15 10:18 — the project is called Sonic Assist — @ahmed
+- Shipped: no code. Settles the name Max flagged at 10:04: Devpost, the README and the pitch say **Sonic Assist**.
+  "Remote Assist" stays in code, folder names and the app's display name unless Salman has time to change the latter.
+- Touched: `team.conf`, this file's Headline; on `context`: `CLAUDE.md` (Registry), `PROJECT.md`
+- Decision (Ahmed): Sonic Assist.
+- 📨 To @laura @max: use Sonic Assist in the README, the video and `docs/devpost-about.md`.
+- 📨 To @salman: only if it's a one-line change, the app's display name (`INFOPLIST_KEY_CFBundleDisplayName`).
+- ⚠️ Conflicts: none
+- Conflict status: n/a
+
+### 2026-11-15 10:53 — the judges' README draft is up to date on main — @laura
+- Shipped: `docs/README.judges.draft.md` on `main`: every framework listed per part (DurHack's rule), AI credited
+  explicitly (Claude Code, Claude labels; ElevenLabs only if it's in the demo), Gemini removed. Still a draft: it
+  replaces the root `README.md` just before submitting.
+- Touched: `docs/README.judges.draft.md`
+- ⚠️ Conflicts: none
+- Conflict status: resolved by @laura 2026-11-15
