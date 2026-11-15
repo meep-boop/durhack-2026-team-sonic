@@ -788,3 +788,22 @@ each builder's brief (`builder-file-<name>.md`, on the `context` branch).
   panel itself is untouched | none for @salman, @ahmed
 - Fix 03:58 (`7053035`): the controls hint wraps instead of running under the labels panel on a narrow window.
 - Conflict status: open (Laura's restyle answer)
+
+### 2026-11-15 04:10 — AI-made props on the DGX Spark (decision; build starting) — @max
+- Shipped: no code yet. Max's call: the team's DGX Spark runs **Hunyuan3D 2.1**, which turns one photo of a part
+  into a textured 3D model in about 3 min (forum users' timing, not ours yet). First props: the SSD and the #0
+  screwdriver, scaled by hand to their real size (SSD 22 × 80 mm), shown on the **dashboard first**. It's a guess
+  from one photo, so it never replaces the scan we calibrate against. Max's agent builds it over SSH in the
+  background (the Docker build compiles Python and Blender, so it's mostly waiting). **Dropped if it isn't built by
+  about 06:30**; nothing else depends on it.
+- Touched: on `context`: `research/ledger.md` § 18 (new), `PROJECT.md` (Decision log, Decisions in force, Active
+  tasks), `builder-file-max.md` (task C). On the Spark: a Docker image, nothing in this repo yet.
+- Decision: AI-made props with Hunyuan3D 2.1 on the DGX Spark, dashboard first, labelled "AI-generated from a
+  photo", dropped by about 06:30 if not built (Max, 04:05)
+- 📨 To @laura: for the README, video and Devpost: if a prop makes the demo, it says **"AI-generated from a photo"**,
+  and "made on our DGX Spark" only once it really was. Nothing to do now.
+- 📨 To @salman: nothing for you yet. If the SSD prop works, Max will ask whether the phone can load a USDZ file
+  (`Entity(contentsOf:)`, ledger § 15) next to the guide; only if you have time.
+- 📨 To @ahmed: nothing for you. No relay or contract change; the Spark isn't part of the live demo path.
+- ⚠️ Conflicts: none
+- Conflict status: n/a
