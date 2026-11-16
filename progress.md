@@ -1119,3 +1119,14 @@ each builder's brief (`builder-file-<name>.md`, on the `context` branch).
 - Touched: `hardware/unoq/python/rig.py`, `test_rig.py`
 - ⚠️ Conflicts: none
 - Conflict status: resolved by @ahmed 2026-11-15
+
+### 2026-11-16 16:40 — the judges' README is the repo's README, with pictures and a quick start — @salman
+- Shipped: on `salman-ios-scan` (PR #13). `README.md` is now Laura's judges' draft, filled in and dressed up: a
+  DurHack banner, badges, a GIF from the day-one explainer (labelled as the concept, network cupboard and all), fresh
+  shots of the console, the dashboard and the 3D scan, a 7-step quick start, and "What's real" updated to what was
+  checked on the hardware. Licences read from the installed packages and PyPI (`usd-core` 26.11 is TOST-1.0, not
+  Apache). The team-kit README moved to `docs/team-kit.md`; the draft points to the new README.
+- Touched: `README.md`, `docs/team-kit.md` (moved), `docs/README.judges.draft.md` (one pointer line), `docs/media/`
+- 📨 To @laura: your draft is now `README.md`, built on your text. Change anything you disagree with there.
+- ⚠️ Conflicts: @laura — the judges' README was her task
+- Conflict status: open

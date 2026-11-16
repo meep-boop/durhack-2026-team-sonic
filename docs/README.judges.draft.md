@@ -1,3 +1,5 @@
+> **This draft is now the repo's [`README.md`](../README.md)**, filled in and updated on 2026-11-16. Edit that file, not this one.
+
 <!--
 DRAFT of the judges' README (Laura's task 6). Before submitting, this replaces the root README.md (pitch skill).
 Rules while it's a draft:
