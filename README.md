@@ -16,6 +16,7 @@
 </p>
 
 <p align="center">
+  <a href="#-see-it-live">See it live</a> ·
   <a href="#-quick-start">Quick start</a> ·
   <a href="#-what-it-does">What it does</a> ·
   <a href="#-how-it-works">How it works</a> ·
@@ -30,6 +31,30 @@
 </p>
 
 ---
+
+## 🎥 See it live
+Real screenshots from our own tests on 15 and 16 November.
+
+<table>
+  <tr>
+    <td width="25%"><img src="docs/media/phone-incoming.png" alt="The phone's home screen, 'What are you fixing?', with an incoming call from the expert at the top"></td>
+    <td width="25%"><img src="docs/media/phone-live.png" alt="The phone 2 minutes 39 seconds into a live call, its camera on the laptop running the console"></td>
+    <td width="25%"><img src="docs/media/phone-area.png" alt="The phone in a live call, with the expert's area drawn over the laptop's bottom cover"></td>
+    <td width="25%"><img src="docs/media/phone-points.png" alt="The phone in a live call, with the expert's numbered points on the laptop's screw holes"></td>
+  </tr>
+  <tr>
+    <td><sub><b>The expert calls.</b> The phone rings over the home screen (16 Nov).</sub></td>
+    <td><sub><b>Live.</b> The expert sees this camera, here pointed at the console and its 3D scan (16 Nov).</sub></td>
+    <td><sub><b>An Area</b> from the expert, on the laptop's bottom cover (15 Nov, an earlier style).</sub></td>
+    <td><sub><b>Points</b> from the expert, numbered on the screw holes (15 Nov).</sub></td>
+  </tr>
+</table>
+
+<p align="center">
+  <img src="docs/media/console-live.png" alt="The technician console in a live call: the phone's camera, the toolbar with Point, Unscrew, Screw in, Area and Clear, the live transcript, and an activity log of marks shown on the phone" width="900"><br>
+  <sub><b>The expert's side of a live call</b> (15 Nov, before the rename): the phone's camera, the toolbar, the live
+  transcript, and each "Screw in" confirmed as shown on the phone.</sub>
+</p>
 
 ## 💡 Why
 Someone has to do a hardware fix they've never done before: here, swapping the SSD in a laptop. The person who could
@@ -53,11 +78,11 @@ expert's hands in the room: their marks land on the real part, through the phone
 
 <table>
   <tr>
-    <td width="50%"><img src="docs/media/console.png" alt="The technician console: live view, the 3D scan of the laptop beside it, the call controls and the live transcript"></td>
+    <td width="50%"><img src="docs/media/console-rig.png" alt="The technician console: relay and phone connected, a 3D scan beside the live view, and the rig's tick for step 4 in the activity log"></td>
     <td width="50%"><img src="docs/media/dashboard.png" alt="The expert dashboard: the 3D scan of the laptop, and a four-step SSD guide with every step done and step 4 checked by the rig"></td>
   </tr>
   <tr>
-    <td><sub><b>Technician console.</b> The live view from the phone goes on the left (empty here: no call), the 3D scan beside it, the call and the live transcript on the right.</sub></td>
+    <td><sub><b>Technician console</b> (16 Nov). Relay and phone connected, a 3D scan beside the live view (before the call), and "Rig, step s4: ✓ correct" in the activity log.</sub></td>
     <td><sub><b>Expert dashboard.</b> The four-step SSD guide on the scan: all done on the phone, and step 4 checked by the rig (✓).</sub></td>
   </tr>
 </table>
@@ -94,6 +119,20 @@ flowchart LR
    bay, or out of it) is what it sees.
 
 Every part speaks one message format, written once in TypeScript: [`contracts/protocol.ts`](contracts/protocol.ts).
+
+## ✅ The rig checks the work
+<p align="center">
+  <img src="docs/media/rig.svg" alt="Drawing of the rig: a Nicla Vision camera looks down at the open laptop's SSD bay, sends what it sees over USB to an Arduino UNO Q, which tells the relay over Wi-Fi; the console and the phone show a tick or a cross" width="100%">
+</p>
+
+An **Arduino UNO Q** and a **Nicla Vision** camera watch the open laptop. A bright sticker on the SSD makes it easy
+to spot.
+- **Step 3** ("slide the SSD out") expects the bay to be empty. **Step 4** ("slide it back in") expects the SSD there.
+- The Nicla says what it sees over USB. The UNO Q compares that with the current step and sends ✓ or ✗ to the relay.
+- The console pops the verdict up and the phone's step card shows it. In our test, the rig's "step 4: ✓ correct"
+  reached the console and the dashboard (both screenshots above).
+
+There's no photo of the rig itself yet, so this is a drawing. To build one: [`hardware/README.md`](hardware/README.md).
 
 ## 🚀 Quick start
 You need a Mac with Xcode, an iPhone (iOS 18+), Node 24 and Python 3. The phone and the laptop must be on the
@@ -160,7 +199,6 @@ Every row was checked on our own hardware, or says plainly that it wasn't.
 | 3D scans of the demo laptop | **Real**: three Scaniverse scans in [`dashboard/public/scans/`](dashboard/public/scans) |
 | Room scan from the app, to the laptop | Photos and camera positions reach the laptop's scan inbox. Training a splat from them on the DGX Spark is written, not shown |
 | Rig (UNO Q + Nicla Vision) | Ran on the hardware: its ✓ for step 4 reached the relay and the dashboard |
-| AI part labels (Claude) | Built into the relay (`--labels`, billed per snapshot); not part of our test runs |
 | Fake phone and fake expert ([`fixtures/`](fixtures)) | Test tools only. Their camera poses are **SIMULATED** and never shown as real |
 | Alignment accuracy in millimetres | **Not measured** |
 
@@ -223,7 +261,7 @@ cd ios && xcodebuild test -scheme RemoteAssist \
 ## 👋 Team
 | Who | Built |
 |---|---|
-| Ahmed (`meep-boop`) | Relay, message format, sync, UNO Q rig, AI labelling, team kit |
+| Ahmed (`meep-boop`) | Relay, message format, sync, UNO Q rig, team kit |
 | Max (`xaw1`) | Dashboard 3D view, splats, scan pipeline, the original plan |
 | Laura (`furtunalaura`) | Guide builder, marker, 3D models, demo set, the README draft and the video |
 | Salman (`salman-abdulrazaq-ali`) | The iPhone app and the technician console (live call, marks, transcript) |
@@ -234,19 +272,11 @@ Versions are the ones installed from each part's package files.
 | Part | Libraries | Licence |
 |---|---|---|
 | Dashboard | React 19.3, Vite 8.3, three.js 0.187, Spark 2.4 (`@sparkjsdev/spark`), TypeScript 7.0 | MIT (TypeScript: Apache-2.0) |
-| Relay | Node 24, `ws` 8.23, Anthropic SDK 1.8 (`@anthropic-ai/sdk`), TypeScript 7.0 | MIT (`ws`), Apache-2.0 (SDK, TypeScript) |
+| Relay | Node 24, `ws` 8.23, TypeScript 7.0 | MIT (`ws`), Apache-2.0 (TypeScript) |
 | iPhone app | Swift, ARKit, RealityKit (Apple); Google's WebRTC M156 via `stasel/WebRTC` | WebRTC: BSD-3-Clause |
 | Rig | OpenMV firmware on the Nicla Vision; `pyserial` 3.5, `websocket-client` 1.9.2 on the UNO Q | BSD (`pyserial`), Apache-2.0 (`websocket-client`) |
 | 3D models | Pixar's USD (`usd-core` 26.11), only to build the model files | Tomorrow Open Source Technology License 1.0 |
 | Marker image and 3D models | Made by us during the event | Ours |
 | Scans of the demo laptop | Made by us with Scaniverse | Ours |
-
-## 🤖 AI use
-DurHack asks for AI tools to be credited. We used:
-- **Claude Code (Anthropic)**, throughout the build, to write and test code and docs. Every design decision was
-  made by a team member, and our decision log records who decided what.
-- **Claude (Anthropic API)**, inside the product: it can suggest labels for parts in a snapshot of the scan. Labels
-  are marked as made by AI, never reach the phone, and the expert can fix or delete each one.
-- **ElevenLabs**, inside the iPhone app: the spoken step voice and the live call transcript (Scribe).
 
 <p align="center"><sub>Made in 24 hours at DurHack 2026 by Team Sonic.</sub></p>

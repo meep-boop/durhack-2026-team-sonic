@@ -1130,3 +1130,15 @@ each builder's brief (`builder-file-<name>.md`, on the `context` branch).
 - 📨 To @laura: your draft is now `README.md`, built on your text. Change anything you disagree with there.
 - ⚠️ Conflicts: @laura — the judges' README was her task
 - Conflict status: open
+
+### 2026-11-16 17:15 — the README shows the app live and the rig, without AI credits — @salman
+- Shipped: on `salman-ios-scan` (PR #13). A "See it live" section with real screenshots from 15 and 16 Nov (the
+  incoming call, a live call, an expert Area and Points on the phone, the console mid-call), and a "The rig checks
+  the work" section with a drawing of the UNO Q + Nicla rig (no photo of it yet) and the console showing "Rig, step
+  s4: ✓ correct". Browser bars and a tab showing an email address were cropped or blurred out of every shot.
+- Decision (Salman): the README carries no AI credits or Claude mentions (the AI use section, the AI labels row, the
+  Anthropic SDK line and "AI labelling" are gone). DurHack's AI credit rule is for Devpost.
+- Touched: `README.md`, `docs/media/`
+- 📨 To @laura @ahmed: the README no longer credits AI tools; keep the credits on Devpost, where the rules ask for them.
+- ⚠️ Conflicts: @laura — her README draft's AI use section was dropped, on Salman's call
+- Conflict status: open
