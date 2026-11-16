@@ -11,7 +11,8 @@ are open.
 
 | File | What's in it |
 |---|---|
-| [architecture.md](architecture.md) | Components, data flow, lining up the scan with the real room, message protocol |
+| [architecture.md](architecture.md) | Components, data flow, the guide format, message protocol |
+| [open-questions.md](open-questions.md) | The hard problems we still have to figure out, with options and owners |
 
 ## Who uses it
 
@@ -38,12 +39,22 @@ Each one still needs the team's agreement at kickoff.
 |---|---|---|
 | 1 | Who places the models, who sees them? | The remote **tech expert** builds the guide. The on-site **user** sees it on their phone |
 | 2 | Which device on site? | **iPhone, native app.** No Quest: we don't have one with us |
-| 3 | Steps made live or prepared ahead? | **Both.** The expert can build the guide during the call or before it, and the phone plays it either way. Order of work not decided yet |
+| 3 | Steps made live or prepared ahead? | **Both.** The expert can build the guide during the call or before it, and the phone plays it either way. Prepared guides first (round 2) |
 | 4 | Where do the 3D models come from? | **A built-in set** (screw, bolt, arrow, screwdriver, hand) **plus objects cut out of the scan itself** |
 | 5 | How are animations made? | **Preset actions:** unscrew, pull, push, flip, rotate 90°. The expert picks one per object per step |
 | 6 | Who presses Next? | **The user**, on the phone |
 | 7 | Do models replace highlight boxes? | **No, both.** The box shows *where*, the animation shows *how* |
 | 8 | What's the demo object? | **Not decided.** Open task below |
+
+**Round 2 (2026-11-14, @max):**
+
+| # | Question | Answer |
+|---|---|---|
+| 1 | Do we have a Mac for the iPhone app? | **Yes, @salman's MacBook** |
+| 2 | How does the phone line up the scan with the room? | **Needs real thought.** [Open question 1](open-questions.md#1-lining-up-the-scan-with-the-real-room) |
+| 3 | What does the phone show for a cut-out from the scan? | **Researched:** iOS 27 RealityKit can draw splats. Working default: RealityKit splats, stand-in model as fallback. [Open question 2](open-questions.md#2-showing-splat-cut-outs-on-the-iphone) |
+| 4 | Live guide-building or prepared guides first? | **Prepared guides first** (what Neptune North needs). Live building reuses the same editor |
+| 5 | How does the live camera reach the expert? | **Researched:** JPEG over the relay first, LiveKit later. Working default: JPEG now, LiveKit later. [Open question 3](open-questions.md#3-getting-the-live-camera-to-the-expert) |
 
 ## The demo (to redo for the new setting)
 
@@ -81,9 +92,12 @@ several sponsor challenges.
 - [ ] **Pick and get the demo objects.** What the set is made of (a real switch or router, a patch panel, a cover
   with screws), who brings or borrows it, and whether it's portable enough to scan once and demo at any table.
   Owner: not assigned yet.
-- [ ] **Check we have a Mac with Xcode.** A native iPhone app can't be built without one (platform rules in
-  `EVENT.md` §6).
-- [ ] **Decide which comes first:** live guide-building during the call, or prepared guides.
+- [x] **Find a Mac for the iPhone app:** @salman's MacBook (2026-11-14).
+- [ ] **Get @salman's MacBook ready for iPhone builds:** Xcode installed, signed in with an Apple ID, the demo
+  iPhone set up for development and a test app running on it.
+- [ ] **Figure out how the phone lines up the scan with the real room:**
+  [open question 1](open-questions.md#1-lining-up-the-scan-with-the-real-room). Owner: not assigned yet.
+- [ ] **Ask the organisers whether DurHack teams can get Dawn access.** Scaniverse is the default until then.
 - [ ] **Agree the protocol** (architecture.md) before the phone and laptop sides split up.
 
 ## Parked (superseded by round 1, kept for the record)
