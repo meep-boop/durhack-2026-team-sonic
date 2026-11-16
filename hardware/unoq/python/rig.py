@@ -33,6 +33,8 @@ class Rig:
         self.step_index = 0
         self.seen: set[str] | None = None
         self.sent: dict[str, Verdict] = {}
+        # True from connecting until the relay's replay ends (its `presence` message comes straight after).
+        self.replaying = False
 
     def current_step(self) -> dict | None:
         if self.guide is None or self.step_index >= len(self.guide["steps"]):
@@ -42,9 +44,13 @@ class Rig:
     def reconnected(self) -> None:
         # The relay never kept verdicts sent while it was unreachable, so judge everything afresh.
         self.sent = {}
+        self.replaying = True
 
     def on_relay(self, message: dict) -> list[dict]:
         kind = message["type"]
+        if kind == "presence":
+            self.replaying = False
+            return []
         if kind == "guide.set":
             guide = message["guide"]
             if self.guide is None or self.guide["id"] != guide["id"]:
@@ -59,8 +65,9 @@ class Rig:
             index = ids.index(message["stepId"])
             if kind == "step.set":
                 self.step_index = index
-            elif index == self.step_index:
-                # The relay replays every past step.done on connect; only Next on the current step moves the rig on.
+            elif index == self.step_index and not self.replaying:
+                # On connect the relay replays its current step and then every past step.done. That step already
+                # counts them, so a replayed one would move the rig past where the user is.
                 self.step_index += 1
         else:
             return []
