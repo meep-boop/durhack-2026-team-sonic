@@ -1,5 +1,8 @@
 <p align="center">
-  <img src="docs/media/banner.svg" alt="Sonic Assist: a remote expert guides your hands, live, in AR. DurHack 2026, Team Sonic." width="100%">
+  <picture>
+    <source media="(prefers-color-scheme: dark)" srcset="docs/media/hero-dark.jpg">
+    <img src="docs/media/hero-light.jpg" alt="Sonic Assist: a remote expert guides your hands, live, in AR. A scan of our laptop's underside, seen through the phone, with the app's AR mark on a screw labelled '1 Cover screw'. Built at DurHack 2026 by Team Sonic." width="100%">
+  </picture>
 </p>
 
 <p align="center">
