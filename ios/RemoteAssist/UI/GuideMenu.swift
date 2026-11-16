@@ -5,16 +5,20 @@ struct GuideMenu: View {
   let isLaptopGuide: Bool
   let frameLocked: Bool
   let teaching: Bool
+  let measuring: Bool
   let inCall: Bool
   let layoutFile: URL?
   @Binding var voiceOn: Bool
   @Binding var ghostToolOn: Bool
+  @Binding var arDebug: Bool
   let handsFreeOn: Bool
   let onConnect: () -> Void
   let onTranscript: () -> Void
   let onSetup: () -> Void
   let onTeach: () -> Void
   let onUndoTeach: () -> Void
+  let onMeasure: () -> Void
+  let onLockToLaptop: () -> Void
   let onHandsFree: () -> Void
   let onLeave: () -> Void
 
@@ -45,8 +49,20 @@ struct GuideMenu: View {
         }
       }
 
+      if !isLaptopGuide {
+        Section("Line the guide up") {
+          Button(action: onLockToLaptop) {
+            Label(frameLocked ? "Re-do the laptop corners" : "Lock the guide to the laptop", systemImage: "laptopcomputer")
+          }
+          Button(action: onMeasure) {
+            Label(measuring ? "Stop measuring" : "Measure positions", systemImage: "ruler")
+          }
+        }
+      }
+
       Section("Voice") {
         Toggle(isOn: $voiceOn) { Label("Read steps aloud", systemImage: "speaker.wave.2") }
+        Toggle(isOn: $arDebug) { Label("Show AR debug", systemImage: "ruler") }
         Button(action: onHandsFree) {
           Label(handsFreeOn ? "Turn hands-free off" : "Hands-free (say “next”)", systemImage: handsFreeOn ? "mic.fill" : "mic")
         }

@@ -60,3 +60,6 @@ Thumbs.db
 share/
 _archive/
 
+
+# Phone scans waiting for the Spark (pipeline/scan-inbox.ts)
+pipeline/inbox/

@@ -5,6 +5,7 @@ struct HomeView: View {
   let relayConnected: Bool
   let onLaptop: () -> Void
   let onMarker: () -> Void
+  let onScan: () -> Void
   let onSettings: () -> Void
 
   var body: some View {
@@ -13,7 +14,7 @@ struct HomeView: View {
 
       VStack(alignment: .leading, spacing: 16) {
         Spacer()
-        Text("Remote Assist")
+        Text("Sonic Assist")
           .font(.caption.weight(.bold))
           .foregroundStyle(Theme.accent)
         Text("What are you fixing?")
@@ -32,6 +33,12 @@ struct HomeView: View {
             ? "Connected. Point the camera at the printed marker."
             : "Uses the printed marker. Connect to the expert from the menu to get their guide.",
           action: onMarker
+        )
+        choice(
+          symbol: "cube.transparent",
+          title: "Scan the room",
+          detail: "For the expert: record a 3D scan lined up with the marker and send it to the laptop.",
+          action: onScan
         )
 
         Spacer()

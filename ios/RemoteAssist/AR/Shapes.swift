@@ -54,7 +54,7 @@ enum Shapes {
     ]
     let edges = [(0, 1), (1, 2), (2, 3), (3, 0), (4, 5), (5, 6), (6, 7), (7, 4), (0, 4), (1, 5), (2, 6), (3, 7)]
     for (a, b) in edges {
-      root.addChild(bar(from: corners[a], to: corners[b], thickness: 0.0012, color: Theme.accentUI))
+      root.addChild(bar(from: corners[a], to: corners[b], thickness: 0.0025, color: Theme.accentUI))
     }
     return root
   }
@@ -88,34 +88,103 @@ enum Shapes {
 
   /// Loops the action until the step changes, along `axis` (in the model's frame), as assets/models/README.md says:
   /// pull is +axis, push is -axis, unscrew spins around it, flip and rotate90 turn about it.
-  static func animate(_ entity: Entity, action: Action, axis: SIMD3<Float>) {
+  /// Plays a guide part's action on a loop that reads at a glance (Ahmed's spec, 2026-11-15): an unscrew is two turns
+  /// out of the hole while rising 15 mm, a pull or push is 4 cm one way; each holds 0.4 s at the end and restarts from
+  /// the start, never back and forth. `delay` staggers parts so a row of screws ripples.
+  static func animate(_ entity: Entity, action: Action, axis: SIMD3<Float>, delay: TimeInterval = 0) {
     let direction = simd_length(axis) > 0 ? simd_normalize(axis) : SIMD3<Float>(0, 1, 0)
     let start = entity.transform
-    var end = start
-    var mode = AnimationRepeatMode.autoReverse
-    var duration = 0.8
+    var steps: [AnimationResource] = []
+    func move(from: Transform, to: Transform, _ duration: TimeInterval, _ timing: AnimationTimingFunction) {
+      if let step = try? AnimationResource.generate(with: FromToByAnimation(from: from, to: to, duration: duration, timing: timing, bindTarget: .transform)) {
+        steps.append(step)
+      }
+    }
 
     switch action {
-    case .pull:
-      end.translation += direction * 0.02
-    case .push:
-      end.translation -= direction * 0.02
     case .unscrew:
-      // Anticlockwise seen from +axis (out of the hole), the way a screw comes undone. Spin, not a from–to half
-      // turn: a half turn starts and ends at the same orientation, so it could play in either direction.
-      spin(entity, anticlockwise: true, axis: direction)
-      return
-    case .flip:
-      end.rotation = simd_quatf(angle: .pi, axis: direction) * start.rotation
-      duration = 1.2
-    case .rotate90:
-      end.rotation = simd_quatf(angle: .pi / 2, axis: direction) * start.rotation
+      // Anticlockwise seen from +axis (out of the hole), the way a screw comes undone, in quarter turns: a from–to
+      // rotation of more than a half turn could go either way round.
+      var from = start
+      for step in unscrewSteps() {
+        var to = from
+        to.rotation = simd_quatf(angle: step.angle, axis: direction) * from.rotation
+        to.translation += direction * step.rise
+        move(from: from, to: to, step.duration, .linear)
+        from = to
+      }
+      move(from: from, to: from, 0.4, .linear)
+    case .pull, .push:
+      var to = start
+      to.translation += direction * (action == .pull ? 0.04 : -0.04)
+      move(from: start, to: to, 1.0, .easeInOut)
+      move(from: to, to: to, 0.4, .linear)
+    case .flip, .rotate90:
+      var end = start
+      end.rotation = simd_quatf(angle: action == .flip ? .pi : .pi / 2, axis: direction) * start.rotation
+      move(from: start, to: end, action == .flip ? 1.2 : 0.8, .easeInOut)
+      move(from: end, to: end, 0.4, .linear)
     }
 
-    let definition = FromToByAnimation(from: start, to: end, duration: duration, timing: .easeInOut, bindTarget: .transform, repeatMode: mode)
-    if let animation = try? AnimationResource.generate(with: definition) {
-      entity.playAnimation(animation)
+    guard !steps.isEmpty, let sequence = try? AnimationResource.sequence(with: steps),
+          let loop = try? AnimationResource.generate(with: sequence.definition.repeatingForever()) else { return }
+    // Delayed once, not every loop, so the ripple keeps its spacing instead of drifting apart.
+    if delay > 0 {
+      DispatchQueue.main.asyncAfter(deadline: .now() + delay) { [weak entity] in entity?.playAnimation(loop) }
+    } else {
+      entity.playAnimation(loop)
     }
+  }
+
+  /// An unscrew as quarter turns: `turns` full turns rising `rise` metres over `duration` seconds in all.
+  static func unscrewSteps(turns: Int = 2, rise: Float = 0.015, duration: TimeInterval = 1.6) -> [(angle: Float, rise: Float, duration: TimeInterval)] {
+    let count = max(turns, 1) * 4
+    return Array(repeating: (angle: Float.pi / 2, rise: rise / Float(count), duration: duration / Double(count)), count: count)
+  }
+
+  /// A see-through white block with white edges, centred on its origin: the expert's 3D box.
+  static func solidBox(size: SIMD3<Float>) -> Entity {
+    let root = Entity()
+    root.addChild(ModelEntity(mesh: .generateBox(size: size), materials: [UnlitMaterial(color: UIColor.white.withAlphaComponent(0.22))]))
+    let h = size / 2
+    let corners: [SIMD3<Float>] = [
+      [-h.x, -h.y, -h.z], [h.x, -h.y, -h.z], [h.x, -h.y, h.z], [-h.x, -h.y, h.z],
+      [-h.x, h.y, -h.z], [h.x, h.y, -h.z], [h.x, h.y, h.z], [-h.x, h.y, h.z],
+    ]
+    for (a, b) in [(0, 1), (1, 2), (2, 3), (3, 0), (4, 5), (5, 6), (6, 7), (7, 4), (0, 4), (1, 5), (2, 6), (3, 7)] {
+      root.addChild(bar(from: corners[a], to: corners[b], thickness: 0.0025, color: .white))
+    }
+    return root
+  }
+
+  /// Where a block on a drawn footprint goes: centred over the four corners and lifted half its height, +X along the
+  /// first edge, +Y out of the surface, never mirrored; and its size (first edge, height, second edge).
+  static func boxFrame(corners: [SIMD3<Float>], normal: SIMD3<Float>, height: Float) -> (transform: simd_float4x4, size: SIMD3<Float>) {
+    let up = simd_normalize(normal)
+    var edge = corners[1] - corners[0]
+    edge -= simd_dot(edge, up) * up
+    let width = max(simd_length(edge), 0.01)
+    let x = edge / width
+    let z = simd_normalize(simd_cross(x, up))
+    var side = corners[3] - corners[0]
+    side -= simd_dot(side, up) * up
+    let depth = max(abs(simd_dot(side, z)), 0.01)
+    let centre = corners.reduce(.zero, +) / 4 + up * (height / 2)
+    return (simd_float4x4(SIMD4(x, 0), SIMD4(up, 0), SIMD4(z, 0), SIMD4(centre, 1)), SIMD3(width, height, depth))
+  }
+
+  /// A thin white ring under a guide part, gently pulsing, so each part reads as "this one" from across the table.
+  static func partRing(radius: Float) -> Entity {
+    guard let mesh = annulus(inner: max(radius - 0.0015, 0.001), outer: radius) else { return Entity() }
+    let ring = ModelEntity(mesh: mesh, materials: [UnlitMaterial(color: UIColor.white.withAlphaComponent(0.85))])
+    if let animation = try? AnimationResource.generate(with: FromToByAnimation(
+      from: Transform(scale: [1, 1, 1]), to: Transform(scale: [1.15, 1, 1.15]), duration: 0.9, timing: .easeInOut, bindTarget: .transform, repeatMode: .autoReverse
+    )) {
+      ring.playAnimation(animation)
+    }
+    let root = Entity()
+    root.addChild(ring)
+    return root
   }
 
   /// Stand-ins for when a model file is missing.
@@ -156,8 +225,8 @@ enum Shapes {
 
     var color: UIColor {
       switch self {
-      case .guide: Theme.accentUI
-      case .expert: .white
+      // Purple means "look here" (Theme): the expert's marks are the thing to look at.
+      case .guide, .expert: Theme.accentUI
       case .refit: Theme.accentSoftUI
       }
     }
@@ -166,40 +235,162 @@ enum Shapes {
   private static let tintName = "pin-tint"
   private static let ringName = "pin-ring"
   private static let tagName = "pin-tag"
+  private static let turnName = "pin-turn"
 
-  /// A numbered pin standing on the surface: a pulsing ring, a stem, a ball and "3 · screw" above it.
-  /// Built along +Y, so a transform from `PinMath.standing` makes it stand up off any surface.
+  /// A numbered mark on the surface, calm enough to sit over a screw: a thin white ring with a small dot and a soft
+  /// ripple lying flat (the screw stays visible inside it), a hairline stem, and a white chip with a purple number
+  /// that always faces the camera. Built along +Y, so a transform from `PinMath.standing` stands it off any surface.
   static func pin(number: Int, label text: String, kind: PinKind) -> Entity {
     let root = Entity()
-    let tint = UnlitMaterial(color: kind.color)
-    let ring = ModelEntity(mesh: .generateCylinder(height: 0.001, radius: 0.011), materials: [UnlitMaterial(color: kind.color.withAlphaComponent(0.55))])
-    ring.name = ringName
-    root.addChild(ring)
-    let stem = ModelEntity(mesh: .generateCylinder(height: 0.035, radius: 0.0012), materials: [tint])
-    stem.position.y = 0.0175
-    stem.name = tintName
+    if let ringMesh = annulus(inner: 0.0085, outer: 0.0105) {
+      let ring = ModelEntity(mesh: ringMesh, materials: [UnlitMaterial(color: .white)])
+      ring.position.y = 0.0008
+      ring.name = tintName
+      root.addChild(ring)
+    }
+    let dot = ModelEntity(mesh: .generateCylinder(height: 0.0012, radius: 0.0025), materials: [UnlitMaterial(color: .white)])
+    dot.name = tintName
+    root.addChild(dot)
+    root.addChild(ripple())
+    let stem = ModelEntity(mesh: .generateCylinder(height: 0.034, radius: 0.0006), materials: [UnlitMaterial(color: UIColor.white.withAlphaComponent(0.8))])
+    stem.position.y = 0.019
     root.addChild(stem)
-    let head = ModelEntity(mesh: .generateSphere(radius: 0.007), materials: [tint])
-    head.position.y = 0.037
-    head.name = tintName
-    root.addChild(head)
-    let tag = label("\(number) · \(text)", size: 0.011)
-    tag.position.y = 0.05
+    let tag = chip(badge: "\(number)", text: text, badgeColor: kind.color)
+    tag.position.y = 0.046
     tag.name = tagName
     root.addChild(tag)
-    pulse(ring)
     return root
   }
 
-  /// Green with a tick once the user has done it; back to its kind's colour if they untick it.
-  static func setPin(_ pin: Entity, done: Bool, number: Int, label text: String, kind: PinKind) {
-    let color = done ? UIColor.systemGreen : kind.color
-    for child in pin.children {
-      guard let model = child as? ModelEntity, child.name == tintName || child.name == ringName else { continue }
-      model.model?.materials = [UnlitMaterial(color: color.withAlphaComponent(child.name == ringName ? 0.55 : 1))]
+  /// A label that always faces the camera and reads over anything: a white rounded plate, dark text, and a coloured
+  /// badge (a number, a tick, or a plain dot when `badge` is nil). Centred on its origin.
+  static func chip(badge: String?, text: String, badgeColor: UIColor) -> Entity {
+    let root = Entity()
+    root.components.set(BillboardComponent())
+    let textModel = ModelEntity(
+      mesh: .generateText(text, extrusionDepth: 0.0002, font: .systemFont(ofSize: 0.0095, weight: .semibold)),
+      materials: [UnlitMaterial(color: UIColor(white: 0.08, alpha: 1))]
+    )
+    let textBounds = textModel.visualBounds(relativeTo: nil)
+    let badgeSize: Float = badge == nil ? 0.006 : 0.0125
+    let pad: Float = 0.0035
+    let gap: Float = 0.003
+    let height: Float = 0.0165
+    let width = pad + badgeSize + gap + textBounds.extents.x + pad * 1.4
+    let left = -width / 2
+
+    let plate = ModelEntity(
+      mesh: .generatePlane(width: width, height: height, cornerRadius: height / 2),
+      materials: [UnlitMaterial(color: UIColor.white.withAlphaComponent(0.93))]
+    )
+    root.addChild(plate)
+    // Each layer a fraction of a millimetre nearer the camera than the one behind it, so they never flicker.
+    let badgeDisc = ModelEntity(
+      mesh: .generatePlane(width: badgeSize, height: badgeSize, cornerRadius: badgeSize / 2),
+      materials: [UnlitMaterial(color: badgeColor)]
+    )
+    badgeDisc.position = [left + pad + badgeSize / 2, 0, 0.0003]
+    root.addChild(badgeDisc)
+    if let badge {
+      let badgeText = ModelEntity(
+        mesh: .generateText(badge, extrusionDepth: 0.0002, font: .systemFont(ofSize: 0.0082, weight: .heavy)),
+        materials: [UnlitMaterial(color: .white)]
+      )
+      let bounds = badgeText.visualBounds(relativeTo: nil)
+      badgeText.position = [badgeDisc.position.x - bounds.center.x, -bounds.center.y, 0.0006]
+      root.addChild(badgeText)
     }
+    textModel.position = [left + pad + badgeSize + gap - textBounds.min.x, -textBounds.center.y, 0.0006]
+    root.addChild(textModel)
+    return root
+  }
+
+  /// "Turn it this way": a white arrow circling the screw and spinning the way to turn, under the see-through
+  /// screwdriver turning the same way. Anticlockwise undoes a screw.
+  static func turnCue(anticlockwise: Bool) -> Entity {
+    let root = Entity()
+    root.name = turnName
+    let arrow = Entity()
+    let sweep: Float = 1.5 * .pi
+    let white = UnlitMaterial(color: UIColor.white.withAlphaComponent(0.92))
+    if let arc = annulus(inner: 0.0165, outer: 0.019, to: sweep) { arrow.addChild(ModelEntity(mesh: arc, materials: [white])) }
+    if let head = arrowHead(at: sweep, radius: 0.01775, size: 0.0065) { arrow.addChild(ModelEntity(mesh: head, materials: [white])) }
+    // The same arrow mirrored goes clockwise: screwing in.
+    if !anticlockwise { arrow.scale = [1, 1, -1] }
+    arrow.position.y = 0.0016
+    root.addChild(arrow)
+    spin(arrow, anticlockwise: anticlockwise, duration: 0.6)
+    root.addChild(ghostTool(anticlockwise: anticlockwise))
+    return root
+  }
+
+  /// A flat ring, or an arc of one, in the XZ plane, visible from both sides. Angles run anticlockwise seen from +Y.
+  static func annulus(inner: Float, outer: Float, from start: Float = 0, to end: Float = 2 * .pi, segments: Int = 48) -> MeshResource? {
+    var positions: [SIMD3<Float>] = []
+    var indices: [UInt32] = []
+    for i in 0...segments {
+      let angle = start + (end - start) * Float(i) / Float(segments)
+      let direction = SIMD3<Float>(cos(angle), 0, -sin(angle))
+      positions.append(direction * inner)
+      positions.append(direction * outer)
+    }
+    for i in 0..<segments {
+      let a = UInt32(i * 2), b = a + 1, c = a + 2, d = a + 3
+      indices += [a, c, b, b, c, d, a, b, c, b, d, c]
+    }
+    var descriptor = MeshDescriptor(name: "annulus")
+    descriptor.positions = MeshBuffers.Positions(positions)
+    descriptor.primitives = .triangles(indices)
+    return try? MeshResource.generate(from: [descriptor])
+  }
+
+  /// A flat triangle on a circle of `radius` at `angle`, pointing the way the angle grows (anticlockwise from +Y).
+  private static func arrowHead(at angle: Float, radius: Float, size: Float) -> MeshResource? {
+    let radial = SIMD3<Float>(cos(angle), 0, -sin(angle))
+    let tangent = SIMD3<Float>(-sin(angle), 0, -cos(angle))
+    let centre = radial * radius
+    var descriptor = MeshDescriptor(name: "arrow-head")
+    descriptor.positions = MeshBuffers.Positions([centre + tangent * size, centre + radial * size * 0.75, centre - radial * size * 0.75])
+    descriptor.primitives = .triangles([0, 1, 2, 0, 2, 1])
+    return try? MeshResource.generate(from: [descriptor])
+  }
+
+  /// A thin ring that grows and fades over and over, like a drop on water. The scale and the fade are on two
+  /// entities because an entity's opacity multiplies down onto its children.
+  private static func ripple() -> Entity {
+    let grow = Entity()
+    guard let mesh = annulus(inner: 0.009, outer: 0.0102) else { return grow }
+    let ring = ModelEntity(mesh: mesh, materials: [UnlitMaterial(color: .white)])
+    ring.name = ringName
+    ring.position.y = 0.0006
+    grow.addChild(ring)
+    if let animation = try? AnimationResource.generate(with: FromToByAnimation(
+      from: Transform(scale: [1, 1, 1]), to: Transform(scale: [2.3, 1, 2.3]), duration: 1.5, timing: .easeOut, bindTarget: .transform, repeatMode: .repeat
+    )) {
+      grow.playAnimation(animation)
+    }
+    ring.components.set(OpacityComponent(opacity: 0.6))
+    if let fade = try? AnimationResource.generate(with: FromToByAnimation<Float>(
+      from: 0.6, to: 0, duration: 1.5, timing: .easeOut, bindTarget: .opacity, repeatMode: .repeat
+    )) {
+      ring.playAnimation(fade)
+    }
+    return grow
+  }
+
+  private static func recolor(_ entity: Entity, named name: String, to material: UnlitMaterial) {
+    if entity.name == name, let model = entity as? ModelEntity { model.model?.materials = [material] }
+    for child in entity.children { recolor(child, named: name, to: material) }
+  }
+
+  /// Green with a tick once the user has done it (and the turning cue stops); back to white if they untick it.
+  static func setPin(_ pin: Entity, done: Bool, number: Int, label text: String, kind: PinKind) {
+    let color = done ? UIColor.systemGreen : UIColor.white
+    recolor(pin, named: tintName, to: UnlitMaterial(color: color))
+    recolor(pin, named: ringName, to: UnlitMaterial(color: color))
+    if done { pin.findEntity(named: turnName)?.removeFromParent() }
     if let old = pin.children.first(where: { $0.name == tagName }) {
-      let tag = label(done ? "✓ \(number)" : "\(number) · \(text)", size: 0.011)
+      let tag = chip(badge: done ? "✓" : "\(number)", text: text, badgeColor: done ? .systemGreen : kind.color)
       tag.position = old.position
       tag.name = tagName
       old.removeFromParent()
@@ -207,34 +398,34 @@ enum Shapes {
     }
   }
 
-  /// "Work here": a translucent quad lying on the surface through four world points, with a glowing outline.
-  /// Its parent should be a world anchor at the origin, since the points are already in world space.
+  /// "Look here": four white corner brackets lying on the surface, like a camera's focus box, breathing gently, with a
+  /// chip over the middle. No fill, so the part itself stays clearly visible. Its parent should be a world anchor at
+  /// the origin, since the points are already in world space.
   static func focusArea(corners: [SIMD3<Float>], normal: SIMD3<Float>, label text: String) -> Entity {
     let root = Entity()
     guard corners.count == 4 else { return root }
+    let up = simd_normalize(normal)
     // Lifted 2 mm off the surface so it doesn't flicker against the real laptop's depth.
-    let lifted = corners.map { $0 + simd_normalize(normal) * 0.002 }
-
-    var descriptor = MeshDescriptor(name: "focus")
-    descriptor.positions = MeshBuffers.Positions(lifted)
-    // Both windings, so it shows whichever side the camera is on.
-    descriptor.primitives = .triangles([0, 1, 2, 0, 2, 3, 0, 2, 1, 0, 3, 2])
-    if let mesh = try? MeshResource.generate(from: [descriptor]) {
-      let fill = ModelEntity(mesh: mesh, materials: [UnlitMaterial(color: Theme.accentUI.withAlphaComponent(0.22))])
-      root.addChild(fill)
-      if let animation = try? AnimationResource.generate(with: FromToByAnimation<Float>(
-        from: 0.45, to: 1, duration: 1.1, timing: .easeInOut, bindTarget: .opacity, repeatMode: .autoReverse
-      )) {
-        fill.components.set(OpacityComponent(opacity: 1))
-        fill.playAnimation(animation)
+    let lifted = corners.map { $0 + up * 0.002 }
+    let brackets = Entity()
+    for i in 0..<4 {
+      for neighbour in [lifted[(i + 1) % 4], lifted[(i + 3) % 4]] {
+        let edge = neighbour - lifted[i]
+        let length = simd_length(edge)
+        guard length > 0.001 else { continue }
+        let leg = min(max(length * 0.25, 0.015), 0.04, length / 2)
+        brackets.addChild(bar(from: lifted[i], to: lifted[i] + edge / length * leg, thickness: 0.003, color: .white))
       }
     }
-    for i in 0..<4 {
-      root.addChild(bar(from: lifted[i], to: lifted[(i + 1) % 4], thickness: 0.0025, color: Theme.accentUI))
+    brackets.components.set(OpacityComponent(opacity: 1))
+    if let breathe = try? AnimationResource.generate(with: FromToByAnimation<Float>(
+      from: 0.55, to: 1, duration: 1.2, timing: .easeInOut, bindTarget: .opacity, repeatMode: .autoReverse
+    )) {
+      brackets.playAnimation(breathe)
     }
-    let centre = lifted.reduce(.zero, +) / 4
-    let tag = label(text, size: 0.013)
-    tag.position = centre + simd_normalize(normal) * 0.03
+    root.addChild(brackets)
+    let tag = chip(badge: nil, text: text, badgeColor: Theme.accentUI)
+    tag.position = lifted.reduce(.zero, +) / 4 + up * 0.03
     root.addChild(tag)
     return root
   }

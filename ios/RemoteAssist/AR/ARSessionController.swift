@@ -25,6 +25,27 @@ final class ARSessionController: NSObject, ARSessionDelegate {
   private(set) var errorMessage: String?
   /// True while the marker was found once but isn't visible right now, for long enough to be worth saying.
   private(set) var markerLostForAWhile = false
+  /// One line for the AR debug strip: the marker's distance, seen size and pose, and how far this step's parts are
+  /// from it. Updated at most twice a second.
+  private(set) var debugLine = ""
+  /// The marker is seen but not lying flat, so the guide's parts would hang in the air: the screen says to lay it down.
+  private(set) var markerNotFlat = false
+  @ObservationIgnored private var lastDebugUpdate: TimeInterval = 0
+  @ObservationIgnored private var lastDebugLog: TimeInterval = 0
+  @ObservationIgnored private var stepRangeText = ""
+  @ObservationIgnored private var markerOutline: Entity?
+  /// True while the expert's guide is locked to the laptop (two corner taps) instead of placed from the marker.
+  private(set) var guideOnLaptop = false
+  @ObservationIgnored private var laptopGuideAnchor: AnchorEntity?
+  /// Everything placed once the marker has been found lives here, at the same spot relative to the marker, so ARKit's
+  /// precise marker tracking keeps correcting it. World anchors drift as tracking slides over a plain grey cover; this
+  /// is what keeps screws and marks on the laptop when the phone moves.
+  @ObservationIgnored private let markerContent = Entity()
+  @ObservationIgnored private var axisGizmo: Entity?
+  /// Called on main when the marker is found, with its world transform: the moment a saved laptop calibration can
+  /// be put back.
+  @ObservationIgnored var onMarkerFound: ((simd_float4x4) -> Void)?
+  var markerWorldTransform: simd_float4x4? { markerAnchor?.transformMatrix(relativeTo: nil) }
 
   /// A pin on the real surface: from the expert tapping the video, or a screw going back in.
   struct PinInfo: Identifiable, Equatable {
@@ -68,6 +89,11 @@ final class ARSessionController: NSObject, ARSessionDelegate {
     get { shared.withLock { $0.onCameraFrame } }
     set { shared.withLock { $0.onCameraFrame = newValue } }
   }
+  /// Set while the scan screen is open: it sees every frame, with the marker's last tracked pose.
+  @ObservationIgnored var scanRecorder: ScanRecorder? {
+    get { shared.withLock { $0.scanRecorder } }
+    set { shared.withLock { $0.scanRecorder = newValue } }
+  }
 
   /// Made on first use, not with the controller: SwiftUI can build and drop a @State's initial value, and every ARView
   /// starts a whole RealityKit renderer. Replaced by a fresh one (same session, same anchors) if it stops drawing.
@@ -100,11 +126,11 @@ final class ARSessionController: NSObject, ARSessionDelegate {
   @ObservationIgnored private var configuration: ARWorldTrackingConfiguration?
   @ObservationIgnored private var isRunning = false
   @ObservationIgnored private let coaching = ARCoachingOverlayView()
-  @ObservationIgnored private var pinEntities: [UUID: (anchor: AnchorEntity, arAnchor: ARAnchor, entity: Entity)] = [:]
-  @ObservationIgnored private var focusAnchor: AnchorEntity?
+  @ObservationIgnored private var pinEntities: [UUID: (holder: Entity, arAnchor: ARAnchor?, entity: Entity)] = [:]
+  @ObservationIgnored private var focusAnchor: Entity?
   @ObservationIgnored private var focusCorners: [SIMD3<Float>] = []
   @ObservationIgnored private var focusLabel = ""
-  @ObservationIgnored private var outlineAnchor: AnchorEntity?
+  @ObservationIgnored private var outlineAnchor: Entity?
   @ObservationIgnored private var cornerAnchor: AnchorEntity?
   @ObservationIgnored private var ghost: Entity?
   @ObservationIgnored private var ghostPinId: UUID?
@@ -132,6 +158,7 @@ final class ARSessionController: NSObject, ARSessionDelegate {
   /// What the session queue and main share. Always behind `shared`'s lock.
   private struct Shared {
     var onCameraFrame: ((CVPixelBuffer, TimeInterval) -> Void)?
+    var scanRecorder: ScanRecorder?
     var feed: CameraFeedView?
     /// The marker's last tracked pose, for expressing the camera in the marker frame.
     var markerTransform: simd_float4x4?
@@ -193,10 +220,10 @@ final class ARSessionController: NSObject, ARSessionDelegate {
     let config = ARWorldTrackingConfiguration()
     config.detectionImages = [reference]
     config.maximumNumberOfTrackedImages = 1
-    // No plane detection: every raycast uses ARKit's estimated planes. Turning it on later meant re-running a live
-    // session, and every re-run made RealityKit rebuild its render graph and then fail every drawable (the frozen
-    // camera). The session is configured once, here.
-    config.planeDetection = []
+    // Tables (horizontal planes) from the start, so marks land on a measured surface instead of ARKit's guess, which
+    // slid when the phone moved. Set once here and never changed: re-running a live session is what used to make
+    // RealityKit rebuild its renderer and fail every drawable. The freeze itself was a display link (research § 20).
+    config.planeDetection = [.horizontal]
     config.automaticImageScaleEstimationEnabled = true
     configuration = config
     applyThermalLimits(to: config)
@@ -505,13 +532,13 @@ final class ARSessionController: NSObject, ARSessionDelegate {
 
   /// The purple outline around the laptop once its corners are set; nil takes it away.
   func showLaptopOutline(_ frame: LaptopFrame?) {
-    outlineAnchor.map { arView.scene.removeAnchor($0) }
+    unplace(outlineAnchor)
     outlineAnchor = nil
     guard let frame else { return }
-    let anchor = AnchorEntity(world: matrix_identity_float4x4)
-    anchor.addChild(Shapes.laptopOutline(corners: frame.corners, normal: frame.normal))
-    arView.scene.addAnchor(anchor)
-    outlineAnchor = anchor
+    let holder = Entity()
+    holder.addChild(Shapes.laptopOutline(corners: frame.corners, normal: frame.normal))
+    place(holder, atWorld: matrix_identity_float4x4)
+    outlineAnchor = holder
     lastSurface = SurfacePoint(position: frame.corners[0], normal: frame.normal)
   }
 
@@ -531,18 +558,85 @@ final class ARSessionController: NSObject, ARSessionDelegate {
   /// "Work here": a zone of the laptop lit on the surface, which the spotlight also follows.
   func showFocus(corners: [SIMD3<Float>], normal: SIMD3<Float>, label: String) {
     clearFocus()
-    let anchor = AnchorEntity(world: matrix_identity_float4x4)
-    anchor.addChild(Shapes.focusArea(corners: corners, normal: normal, label: label))
-    arView.scene.addAnchor(anchor)
-    focusAnchor = anchor
+    let holder = Entity()
+    holder.addChild(Shapes.focusArea(corners: corners, normal: normal, label: label))
+    place(holder, atWorld: matrix_identity_float4x4)
+    focusAnchor = holder
     focusCorners = corners
     focusLabel = label
   }
 
   func clearFocus() {
-    focusAnchor.map { arView.scene.removeAnchor($0) }
+    unplace(focusAnchor)
     focusAnchor = nil
     focusCorners = []
+  }
+
+  /// Moves the guide's parts onto the real laptop (`GuideOnLaptop.transform`), or back onto the marker with nil.
+  func lockGuide(_ transform: simd_float4x4?) {
+    laptopGuideAnchor.map { arView.scene.removeAnchor($0) }
+    laptopGuideAnchor = nil
+    guard let transform else {
+      stepRoot.transform = .identity
+      markerRoot.addChild(stepRoot)
+      if guideOnLaptop { guideOnLaptop = false }
+      Self.log.notice("Guide back on the marker")
+      return
+    }
+    laptopGuideAnchor = place(stepRoot, atWorld: transform)
+    if !guideOnLaptop { guideOnLaptop = true }
+    if debugLine.isEmpty || !debugLine.hasPrefix("Guide locked") { debugLine = "Guide locked to the laptop · " + stepRangeText }
+    Self.log.notice("Guide locked to the laptop at (\(transform.columns.3.x, format: .fixed(precision: 2), privacy: .public), \(transform.columns.3.y, format: .fixed(precision: 2), privacy: .public), \(transform.columns.3.z, format: .fixed(precision: 2), privacy: .public))")
+  }
+
+  /// Puts `entity` at a world transform. Once the marker has been found it goes on the marker (`markerContent`), at the
+  /// same spot relative to it; before that, on a world anchor, which is returned so the caller can remove it.
+  @discardableResult
+  private func place(_ entity: Entity, atWorld transform: simd_float4x4) -> AnchorEntity? {
+    if let marker = markerWorldTransform {
+      entity.transform = Transform(matrix: PinMath.local(transform, in: marker))
+      markerContent.addChild(entity)
+      return nil
+    }
+    let anchor = AnchorEntity(world: transform)
+    anchor.addChild(entity)
+    arView.scene.addAnchor(anchor)
+    return anchor
+  }
+
+  /// Takes away something `place` (or a session anchor) put in the scene.
+  private func unplace(_ holder: Entity?) {
+    guard let holder else { return }
+    if let anchor = holder as? AnchorEntity {
+      arView.scene.removeAnchor(anchor)
+    } else if let anchor = holder.parent as? AnchorEntity, anchor !== markerAnchor {
+      arView.scene.removeAnchor(anchor)
+    } else {
+      holder.removeFromParent()
+    }
+  }
+
+  /// Where a pin is now: it may have been nudged with the marker since it was placed.
+  private func livePosition(_ pin: PinInfo) -> SIMD3<Float> {
+    pinEntities[pin.id]?.entity.position(relativeTo: nil) ?? pin.position
+  }
+
+  /// Points that were world positions when `holder` was placed, where they are now. A holder on the marker was given
+  /// marker⁻¹ then, so its world matrix is how far the marker's pose has been corrected since (identity on a world
+  /// anchor).
+  private func live(_ points: [SIMD3<Float>], in holder: Entity?) -> [SIMD3<Float>] {
+    guard let holder, holder.parent != nil else { return points }
+    let m = holder.transformMatrix(relativeTo: nil)
+    return points.map { p in let w = m * SIMD4(p.x, p.y, p.z, 1); return SIMD3(w.x, w.y, w.z) }
+  }
+
+  /// Where a world point is in the marker's frame, the frame guide positions are written in; nil before the marker
+  /// has been found. Measuring with this is what lines a guide up with the real laptop: whatever way the marker's axes
+  /// turn out to run, a position measured here is placed back on the same spot.
+  func markerFramePoint(_ world: SIMD3<Float>) -> SIMD3<Float>? {
+    guard let markerAnchor else { return nil }
+    let local = markerAnchor.transformMatrix(relativeTo: nil).inverse * SIMD4(world.x, world.y, world.z, 1)
+    return SIMD3(local.x, local.y, local.z)
   }
 
   /// The camera as it was `secondsAgo`, from the last ~2.5 s.
@@ -566,7 +660,7 @@ final class ARSessionController: NSObject, ARSessionDelegate {
   /// which is nearly always the same desk.
   @ObservationIgnored private var lastSurface: SurfacePoint?
   /// The expert's marked area: lit on the surface, and the first thing the spotlight shows.
-  @ObservationIgnored private var expertAreaAnchor: AnchorEntity?
+  @ObservationIgnored private var expertAreaAnchor: Entity?
   @ObservationIgnored private var expertAreaCorners: [SIMD3<Float>] = []
   @ObservationIgnored private var expertAreaLabel = ""
 
@@ -580,43 +674,105 @@ final class ARSessionController: NSObject, ARSessionDelegate {
 
   /// The expert tapped the live video: a pin where they tapped, through the camera that filmed that frame. One thing
   /// at a time: a pin replaces the expert's marked area.
-  func placeExpertPin(at point: UprightPoint, label: String, secondsAgo: Double) -> Bool {
+  func placeExpertPin(at point: UprightPoint, label: String, secondsAgo: Double, turn anticlockwise: Bool? = nil) -> Bool {
     guard let camera = cameraContext(secondsAgo: secondsAgo) else { return false }
     guard let surface = surfacePoint(for: point, camera: camera)
       ?? fallbackSurfacePoint(for: point, camera: camera, reference: lastSurface) else { return false }
     lastSurface = surface
     clearExpertArea()
     let number = (pins.filter { $0.kind == .expert }.map(\.number).max() ?? 0) + 1
-    addPin(number: number, label: label, kind: .expert, transform: PinMath.standing(at: surface.position, normal: surface.normal), photoPoint: nil)
+    let id = addPin(number: number, label: label, kind: .expert, transform: PinMath.standing(at: surface.position, normal: surface.normal), photoPoint: nil)
+    // "Unscrew this": the turning arrow and the see-through screwdriver, on the pin itself so they follow it.
+    if let anticlockwise, let entity = pinEntities[id]?.entity {
+      entity.addChild(Shapes.turnCue(anticlockwise: anticlockwise))
+    }
     return true
   }
 
   /// The expert dragged a box on the live video: that patch of the surface is lit and the spotlight dims everything
   /// else. `corners` go round the box in order. All four land on one plane (the one under the box's centre, else
   /// under any corner, else the last surface), so the area stays a flat, clean shape. It replaces the expert's pins.
-  func placeExpertArea(corners points: [UprightPoint], label: String, secondsAgo: Double) -> Bool {
-    guard points.count == 4, let camera = cameraContext(secondsAgo: secondsAgo) else { return false }
+  /// How far an area's corner may be from the box's centre: more than a laptop's half-diagonal, less than a desk.
+  static let areaReach: Float = 0.45
+
+  /// The box the expert dragged, as four points on the surface under it (clockwise from the top-left as drawn) and
+  /// that surface's normal; nil when there's no surface at all. Each corner is where its ray meets the plane under the
+  /// box's centre, pulled in to at most `areaReach` from the centre: drawn from an angle, a box round a laptop meets the
+  /// table far away at its top corners, and refusing those turned normal areas red.
+  private func footprint(_ points: [UprightPoint], secondsAgo: Double, label: String, kind: String) -> (corners: [SIMD3<Float>], normal: SIMD3<Float>)? {
+    guard points.count == 4, let camera = cameraContext(secondsAgo: secondsAgo) else { return nil }
     let centre = UprightPoint(x: points.map(\.x).reduce(0, +) / 4, y: points.map(\.y).reduce(0, +) / 4)
     guard let plane = surfacePoint(for: centre, camera: camera)
       ?? points.lazy.compactMap({ self.surfacePoint(for: $0, camera: camera) }).first
-      ?? lastSurface else { return false }
-    let corners = points.compactMap { fallbackSurfacePoint(for: $0, camera: camera, reference: plane)?.position }
-    guard corners.count == 4 else { return false }
+      ?? lastSurface else {
+      Self.log.notice("\(kind, privacy: .public) \"\(label, privacy: .public)\" missed: no surface under the box")
+      return nil
+    }
+    let up = simd_normalize(plane.normal)
+    let centreRay = PinMath.ray(for: centre, in: camera)
+    let middle = PinMath.intersect(origin: centreRay.origin, direction: centreRay.direction, planePoint: plane.position, planeNormal: up) ?? plane.position
+    var pulled = 0
+    let corners = points.map { point -> SIMD3<Float> in
+      let ray = PinMath.ray(for: point, in: camera)
+      let hit = PinMath.intersect(origin: ray.origin, direction: ray.direction, planePoint: plane.position, planeNormal: up)
+      // A ray that never meets the plane (above the horizon) still points somewhere along it.
+      var along = ray.direction - simd_dot(ray.direction, up) * up
+      if simd_length(along) < 1e-4 { along = SIMD3(1, 0, 0) }
+      let target = hit ?? middle + simd_normalize(along) * Self.areaReach
+      let corner = PinMath.pulledIn(target, toward: middle, limit: Self.areaReach)
+      if corner != target { pulled += 1 }
+      return corner
+    }
+    Self.log.notice("\(kind, privacy: .public) \"\(label, privacy: .public)\": placed, centre \(simd_distance(middle, centreRay.origin), format: .fixed(precision: 2), privacy: .public) m from the camera, \(pulled, privacy: .public)/4 corners pulled in")
     lastSurface = plane
+    return (corners, up)
+  }
 
-    clearPins(kinds: [.expert])
-    clearExpertArea()
-    let anchor = AnchorEntity(world: matrix_identity_float4x4)
-    anchor.addChild(Shapes.focusArea(corners: corners, normal: plane.normal, label: label))
-    arView.scene.addAnchor(anchor)
-    expertAreaAnchor = anchor
-    expertAreaCorners = corners
-    expertAreaLabel = label
+  func placeExpertArea(corners points: [UprightPoint], label: String, secondsAgo: Double) -> Bool {
+    guard let (corners, normal) = footprint(points, secondsAgo: secondsAgo, label: label, kind: "Area") else { return false }
+    showExpertMark(Shapes.focusArea(corners: corners, normal: normal, label: label), corners: corners, label: label)
     return true
   }
 
+  /// How a box the expert drew moves on the phone.
+  enum BoxMotion: String { case still, flip, turn }
+
+  /// The expert dragged a box and picked a motion: a 3D block on that footprint, 2 cm high, turning over or round.
+  func placeExpertBox(corners points: [UprightPoint], label: String, secondsAgo: Double, motion: BoxMotion) -> Bool {
+    guard let (corners, normal) = footprint(points, secondsAgo: secondsAgo, label: label, kind: "Box") else { return false }
+    let frame = Shapes.boxFrame(corners: corners, normal: normal, height: 0.02)
+    let root = Entity()
+    let block = Shapes.solidBox(size: frame.size)
+    block.transform = Transform(matrix: frame.transform)
+    root.addChild(block)
+    let axisX = SIMD3(frame.transform.columns.0.x, frame.transform.columns.0.y, frame.transform.columns.0.z)
+    switch motion {
+    case .flip: Shapes.animate(block, action: .flip, axis: axisX)
+    case .turn: Shapes.animate(block, action: .rotate90, axis: normal)
+    case .still: break
+    }
+    let tag = Shapes.chip(badge: nil, text: label, badgeColor: Theme.accentUI)
+    tag.position = corners.reduce(.zero, +) / 4 + normal * 0.06
+    root.addChild(tag)
+    showExpertMark(root, corners: corners, label: label)
+    Self.log.notice("Box \"\(label, privacy: .public)\": \(frame.size.x, format: .fixed(precision: 2), privacy: .public) × \(frame.size.z, format: .fixed(precision: 2), privacy: .public) m, \(motion.rawValue, privacy: .public)")
+    return true
+  }
+
+  /// One thing at a time: a new area or box replaces the expert's previous marks.
+  private func showExpertMark(_ entity: Entity, corners: [SIMD3<Float>], label: String) {
+    clearPins(kinds: [.expert])
+    clearExpertArea()
+    let holder = Entity()
+    holder.addChild(entity)
+    place(holder, atWorld: matrix_identity_float4x4)
+    expertAreaAnchor = holder
+    expertAreaCorners = corners
+    expertAreaLabel = label
+  }
+
   func clearExpertArea() {
-    expertAreaAnchor.map { arView.scene.removeAnchor($0) }
+    unplace(expertAreaAnchor)
     expertAreaAnchor = nil
     expertAreaCorners = []
   }
@@ -625,8 +781,8 @@ final class ARSessionController: NSObject, ARSessionDelegate {
   func clearPins(kinds: Set<Shapes.PinKind> = [.guide, .expert, .refit]) {
     for pin in pins where kinds.contains(pin.kind) {
       if let entry = pinEntities.removeValue(forKey: pin.id) {
-        arView.scene.removeAnchor(entry.anchor)
-        arView.session.remove(anchor: entry.arAnchor)
+        unplace(entry.holder)
+        entry.arAnchor.map(arView.session.remove)
       }
     }
     pins.removeAll { kinds.contains($0.kind) }
@@ -635,35 +791,55 @@ final class ARSessionController: NSObject, ARSessionDelegate {
 
   @discardableResult
   private func addPin(number: Int, label: String, kind: Shapes.PinKind, transform: simd_float4x4, photoPoint: UprightPoint?) -> UUID {
-    // A session anchor, not a free world position, so ARKit keeps refining where it is as it learns the room.
-    let arAnchor = ARAnchor(name: "pin", transform: transform)
-    arView.session.add(anchor: arAnchor)
-    let anchor = AnchorEntity(anchor: arAnchor)
     let entity = Shapes.pin(number: number, label: label, kind: kind)
-    anchor.addChild(entity)
-    arView.scene.addAnchor(anchor)
+    let holder: Entity
+    var arAnchor: ARAnchor?
+    if markerAnchor != nil {
+      // On the marker, so it stays on its screw however tracking slides.
+      holder = Entity()
+      holder.addChild(entity)
+      place(holder, atWorld: transform)
+    } else {
+      // No marker yet: a session anchor, which ARKit at least refines as it learns the room.
+      let session = ARAnchor(name: "pin", transform: transform)
+      arView.session.add(anchor: session)
+      let anchor = AnchorEntity(anchor: session)
+      anchor.addChild(entity)
+      arView.scene.addAnchor(anchor)
+      holder = anchor
+      arAnchor = session
+    }
     let info = PinInfo(id: UUID(), number: number, label: label, kind: kind, done: false, transform: transform, photoPoint: photoPoint)
-    pinEntities[info.id] = (anchor, arAnchor, entity)
+    pinEntities[info.id] = (holder, arAnchor, entity)
     pins.append(info)
     return info.id
   }
 
+  /// Farther than this from the camera, a hit is a guess through a gap, not the laptop in front of the user: a missed
+  /// mark (red on the console, try again) beats a wrong one.
+  static let maxReach: Float = 1.5
+
   private func surfacePoint(for point: UprightPoint, camera: CameraContext) -> SurfacePoint? {
     let ray = PinMath.ray(for: point, in: camera)
-    // Real detected planes first: they're measured. Estimated planes are ARKit's guess from feature points.
-    for target in [ARRaycastQuery.Target.existingPlaneGeometry, .estimatedPlane] {
-      let query = ARRaycastQuery(origin: ray.origin, direction: ray.direction, allowing: target, alignment: .any)
-      if let hit = arView.session.raycast(query).first {
-        let t = hit.worldTransform
-        return SurfacePoint(position: SIMD3(t.columns.3.x, t.columns.3.y, t.columns.3.z), normal: SIMD3(t.columns.1.x, t.columns.1.y, t.columns.1.z))
-      }
+    // Measured planes first, then ARKit's guess from feature points, then the table extended past its measured edge.
+    let targets: [(ARRaycastQuery.Target, ARRaycastQuery.TargetAlignment)] = [
+      (.existingPlaneGeometry, .any), (.estimatedPlane, .any), (.existingPlaneInfinite, .horizontal),
+    ]
+    for (target, alignment) in targets {
+      let query = ARRaycastQuery(origin: ray.origin, direction: ray.direction, allowing: target, alignment: alignment)
+      guard let hit = arView.session.raycast(query).first else { continue }
+      let t = hit.worldTransform
+      let position = SIMD3(t.columns.3.x, t.columns.3.y, t.columns.3.z)
+      guard simd_distance(position, ray.origin) <= Self.maxReach else { continue }
+      return SurfacePoint(position: position, normal: SIMD3(t.columns.1.x, t.columns.1.y, t.columns.1.z))
     }
     return nil
   }
 
   private func fallbackSurfacePoint(for point: UprightPoint, camera: CameraContext, reference: SurfacePoint?) -> SurfacePoint? {
     let ray = PinMath.ray(for: point, in: camera)
-    if let reference, let hit = PinMath.intersect(origin: ray.origin, direction: ray.direction, planePoint: reference.position, planeNormal: reference.normal) {
+    if let reference, let hit = PinMath.intersect(origin: ray.origin, direction: ray.direction, planePoint: reference.position, planeNormal: reference.normal),
+       simd_distance(hit, ray.origin) <= Self.maxReach {
       return SurfacePoint(position: hit, normal: reference.normal)
     }
     // Otherwise the nearest detected horizontal plane, extended past its measured edges.
@@ -692,7 +868,7 @@ final class ARSessionController: NSObject, ARSessionDelegate {
     // Nearest pin on screen within a finger's width: kinder than hit-testing a 7 mm ball.
     let nearest = pins.indices
       .compactMap { i -> (Int, CGFloat)? in
-        guard let screen = arView.project(pins[i].position + SIMD3(pins[i].transform.columns.1.x, pins[i].transform.columns.1.y, pins[i].transform.columns.1.z) * 0.02) else { return nil }
+        guard let screen = arView.project(livePosition(pins[i]) + SIMD3(pins[i].transform.columns.1.x, pins[i].transform.columns.1.y, pins[i].transform.columns.1.z) * 0.02) else { return nil }
         return (i, hypot(screen.x - location.x, screen.y - location.y))
       }
       .min { $0.1 < $1.1 }
@@ -739,17 +915,21 @@ final class ARSessionController: NSObject, ARSessionDelegate {
   /// what the expert marked last is what's lit.
   func spotlightTarget() -> SpotlightTarget? {
     if !expertAreaCorners.isEmpty {
-      return SpotlightTarget(points: expertAreaCorners, label: expertAreaLabel)
+      return SpotlightTarget(points: live(expertAreaCorners, in: expertAreaAnchor), label: expertAreaLabel)
+    }
+    // The expert's newest mark alone, not a box round all of them: one thing to look at.
+    if let newest = pins.last(where: { $0.kind == .expert && !$0.done }) {
+      return SpotlightTarget(points: [livePosition(newest)], label: "\(newest.number) · \(newest.label)")
     }
     let pending = pins.filter { !$0.done }
     if !pending.isEmpty {
       let label = pending.count == 1 ? "\(pending[0].number) · \(pending[0].label)" : "\(pending.count) left"
-      return SpotlightTarget(points: pending.map(\.position), label: label)
+      return SpotlightTarget(points: pending.map(livePosition), label: label)
     }
     if !focusCorners.isEmpty {
-      return SpotlightTarget(points: focusCorners, label: focusLabel)
+      return SpotlightTarget(points: live(focusCorners, in: focusAnchor), label: focusLabel)
     }
-    if markerSeen, !stepRoot.children.isEmpty {
+    if markerSeen || guideOnLaptop, stepRoot.isEnabled, !stepRoot.children.isEmpty {
       let points = stepRoot.children.map { $0.position(relativeTo: nil) }
       return SpotlightTarget(points: points, label: step?.objects.first?.label ?? "Here")
     }
@@ -790,6 +970,9 @@ final class ARSessionController: NSObject, ARSessionDelegate {
 
     // Synchronous: the handler copies what it needs, so ARKit's buffer is free again when this returns.
     if let onCameraFrame { onCameraFrame(frame.capturedImage, timestamp) }
+
+    let (scanRecorder, marker) = shared.withLock { ($0.scanRecorder, $0.markerTransform) }
+    scanRecorder?.consider(frame, marker: marker)
 
     let pose: PoseUpdate? = shared.withLock { state in
       guard let marker = state.markerTransform, timestamp - state.lastPoseTime >= 0.2 else { return nil }
@@ -882,16 +1065,29 @@ final class ARSessionController: NSObject, ARSessionDelegate {
     markerAnchor.map { arView.scene.removeAnchor($0) }
 
     let anchor = AnchorEntity(world: sample.transform)
-    markerRoot.children.removeAll()
-    markerRoot.addChild(Shapes.markerOutline(width: Float(sample.size.width), height: Float(sample.size.height)))
-    markerRoot.addChild(Shapes.axisGizmo())
-    markerRoot.addChild(stepRoot)
-    markerRoot.scale = SIMD3(repeating: sample.scale)
+    // Only the outline and the axes are rebuilt: what's pinned to the marker (markerContent) must survive.
+    markerOutline?.removeFromParent()
+    axisGizmo?.removeFromParent()
+    if markerContent.parent == nil { markerRoot.addChild(markerContent) }
+    // Only the outline follows ARKit's size estimate, so it matches the print. The parts don't: their positions are
+    // real metres from the marker's centre, and the anchor ARKit gives is already metric. Scaling them by the estimate
+    // pushed every part proportionally too far (or too near) whenever the print wasn't exactly 18 cm.
+    let outline = Shapes.markerOutline(width: Float(sample.size.width), height: Float(sample.size.height))
+    outline.scale = [sample.scale, 1, sample.scale]
+    markerOutline = outline
+    markerRoot.addChild(outline)
+    let gizmo = Shapes.axisGizmo()
+    axisGizmo = gizmo
+    markerRoot.addChild(gizmo)
+    // While the guide is locked to the laptop its parts stay there; the marker only carries its outline.
+    if !guideOnLaptop { markerRoot.addChild(stepRoot) }
     anchor.addChild(markerRoot)
     arView.scene.addAnchor(anchor)
 
     markerAnchor = anchor
     markerSeen = true
+    report(sample, force: true)
+    onMarkerFound?(sample.transform)
   }
 
   private func follow(_ sample: MarkerSample, reacquired: Bool) {
@@ -906,7 +1102,27 @@ final class ARSessionController: NSObject, ARSessionDelegate {
       // Never restart or fight a glide that's already running; once it lands, follow every update exactly.
       markerAnchor.transform = target
     }
-    markerRoot.scale = SIMD3(repeating: sample.scale)
+    markerOutline?.scale = [sample.scale, 1, sample.scale]
+    report(sample, force: false)
+  }
+
+  /// The debug line (twice a second), the log (every 2 s, or now when forced) and the "lay it flat" warning.
+  private func report(_ sample: MarkerSample, force: Bool) {
+    let now = ProcessInfo.processInfo.systemUptime
+    guard force || now - lastDebugUpdate >= 0.5 else { return }
+    lastDebugUpdate = now
+    guard let camera = arView.session.currentFrame?.camera.transform else { return }
+    let reading = MarkerReading.describe(
+      transform: sample.transform, scale: sample.scale, physicalWidth: Float(sample.size.width),
+      cameraPosition: SIMD3(camera.columns.3.x, camera.columns.3.y, camera.columns.3.z)
+    )
+    let line = stepRangeText.isEmpty ? reading.line : reading.line + " · " + stepRangeText
+    if debugLine != line { debugLine = line }
+    if markerNotFlat != !reading.isFlat { markerNotFlat = !reading.isFlat }
+    if force || now - lastDebugLog >= 2 {
+      lastDebugLog = now
+      Self.log.notice("\(line, privacy: .public) · normal·up \(reading.flatness, format: .fixed(precision: 2), privacy: .public) · tracked \(sample.isTracked, privacy: .public)")
+    }
   }
 
   /// After 3 s of not seeing the marker, the UI says the guide is holding where it was.
@@ -923,24 +1139,55 @@ final class ARSessionController: NSObject, ARSessionDelegate {
     }
   }
 
-  private func renderStep() {
-    stepRoot.children.removeAll()
-    guard let step else { return }
+  /// The expert cleared the view: the guide's parts go too, not just the expert's own marks, until the next step (or
+  /// a new guide) brings its parts back.
+  func hideGuideParts() {
+    stepRoot.isEnabled = false
+    Self.log.notice("Guide parts hidden: the expert cleared the view")
+  }
 
+  private func renderStep() {
+    stepRoot.isEnabled = true
+    stepRoot.children.removeAll()
+    guard let step else {
+      stepRangeText = ""
+      return
+    }
+    let distances = step.objects.map { simd_length($0.pos.simd) }
+    if let near = distances.min(), let far = distances.max() {
+      stepRangeText = String(format: "%d part%@ %.2f–%.2f m from it", distances.count, distances.count == 1 ? "" : "s", near, far)
+    } else {
+      stepRangeText = "no parts"
+    }
+    Self.log.notice("Step \(step.id, privacy: .public): \(self.stepRangeText, privacy: .public)")
     for object in step.objects {
+      let p = object.pos.simd
+      let world = markerAnchor.map { $0.transformMatrix(relativeTo: nil) * SIMD4(p.x, p.y, p.z, 1) }
+      Self.log.notice("  \(object.label ?? "part", privacy: .public): marker (\(p.x, format: .fixed(precision: 3), privacy: .public), \(p.y, format: .fixed(precision: 3), privacy: .public), \(p.z, format: .fixed(precision: 3), privacy: .public)) → world \(world.map { String(format: "(%.2f, %.2f, %.2f)", $0.x, $0.y, $0.z) } ?? "(marker not found yet)", privacy: .public)")
+    }
+
+    for (index, object) in step.objects.enumerated() {
       // Positions are already in the marker frame (contracts/protocol.ts), so they go straight onto the anchor.
       let node = Entity()
       node.position = object.pos.simd
       node.orientation = object.rot.simd
-      node.addChild(Shapes.highlightBox(size: object.size.simd))
+      // The box and its model together, so a flip or a turn moves the whole part (a laptop-sized box turns over);
+      // an unscrew, pull or push moves only the model, out of its box.
+      let body = Entity()
+      body.addChild(Shapes.highlightBox(size: object.size.simd))
+      let ring = Shapes.partRing(radius: max(object.size.x, object.size.z) / 2 + 0.004)
+      ring.position.y = -object.size.y / 2 + 0.001
+      node.addChild(ring)
       let model = Shapes.model(object.model)
-      node.addChild(model)
+      body.addChild(model)
+      node.addChild(body)
       if let action = object.action {
         // The contract's axis is in the marker frame; the model lives in the object's rotated frame.
-        Shapes.animate(model, action: action, axis: object.rot.simd.inverse.act(object.axis.simd))
+        let whole = action == .flip || action == .rotate90
+        Shapes.animate(whole ? body : model, action: action, axis: object.rot.simd.inverse.act(object.axis.simd), delay: 0.15 * Double(index))
       }
       if let text = object.label {
-        let label = Shapes.label(text)
+        let label = Shapes.label(text, size: 0.018)
         label.position = [0, object.size.y / 2 + 0.012, 0]
         node.addChild(label)
       }

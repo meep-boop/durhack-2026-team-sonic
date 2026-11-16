@@ -62,13 +62,13 @@ final class VoiceCommands {
     SFSpeechRecognizer.requestAuthorization { status in
       DispatchQueue.main.async {
         guard status == .authorized else {
-          self.problem = "Allow Speech Recognition for Remote Assist in Settings"
+          self.problem = "Allow Speech Recognition for Sonic Assist in Settings"
           return
         }
         AVAudioApplication.requestRecordPermission { granted in
           DispatchQueue.main.async {
             guard granted else {
-              self.problem = "Allow the microphone for Remote Assist in Settings"
+              self.problem = "Allow the microphone for Sonic Assist in Settings"
               return
             }
             guard self.recognizer?.isAvailable == true else {

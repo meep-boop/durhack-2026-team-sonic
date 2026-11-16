@@ -1006,7 +1006,7 @@ each builder's brief (`builder-file-<name>.md`, on the `context` branch).
   `receive`: ignore an image anchor whose `estimatedScaleFactor` is outside about 0.8–1.2 (not our 180 mm print),
   and consider turning scale estimation off. Yours to decide and test.
 - ⚠️ Conflicts: @salman — a suspected fault in how the phone anchors the guide
-- Conflict status: open
+- Conflict status: resolved by @salman 2026-11-15 (fixed on `salman-ios-scan`, see 11:05)
 
 ### 2026-11-15 10:04 — Devpost "About the project" draft — @max
 - Shipped: `docs/devpost-about.md` on `max-scene` (`00d7ba4`), not `main`: all seven Devpost sections (inspiration,
@@ -1043,6 +1043,51 @@ each builder's brief (`builder-file-<name>.md`, on the `context` branch).
 - ⚠️ Conflicts: none
 - Conflict status: resolved by @laura 2026-11-15
 
+### 2026-11-15 11:05 — the phone's guide fixes, saved on `salman-ios-scan` (not main) — @salman
+- Shipped: `salman-ios-scan` has main merged in and is pushed. It holds PR #12 (`salman-ios-guide`) plus Max's room
+  scan (`max-ios-scan`). Not on `main`: that's Salman's call.
+- Answers Ahmed's 09:00 entry (marks across the room). Fixed on the phone:
+  - the guide was scaled by ARKit's size estimate of the marker; now only the green outline is, so positions stay in
+    true metres;
+  - "Lock the guide to the laptop" (guide menu, two corner taps) moves the guide onto the real laptop, and the phone
+    saves that lock relative to the marker, so it's done once;
+  - the expert's points, areas and boxes are pinned to the marker, so they no longer drift as the phone moves.
+  - Seen in the phone's log: areas land, Done for s1–s4 reaches the relay, Clear hides the guide's part too.
+    Not yet checked by eye: no drift, the saved lock coming back after a restart, the Box tool.
+- Also on the branch: the console toolbar (Point, Unscrew, Screw in, Area, Box), a rig status pill, and a 3D panel
+  beside the live video that shows only the scan (`dashboard/viewer.html`, with the three Scaniverse scans in
+  `dashboard/public/scans/`).
+- Open: ElevenLabs is out of credits (0 of 10,000 at 10:41). Steps speak with the iOS voice; the call transcript and
+  spoken commands won't work until it's topped up or the key is swapped. The rig is off, not connected yet.
+- Touched: `ios/RemoteAssist/**`, `ios/expert-call/index.html`, `dashboard/viewer.html`, `dashboard/src/viewer.tsx`,
+  `dashboard/public/scans/`, `pipeline/` (Max's scan)
+- 📨 To @max: for Devpost Challenges, the wrong-side-of-the-room bug is fixed on the phone (above), on this branch,
+  not on main yet. Your dashboard gained one page (`viewer.html` + `src/viewer.tsx`); none of your files changed.
+- 📨 To @laura: ElevenLabs has no credits left, so check before the README credits it for the demo.
+- ⚠️ Conflicts: @max — a new page beside his dashboard (nothing of his edited)
+- Conflict status: open
+
+### 2026-11-15 11:20 — the phone app and console are called Sonic Assist — @salman
+- Shipped: on `salman-ios-scan`, everything a person sees says **Sonic Assist**: the name under the app icon and in
+  Settings, the start screen, onboarding, the permission prompts, Settings hints, the report footer, the console's
+  tab and heading, and the 3D scan page. Code, folders, the bundle id and the scheme stay `RemoteAssist`.
+- Answers Ahmed's 10:18 📨 (the display name).
+- Touched: `ios/project.yml`, `ios/RemoteAssist/Info.plist`, string-only edits in `ios/RemoteAssist/**`,
+  `ios/expert-call/index.html`, `dashboard/viewer.html`
+- 📨 To @max: your dashboard still says "Remote Assist" (`dashboard/index.html` title, `src/shell/Header.tsx`).
+- ⚠️ Conflicts: none
+- Conflict status: n/a
+
+### 2026-11-15 11:40 — Scan the room says why it can't start yet — @salman
+- Shipped: on `salman-ios-scan`. Before the marker has been seen, Scan the room's greyed-out Start was close to
+  invisible on the glass card, so Salman couldn't find it. It now shows "Point at the marker to start" in plain view,
+  and becomes the purple Start once the marker is seen. Same rule as before, only clearer.
+- Rig: it joined the relay twice and dropped both times. No code change: the relay's guide already has the rig's
+  checks on s3 (SSD out of the bay) and s4 (SSD in), and the console shows them as pop-ups.
+- Touched: `ios/RemoteAssist/Scan/ScanView.swift`
+- 📨 To @max: a small look change on your scan screen's ready state; the flow is unchanged.
+- ⚠️ Conflicts: @max — `ScanView.swift` is from his `max-ios-scan`
+- Conflict status: open
 ### 2026-11-15 11:04 — a full test run on Laura's laptop: what works, and two things to fix — @laura
 - Shipped: README draft now titled **Sonic Assist**. Tested everything else on `main` (`b327dea`) with a relay on its
   own `--state` file, the dashboard, `fixtures/fake-phone.ts` and the rig's `main.py` fed Nicla lines on stdin.
@@ -1074,3 +1119,26 @@ each builder's brief (`builder-file-<name>.md`, on the `context` branch).
 - Touched: `hardware/unoq/python/rig.py`, `test_rig.py`
 - ⚠️ Conflicts: none
 - Conflict status: resolved by @ahmed 2026-11-15
+
+### 2026-11-16 16:40 — the judges' README is the repo's README, with pictures and a quick start — @salman
+- Shipped: on `salman-ios-scan` (PR #13). `README.md` is now Laura's judges' draft, filled in and dressed up: a
+  DurHack banner, badges, a GIF from the day-one explainer (labelled as the concept, network cupboard and all), fresh
+  shots of the console, the dashboard and the 3D scan, a 7-step quick start, and "What's real" updated to what was
+  checked on the hardware. Licences read from the installed packages and PyPI (`usd-core` 26.11 is TOST-1.0, not
+  Apache). The team-kit README moved to `docs/team-kit.md`; the draft points to the new README.
+- Touched: `README.md`, `docs/team-kit.md` (moved), `docs/README.judges.draft.md` (one pointer line), `docs/media/`
+- 📨 To @laura: your draft is now `README.md`, built on your text. Change anything you disagree with there.
+- ⚠️ Conflicts: @laura — the judges' README was her task
+- Conflict status: open
+
+### 2026-11-16 17:15 — the README shows the app live and the rig, without AI credits — @salman
+- Shipped: on `salman-ios-scan` (PR #13). A "See it live" section with real screenshots from 15 and 16 Nov (the
+  incoming call, a live call, an expert Area and Points on the phone, the console mid-call), and a "The rig checks
+  the work" section with a drawing of the UNO Q + Nicla rig (no photo of it yet) and the console showing "Rig, step
+  s4: ✓ correct". Browser bars and a tab showing an email address were cropped or blurred out of every shot.
+- Decision (Salman): the README carries no AI credits or Claude mentions (the AI use section, the AI labels row, the
+  Anthropic SDK line and "AI labelling" are gone). DurHack's AI credit rule is for Devpost.
+- Touched: `README.md`, `docs/media/`
+- 📨 To @laura @ahmed: the README no longer credits AI tools; keep the credits on Devpost, where the rules ask for them.
+- ⚠️ Conflicts: @laura — her README draft's AI use section was dropped, on Salman's call
+- Conflict status: open
