@@ -37,16 +37,14 @@ Real screenshots from our own tests on 15 and 16 November.
 
 <table>
   <tr>
-    <td width="25%"><img src="docs/media/phone-incoming.png" alt="The phone's home screen, 'What are you fixing?', with an incoming call from the expert at the top"></td>
-    <td width="25%"><img src="docs/media/phone-live.png" alt="The phone 2 minutes 39 seconds into a live call, its camera on the laptop running the console"></td>
-    <td width="25%"><img src="docs/media/phone-area.png" alt="The phone in a live call, with the expert's area drawn over the laptop's bottom cover"></td>
-    <td width="25%"><img src="docs/media/phone-points.png" alt="The phone in a live call, with the expert's numbered points on the laptop's screw holes"></td>
+    <td width="33%"><img src="docs/media/phone-incoming.png" alt="The phone's home screen, 'What are you fixing?', with an incoming call from the expert at the top"></td>
+    <td width="33%"><img src="docs/media/phone-live.png" alt="The phone 2 minutes 39 seconds into a live call, its camera on the laptop running the console"></td>
+    <td width="33%"><img src="docs/media/phone-area.png" alt="The phone in a live call, with the expert's area drawn over the laptop's bottom cover"></td>
   </tr>
   <tr>
     <td><sub><b>The expert calls.</b> The phone rings over the home screen (16 Nov).</sub></td>
     <td><sub><b>Live.</b> The expert sees this camera, here pointed at the console and its 3D scan (16 Nov).</sub></td>
     <td><sub><b>An Area</b> from the expert, on the laptop's bottom cover (15 Nov, an earlier style).</sub></td>
-    <td><sub><b>Points</b> from the expert, numbered on the screw holes (15 Nov).</sub></td>
   </tr>
 </table>
 
@@ -76,19 +74,24 @@ expert's hands in the room: their marks land on the real part, through the phone
   the step to both sides.
 - 📶 **It keeps going offline.** The phone holds the whole guide; its taps are sent when the network comes back.
 
-<table>
-  <tr>
-    <td width="50%"><img src="docs/media/console-call.png" alt="The technician console in a live call: the phone's camera on the left, the 3D scan beside it, the call controls and the live transcript on the right"></td>
-    <td width="50%"><img src="docs/media/dashboard.png" alt="The expert dashboard: the 3D scan of the laptop, and a four-step SSD guide with every step done and step 4 checked by the rig"></td>
-  </tr>
-  <tr>
-    <td><sub><b>Technician console in a live call</b> (16 Nov): the phone's camera, the 3D scan beside it, the call and the transcript.</sub></td>
-    <td><sub><b>Expert dashboard.</b> The four-step SSD guide on the scan: all done on the phone, and step 4 checked by the rig (✓).</sub></td>
-  </tr>
-</table>
+**Technician console**
 
 <p align="center">
-  <img src="docs/media/scan-3d.png" alt="A 3D scan of the laptop next to the printed marker" width="820"><br>
+  <img src="docs/media/console-call.png" alt="The technician console in a live call: the phone's camera on the left, the 3D scan beside it, the call controls and the live transcript on the right" width="100%"><br>
+  <sub>In a live call (16 Nov): the phone's camera, the 3D scan beside it, the call and the transcript.</sub>
+</p>
+
+**Expert dashboard**
+
+<p align="center">
+  <img src="docs/media/dashboard.png" alt="The expert dashboard: the 3D scan of the laptop, and a four-step SSD guide with every step done and step 4 checked by the rig" width="100%"><br>
+  <sub>The four-step SSD guide on the scan: all done on the phone, and step 4 checked by the rig (✓).</sub>
+</p>
+
+**3D scan**
+
+<p align="center">
+  <img src="docs/media/scan-3d.png" alt="A 3D scan of the laptop next to the printed marker" width="100%"><br>
   <sub>A 3D scan of the demo laptop and the printed marker beside it, made with Scaniverse on an iPhone.</sub>
 </p>
 
@@ -253,9 +256,6 @@ cd ios && xcodebuild test -scheme RemoteAssist \
   team's own DGX Spark.
 
 ## 🔭 Limits and next steps
-- A scan is a snapshot: if the hardware moves after scanning, the guide's positions are off.
-- The marker has to stay put, and accuracy drops further from it.
-- The rig can mistake a hand over the sticker for the part being gone.
 - The live call needs both devices on one network (no TURN server yet).
 
 ## 👋 Team
