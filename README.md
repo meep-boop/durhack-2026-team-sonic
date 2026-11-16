@@ -52,8 +52,8 @@ Real screenshots from our own tests on 15 and 16 November.
 
 <p align="center">
   <img src="docs/media/console-live.png" alt="The technician console in a live call: the phone's camera, the toolbar with Point, Unscrew, Screw in, Area and Clear, the live transcript, and an activity log of marks shown on the phone" width="900"><br>
-  <sub><b>The expert's side of a live call</b> (15 Nov, before the rename): the phone's camera, the toolbar, the live
-  transcript, and each "Screw in" confirmed as shown on the phone.</sub>
+  <sub><b>The expert's side of a live call</b> (15 Nov): the phone's camera, the live transcript, and each "Screw in"
+  confirmed as shown on the phone.</sub>
 </p>
 
 ## 💡 Why
@@ -78,11 +78,11 @@ expert's hands in the room: their marks land on the real part, through the phone
 
 <table>
   <tr>
-    <td width="50%"><img src="docs/media/console-rig.png" alt="The technician console: relay and phone connected, a 3D scan beside the live view, and the rig's tick for step 4 in the activity log"></td>
+    <td width="50%"><img src="docs/media/console-call.png" alt="The technician console in a live call: the phone's camera on the left, the 3D scan beside it, the call controls and the live transcript on the right"></td>
     <td width="50%"><img src="docs/media/dashboard.png" alt="The expert dashboard: the 3D scan of the laptop, and a four-step SSD guide with every step done and step 4 checked by the rig"></td>
   </tr>
   <tr>
-    <td><sub><b>Technician console</b> (16 Nov). Relay and phone connected, a 3D scan beside the live view (before the call), and "Rig, step s4: ✓ correct" in the activity log.</sub></td>
+    <td><sub><b>Technician console in a live call</b> (16 Nov): the phone's camera, the 3D scan beside it, the call and the transcript.</sub></td>
     <td><sub><b>Expert dashboard.</b> The four-step SSD guide on the scan: all done on the phone, and step 4 checked by the rig (✓).</sub></td>
   </tr>
 </table>
@@ -130,7 +130,7 @@ to spot.
 - **Step 3** ("slide the SSD out") expects the bay to be empty. **Step 4** ("slide it back in") expects the SSD there.
 - The Nicla says what it sees over USB. The UNO Q compares that with the current step and sends ✓ or ✗ to the relay.
 - The console pops the verdict up and the phone's step card shows it. In our test, the rig's "step 4: ✓ correct"
-  reached the console and the dashboard (both screenshots above).
+  reached the console and the dashboard (the dashboard picture above shows "Rig ✓ step 4").
 
 This is a drawing of the rig we built. To build your own: [`hardware/README.md`](hardware/README.md).
 
