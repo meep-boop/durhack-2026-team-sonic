@@ -132,7 +132,7 @@ to spot.
 - The console pops the verdict up and the phone's step card shows it. In our test, the rig's "step 4: ✓ correct"
   reached the console and the dashboard (both screenshots above).
 
-There's no photo of the rig itself yet, so this is a drawing. To build one: [`hardware/README.md`](hardware/README.md).
+This is a drawing of the rig we built. To build your own: [`hardware/README.md`](hardware/README.md).
 
 ## 🚀 Quick start
 You need a Mac with Xcode, an iPhone (iOS 18+), Node 24 and Python 3. The phone and the laptop must be on the
