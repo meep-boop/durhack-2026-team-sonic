@@ -1142,3 +1142,29 @@ each builder's brief (`builder-file-<name>.md`, on the `context` branch).
 - 📨 To @laura @ahmed: the README no longer credits AI tools; keep the credits on Devpost, where the rules ask for them.
 - ⚠️ Conflicts: @laura — her README draft's AI use section was dropped, on Salman's call
 - Conflict status: open
+
+### 2026-11-17 02:45 — owner sweep, and a local improvement run started — @ahmed
+- Shipped: no code on `main`. The sweep of Salman's five entries since the event is in the briefs and `PROJECT.md`
+  (on `context`). `ahmed-relay` is level with `main` again: the hook's fast-forward had been blocked by two
+  untracked scans on Ahmed's laptop, byte-identical to the ones PR #13 added.
+- Found reading `main` (facts; nothing changed):
+  - The dashboard's preview and the phone disagree on direction, not only size: `preview.ts` turns an unscrew by
+    `-4π` (clockwise seen from the tip of `axis`, as `objects.ts` applies it) and slides a push along +`axis`; the
+    phone (`Shapes.swift`, `animate`) turns anticlockwise and moves a push along -`axis`.
+  - `pipeline/README.md`'s test command, `node --test pipeline/`, fails on Node 24.13.1 ("Cannot find module");
+    `node --test` from inside `pipeline/` passes 6 of 6.
+  - The README's library table leaves out `@anthropic-ai/sdk`, which `relay/package.json` installs.
+  - Tests on `main` at `09555ed`, run on Windows: relay 42/42, dashboard 54/54, rig 14/14, pipeline 6/6 and 5/5;
+    both type-checks and the dashboard build pass. The iOS tests weren't run (no Mac here).
+- Decision (Ahmed): a local improvement run on the branch `improve/features_and_fundamentals`, nothing pushed. A
+  locked backlog of 15 acceptance checks: one command for every suite plus a CI file; a hardware-free rehearsal, an
+  alignment-check guide and relay tools; on the dashboard, save / open a guide file, undo and redo, the preview
+  matching the phone, the name; on the phone, four small items **written without a compiler**. No new dependency,
+  no message-shape change.
+- Touched: on `context`: all four briefs, `PROJECT.md` (two decision rows, one pending item), `CLAUDE.md` (Known gaps)
+- 📨 To @salman: your 17:15 decision (no AI credits in the README) is logged as yours and as open: the charter (§7)
+  puts the disclosure in the README. Ahmed's to settle with you and Laura.
+- 📨 To @max: the two preview mismatches and the pipeline README command, above.
+- ⚠️ Conflicts: @max @laura @salman — the local run writes in `dashboard/` and `ios/`; none of it reaches `main`
+  without the owner's OK (and, for `ios/`, a build on a Mac)
+- Conflict status: open
