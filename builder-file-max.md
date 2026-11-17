@@ -64,13 +64,31 @@ and the walking skeleton is the next one. Anything new for you is in the block a
 ## 3. ▶ Current tasks (2026-11-14), in order
 *Status: ⬜ not started · 🟡 in progress · ⏸ blocked · ✅ done*
 
+**📥 From the board since the event (copied by @ahmed's agent, 2026-11-17 02:43):**
+- From @salman (2026-11-15 11:20): your dashboard still says "Remote Assist" (`dashboard/index.html` title,
+  `src/shell/Header.tsx`).
+- From @salman (2026-11-15 11:05): the marks-across-the-room bug is fixed on the phone, and your dashboard gained one
+  page of his (`viewer.html`, `src/viewer.tsx`); none of your files changed. All on `main` since PR #13.
+- From @salman (2026-11-15 11:40): a small look change on your scan screen's ready state (`ScanView.swift`); the flow
+  is unchanged.
+- From @ahmed's agent, found reading `main` on 2026-11-17 (facts; nothing was changed):
+  - The preview and the phone disagree on direction as well as size. `preview.ts` turns an unscrew by `-4π` and
+    `objects.ts` applies it with `setFromAxisAngle`, so the dashboard turns clockwise seen from the tip of `axis`; the
+    phone (`Shapes.swift`, `animate`) turns anticlockwise. The preview also slides a push along +`axis`, while the
+    phone moves it along -`axis`. The guide builder always sets `axis` to the model's own +Y (`guide.ts`, `modelUp`),
+    so the phone is the consistent one.
+  - `pipeline/README.md` gives `node --test pipeline/` as the test command. On Node 24.13.1 that fails with "Cannot
+    find module"; `node --test` from inside `pipeline/` passes 6 of 6.
+- **Heads-up:** Ahmed started a local improvement run on 2026-11-17 (branch `improve/features_and_fundamentals`, nothing pushed). Its backlog includes dashboard items: save / open a guide file, undo and redo, the preview
+  matching the phone, the name. Nothing of it reaches `main` without your OK.
+
 **▶ CHANGE (2026-11-15 08:30, Ahmed's decision): the demo opens with Salman's technician console, then the guide dashboard.**
 New order of the 5 minutes: problem → **live call: the expert clicks a screw on the phone's video and it appears on
 the real screw (Point, Unscrew, Screw in, Area)** → the guide dashboard: send the prepared guide, taps and ticks →
 phone Wi-Fi off, it keeps going, syncs → SSD out, the rig's ✓ → what's real. If the scans aren't calibrated in time,
 the guide's positions are typed and we say "prepared guide".
 - **For you:** the scan route is now the second beat, not the first. Two new scans are on Ahmed's laptop as
-  `dashboard/public/scans/scan-0801.usdz` and `scan-0809.usdz` (not committed yet: Ahmed is trying the calibration).
+  `dashboard/public/scans/scan-0801.usdz` and `scan-0809.usdz` (not committed yet: Ahmed is trying the calibration). *(Sweep 2026-11-17: both are on `main` since PR #13, the same bytes as Ahmed's copies.)*
 
 **▶ YOUR CHECKLIST (from @ahmed, 2026-11-15 07:47). Do these top to bottom; tick each with ✅ and a time. Everything below is
 background.** Why: boxes float on the phone because no guide has real positions yet. The fix is a scan with the

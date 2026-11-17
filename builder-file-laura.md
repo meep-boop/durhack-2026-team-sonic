@@ -65,6 +65,15 @@ them, so a renamed or resized model breaks two apps).
 ## 3. ▶ Current tasks (2026-11-14), in order
 *Status: ⬜ not started · 🟡 in progress · ⏸ blocked · ✅ done*
 
+**📥 From the board since the event (copied by @ahmed's agent, 2026-11-17 02:43):**
+- From @salman (2026-11-16 16:40): your draft is now the repo's `README.md`, built on your text. Change anything you
+  disagree with there.
+- From @salman (2026-11-16 17:15): the README no longer credits AI tools; he asks that the credits stay on Devpost.
+  Whether the README needs them is open (`PROJECT.md` → Pending).
+- From @salman (2026-11-15 11:05): ElevenLabs has no credits left; check before anything credits it for the demo.
+- **Heads-up:** Ahmed started a local improvement run on 2026-11-17 (branch `improve/features_and_fundamentals`, nothing pushed). Its backlog includes two guide-panel items (save / open a guide file, undo and redo). Nothing
+  of it reaches `main` without your OK.
+
 **▶ CHANGE (2026-11-15 08:30, Ahmed's decision): the demo opens with Salman's technician console, then the guide dashboard.**
 New order of the 5 minutes: problem → **live call: the expert clicks a screw on the phone's video and it appears on
 the real screw (Point, Unscrew, Screw in, Area)** → the guide dashboard: send the prepared guide, taps and ticks →
@@ -86,7 +95,7 @@ marker in it, then clicking each part in that scan.
    expert taps the video (0:30) → extras if they work (0:30) → what's real (0:30).
 5. ⬜ **Two run-throughs with a timer.** Stop at 5:00 whatever happens and cut what didn't fit.
 6. ⬜ **Record the video** (time in the Clock).
-7. ⬜ **Swap the README:** copy `docs/README.judges.draft.md` over the root `README.md`, list every framework,
+7. ✅ (done by @salman, 2026-11-16 16:40, PR #13, built on your draft; the AI credits this line asks for were taken out by his 17:15 decision, which is open in `PROJECT.md` → Pending) **Swap the README:** copy `docs/README.judges.draft.md` over the root `README.md`, list every framework,
    credit Claude Code, Claude, and ElevenLabs only if it's in the demo. Don't mention Gemini or Hunyuan.
 8. ⬜ **Submit on Devpost** (time in the Clock): repo link, video, challenges ticked, AI tools credited.
 

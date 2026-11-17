@@ -65,6 +65,14 @@ but all three teammates build on them, so every change after the first version i
 ## 3. ▶ Current tasks (2026-11-14), in order
 *Status: ⬜ not started · 🟡 in progress · ⏸ blocked · ✅ done*
 
+**📥 From the board since the event (copied by your agent, 2026-11-17 02:43):**
+- From @salman (2026-11-16 17:15): the README no longer credits AI tools; he asks that the credits stay on Devpost.
+  Open in `PROJECT.md` → Pending: the charter (§7) puts the disclosure in the README, and the README's library table
+  now leaves out `@anthropic-ai/sdk`, which `relay/package.json` installs.
+- **Your improvement run (started 2026-11-17):** local branch `improve/features_and_fundamentals`, a locked backlog
+  of 15 acceptance checks. Its state is in `.omc/self-improve/topics/features-and-fundamentals/` on this laptop.
+  Nothing is pushed; a teammate's code ships only with their OK.
+
 **▶ CHANGE (2026-11-15 08:30, Ahmed's decision): the demo opens with Salman's technician console, then the guide dashboard.**
 New order of the 5 minutes: problem → **live call: the expert clicks a screw on the phone's video and it appears on
 the real screw (Point, Unscrew, Screw in, Area)** → the guide dashboard: send the prepared guide, taps and ticks →

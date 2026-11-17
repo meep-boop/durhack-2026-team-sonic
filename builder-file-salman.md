@@ -63,6 +63,13 @@ splats until that's settled. Training splats in the app (the scan is taken in Sc
 ## 3. ▶ Current tasks (2026-11-14), in order
 *Status: ⬜ not started · 🟡 in progress · ⏸ blocked · ✅ done*
 
+**📥 From the board since the event (copied by @ahmed's agent, 2026-11-17 02:43):**
+- **Heads-up:** Ahmed started a local improvement run on 2026-11-17 (branch `improve/features_and_fundamentals`, nothing pushed). Its backlog includes four small phone items, written on a Windows laptop and so
+  **never compiled**: a "Check the marker" entry on Home, steps waiting to sync in the status capsule, a haptic and a
+  spoken line for the rig's verdict, VoiceOver labels. Nothing of it reaches `main` without your OK and a build on
+  your Mac.
+- Open in `PROJECT.md` → Pending: your 17:15 decision that the README carries no AI credits.
+
 **▶ CHANGE (2026-11-15 08:30, Ahmed's decision): the demo opens with Salman's technician console, then the guide dashboard.**
 New order of the 5 minutes: problem → **live call: the expert clicks a screw on the phone's video and it appears on
 the real screw (Point, Unscrew, Screw in, Area)** → the guide dashboard: send the prepared guide, taps and ticks →
@@ -75,8 +82,8 @@ the guide's positions are typed and we say "prepared guide".
 **▶ YOUR CHECKLIST (from @ahmed, 2026-11-15 07:47). Do these top to bottom; tick each with ✅ and a time. Everything below is
 background.** Why: boxes float on the phone because no guide has real positions yet. The fix is a scan with the
 marker in it, then clicking each part in that scan.
-1. ⬜ **Check PR #12 on the phone** (45 s of camera with no freeze; tap Done and see it synced), then merge it.
-2. ⬜ **Make the animations readable** in `ios/RemoteAssist/AR/Shapes.swift`:
+1. ✅ (sweep 2026-11-17: PR #12's commits reached `main` on 2026-11-16 inside PR #13, `09555ed`; your 11:05 entry says what the phone's log showed and what wasn't checked by eye) **Check PR #12 on the phone** (45 s of camera with no freeze; tap Done and see it synced), then merge it.
+2. 🟡 (sweep 2026-11-17: on `main`, `Shapes.animate` plays the unscrew, the pull / push and the stagger as written here, with `testAnUnscrewIsTwoTurnsRising15mmIn1point6s`; the ring, the 2.5 mm lines and the 18 mm label weren't checked by this sweep) **Make the animations readable** in `ios/RemoteAssist/AR/Shapes.swift`:
    - unscrew: two turns anticlockwise while rising 15 mm over 1.6 s, hold 0.4 s, restart from the hole;
    - pull / push: 4 cm one way over 1.0 s, hold 0.4 s, restart (not back and forth);
    - start each object 0.15 s after the one before, so 8 screws ripple;
@@ -86,7 +93,7 @@ marker in it, then clicking each part in that scan.
 4. ⬜ **Be at the table** when Max sends the guide built in the scan. Connect to Max's relay, point at the marker,
    and say whether each box sits on its screw.
 5. ⬜ **Try the call from Max's laptop:** press Call on the dashboard, accept on the phone, tap the video, see the pin.
-6. ⬜ **Tell Laura** whether ElevenLabs is in the demo build.
+6. ✅ (your 2026-11-15 11:05 entry: ElevenLabs ran out of credits; the README's "What's real" says so) **Tell Laura** whether ElevenLabs is in the demo build.
 - For the demo, use "the expert's guide" on the start screen, not the laptop guide: only that one reaches the dashboard.
 
 **How to start everything (for the run-through and the demo), in this order:**
@@ -103,8 +110,8 @@ photos with ARKit's camera poses in the marker's frame and posts them to an uplo
 Spark trains a splat from them. New folder `ios/RemoteAssist/Scan/`, plus small hooks in `ARSessionController.swift`
 (a `scanRecorder` that sees each frame), `ContentView.swift` and `HomeView.swift` (a third choice). **It has never
 been compiled:** Max's laptop has no Xcode. Nothing goes to `main` unless you say yes.
-1. ⬜ Say yes or no on the board.
-2. ⬜ If yes and there's time: check out `max-ios-scan`, run `xcodegen generate`, build, run `ScanKeyframePolicyTests`,
+1. ✅ (yes: your 11:05 entry; `max-ios-scan` is inside `salman-ios-scan`, on `main` since PR #13) Say yes or no on the board.
+2. 🟡 (sweep 2026-11-17: built and on `main`; the README's "What's real" says photos and camera positions reach the laptop's inbox, and that training a splat from them isn't shown) If yes and there's time: check out `max-ios-scan`, run `xcodegen generate`, build, run `ScanKeyframePolicyTests`,
    fix what doesn't compile, then try one scan (Home → Scan the room). *Done when:* a scan of 50+ photos lands in
    `pipeline/inbox/` on Max's laptop (`node pipeline/scan-inbox.ts` running there). `[⚠ with @max: his code in your app]`
 

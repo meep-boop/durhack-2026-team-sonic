@@ -205,7 +205,10 @@ rig is a Nicla Vision and an UNO Q. Splats come from Scaniverse, with the team's
 table: `PROJECT.md` §6.
 **The plan:** `docs/remote-assist/` on `main`.
 **Runtime shape:** `PROJECT.md` §5 diagram.
-**Known gaps** (2026-11-15 03:55): the dashboard (relay connection, calibration, picking, guide panel, header and
+**Known gaps** (2026-11-17): the phone app, the technician console and in-app scanning are on `main` (PR #13,
+`09555ed`). Still open: no alignment accuracy has been measured; Claude labelling has never made a live call; no
+splat has been trained from an in-app scan; cut-outs aren't built; `fixtures/ssd-swap-guide.json` still has draft
+positions. (2026-11-15 03:55): the dashboard (relay connection, calibration, picking, guide panel, header and
 live strip) is on `main`, but cut-outs aren't built and no scan with the marker in it exists yet, so nothing has been
 calibrated for real. The phone app is on `salman-ios-ar`, not `main`. (01:45, since fixed: the dashboard was a splat
 viewer with no relay connection, calibration, picking or guide screen.) (2026-11-14 23:40): the iPhone app (PR #4), the dashboard (PR #6) and the guide builder (`laura-guide`) aren't

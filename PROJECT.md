@@ -13,6 +13,8 @@ the system is shaped this way, and **History** says how we got here.
 
 ## NOW (updated 2026-11-15 01:45)
 
+*2026-11-17: the event ended on Sun 15 Nov, so every Clock row below is in the past. Rows dated after 2026-11-15 are work since then.*
+
 ### Headline
 **Step-by-step 3D guidance on a phone, built by a remote engineer from a scan of the room, that keeps working when the network is down.**
 
@@ -49,6 +51,8 @@ Source: `EVENT.md` §1 (one notes file, not yet checked against Devpost). The 02
 
 | Date | Decision |
 |---|---|
+| 2026-11-17 | A local improvement run on the branch `improve/features_and_fundamentals`, nothing pushed: a locked backlog of 15 acceptance checks (one command + CI, a hardware-free rehearsal and relay tools, four dashboard features, four iPhone-app items written without a compiler). No new dependency and no message-shape change; a teammate's code ships only with their OK (Ahmed) |
+| 2026-11-16 | The README carries no AI credits or Claude mentions; the credits stay on Devpost (Salman, 17:15). **Open:** see Pending, "Does the README credit the AI tools?" |
 | 2026-11-15 | The project's name is **Sonic Assist** (Ahmed, 10:18); "Remote Assist" was the working name. Devpost, the README and the pitch use Sonic Assist; code and folder names stay as they are |
 | 2026-11-15 | Scanning inside our own app, as a side route next to Scaniverse: the phone records photos with ARKit's camera poses in the marker's frame (`max-ios-scan`, merged only once Salman agrees and has built it in Xcode); an upload server on the relay laptop (port 8090) receives the zip and Max copies it to the Spark; our own gsplat script trains the splat in `~/scan`. Scaniverse stays the demo's scan; not shown as working until a real run has (Max, 08:00) |
 | 2026-11-15 | The demo opens with Salman's technician console (the expert clicks the live video, the mark lands on the real part), then the guide dashboard for the prepared guide, offline and the rig; replaces "scan first" in the 07:40 order (Ahmed, 08:30) |
@@ -116,6 +120,11 @@ SSD-swap demo (23:03).
 
 ### Pending decisions
 *Open questions, each with an owner and what it's waiting on. Unconfirmed leanings go here too, marked **not decided**.*
+- **Does the README credit the AI tools?** Salman took the credits out on 2026-11-16 (his 17:15 entry), reading the
+  event's rule as Devpost-only. `EVENT.md` records both "AI / LLM use must be credited explicitly" and "AI tools
+  must be credited on Devpost"; the charter (§7) puts the disclosure in the README. Separate from credit: the
+  README's library table leaves out `@anthropic-ai/sdk`, which `relay/package.json` installs, and the organisers
+  asked for every framework to be listed there. Owner: Ahmed, with Laura and Salman. **Not decided.**
 - **Reopen: cut-outs on the phone.** Ahmed chose "box plus a built-in model" on the premise that RealityKit can't
   draw splats. Max's research (`research/ledger.md` § 1, § 4), published the same hour, says RealityKit on iOS 27.2+
   can, and recommends real splat cut-outs with the model as the fallback. Owner: Ahmed + Max. **Not decided** whether
