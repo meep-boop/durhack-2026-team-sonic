@@ -68,7 +68,8 @@ splats until that's settled. Training splats in the app (the scan is taken in Sc
   **never compiled**: a "Check the marker" entry on Home, steps waiting to sync in the status capsule, a haptic and a
   spoken line for the rig's verdict, VoiceOver labels. Nothing of it reaches `main` without your OK and a build on
   your Mac.
-- Open in `PROJECT.md` → Pending: your 17:15 decision that the README carries no AI credits.
+- Settled 2026-11-17 by Ahmed: your 17:15 decision that the README carries no AI credits stands; nothing is open
+  on it.
 
 **▶ CHANGE (2026-11-15 08:30, Ahmed's decision): the demo opens with Salman's technician console, then the guide dashboard.**
 New order of the 5 minutes: problem → **live call: the expert clicks a screw on the phone's video and it appears on

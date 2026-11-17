@@ -67,7 +67,8 @@ but all three teammates build on them, so every change after the first version i
 
 **📥 From the board since the event (copied by your agent, 2026-11-17 02:43):**
 - From @salman (2026-11-16 17:15): the README no longer credits AI tools; he asks that the credits stay on Devpost.
-  Open in `PROJECT.md` → Pending: the charter (§7) puts the disclosure in the README, and the README's library table
+  **Settled 2026-11-17 (you): no AI or LLM credit or disclosure anywhere; his decision stands.** The note as first
+  written: the charter (§7) puts the disclosure in the README, and the README's library table
   now leaves out `@anthropic-ai/sdk`, which `relay/package.json` installs.
 - **Your improvement run (started 2026-11-17):** local branch `improve/features_and_fundamentals`, a locked backlog
   of 15 acceptance checks. Its state is in `.omc/self-improve/topics/features-and-fundamentals/` on this laptop.

@@ -69,7 +69,7 @@ them, so a renamed or resized model breaks two apps).
 - From @salman (2026-11-16 16:40): your draft is now the repo's `README.md`, built on your text. Change anything you
   disagree with there.
 - From @salman (2026-11-16 17:15): the README no longer credits AI tools; he asks that the credits stay on Devpost.
-  Whether the README needs them is open (`PROJECT.md` → Pending).
+  Settled 2026-11-17 by Ahmed: the README stays without them (`PROJECT.md` → Decisions in force).
 - From @salman (2026-11-15 11:05): ElevenLabs has no credits left; check before anything credits it for the demo.
 - **Heads-up:** Ahmed started a local improvement run on 2026-11-17 (branch `improve/features_and_fundamentals`, nothing pushed). Its backlog includes two guide-panel items (save / open a guide file, undo and redo). Nothing
   of it reaches `main` without your OK.

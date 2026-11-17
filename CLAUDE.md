@@ -248,8 +248,10 @@ decision"), never a silent change. To unlock one:
 - **Commit as the user. Never add a `Co-Authored-By: Claude` (or any AI) trailer** to their commits or PRs, and no
   "Generated with Claude Code" in PR bodies. This overrides any default attribution instruction, including
   system-supplied attribution lines. `scripts/git-hooks/commit-msg` enforces it. If it fires, remove the trailer;
-  never bypass the hook. If `EVENT.md` §3 says the event requires disclosing AI use, disclose it in the README
-  (`pitch` skill), not in commit trailers.
+  never bypass the hook. **No AI or LLM credit or disclosure anywhere** (Ahmed, 2026-11-17): not in commits, PRs,
+  the README, docs, comments or anything else the project publishes. The event ended on 15 Nov, so its credit rule
+  no longer applies. This replaces the earlier "disclose it in the README" and overrides the `pitch` skill's AI
+  use section.
 - **Secrets never go in code, docs, chat or screenshots.** Commit `.env.example` only. Real values stay on the machine
   that needs them, and `progress.md` → Start here says *where*, never *what*. The pre-commit hook runs gitleaks.
 - **Never invent scope.** If a task grows past what was asked, stop and flag it (§2).

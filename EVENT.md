@@ -1,4 +1,7 @@
 # DurHack 2026: rules, judging and context
+**The event ended on Sun 15 Nov 2026.** This file is the record of its rules, kept as history. They no longer bind
+work on the project, which is improved outside any event from here on (Ahmed, 2026-11-17).
+
 *For Team Sonic. Fill it at kickoff from the event's own pages: paste the rules, schedule and judging criteria into
 the chat and say "fill EVENT.md". Where two sources disagree, write both down and plan for the stricter one. Our own
 spec lives in `PROJECT.md`.*

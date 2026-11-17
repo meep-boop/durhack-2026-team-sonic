@@ -51,8 +51,9 @@ Source: `EVENT.md` §1 (one notes file, not yet checked against Devpost). The 02
 
 | Date | Decision |
 |---|---|
+| 2026-11-17 | No AI or LLM credit or disclosure anywhere: not in commits, PRs, the README or docs. The event ended on 15 Nov, so its credit rule no longer applies; Salman's README decision of 2026-11-16 stands and the Pending question on it is closed (Ahmed) |
 | 2026-11-17 | A local improvement run on the branch `improve/features_and_fundamentals`, nothing pushed: a locked backlog of 15 acceptance checks (one command + CI, a hardware-free rehearsal and relay tools, four dashboard features, four iPhone-app items written without a compiler). No new dependency and no message-shape change; a teammate's code ships only with their OK (Ahmed) |
-| 2026-11-16 | The README carries no AI credits or Claude mentions; the credits stay on Devpost (Salman, 17:15). **Open:** see Pending, "Does the README credit the AI tools?" |
+| 2026-11-16 | The README carries no AI credits or Claude mentions; the credits stay on Devpost (Salman, 17:15). Settled 2026-11-17 by the row above |
 | 2026-11-15 | The project's name is **Sonic Assist** (Ahmed, 10:18); "Remote Assist" was the working name. Devpost, the README and the pitch use Sonic Assist; code and folder names stay as they are |
 | 2026-11-15 | Scanning inside our own app, as a side route next to Scaniverse: the phone records photos with ARKit's camera poses in the marker's frame (`max-ios-scan`, merged only once Salman agrees and has built it in Xcode); an upload server on the relay laptop (port 8090) receives the zip and Max copies it to the Spark; our own gsplat script trains the splat in `~/scan`. Scaniverse stays the demo's scan; not shown as working until a real run has (Max, 08:00) |
 | 2026-11-15 | The demo opens with Salman's technician console (the expert clicks the live video, the mark lands on the real part), then the guide dashboard for the prepared guide, offline and the rig; replaces "scan first" in the 07:40 order (Ahmed, 08:30) |
@@ -120,11 +121,13 @@ SSD-swap demo (23:03).
 
 ### Pending decisions
 *Open questions, each with an owner and what it's waiting on. Unconfirmed leanings go here too, marked **not decided**.*
-- **Does the README credit the AI tools?** Salman took the credits out on 2026-11-16 (his 17:15 entry), reading the
+- **Settled 2026-11-17 by Ahmed: no AI or LLM credit or disclosure anywhere.** The event ended on 15 Nov, so its
+  credit rule no longer applies, and Salman's README decision stands. The original note: does the README credit
+  the AI tools? Salman took the credits out on 2026-11-16 (his 17:15 entry), reading the
   event's rule as Devpost-only. `EVENT.md` records both "AI / LLM use must be credited explicitly" and "AI tools
   must be credited on Devpost"; the charter (§7) puts the disclosure in the README. Separate from credit: the
   README's library table leaves out `@anthropic-ai/sdk`, which `relay/package.json` installs, and the organisers
-  asked for every framework to be listed there. Owner: Ahmed, with Laura and Salman. **Not decided.**
+  asked for every framework to be listed there. (Closed with the rest: the table stays as it is.)
 - **Reopen: cut-outs on the phone.** Ahmed chose "box plus a built-in model" on the premise that RealityKit can't
   draw splats. Max's research (`research/ledger.md` § 1, § 4), published the same hour, says RealityKit on iOS 27.2+
   can, and recommends real splat cut-outs with the model as the fallback. Owner: Ahmed + Max. **Not decided** whether
@@ -348,6 +351,14 @@ The diagram, components, alignment maths and draft protocol are in `docs/remote-
 
 ## Decision log
 *Full records, newest first. NOW → Decisions in force holds the one-line versions.*
+
+## 2026-11-17 — No AI or LLM credit or disclosure
+- Chose: nothing the project publishes credits or discloses AI or LLM use: commits, PRs, the README, docs (Ahmed)
+- Because: the event ended on 15 Nov, so its credit rule (`EVENT.md`) no longer applies; the project is improved
+  outside any event from here on
+- Replaces: the charter's "if the event requires disclosing AI use, disclose it in the README" (§7); closes the
+  question raised by Salman's README decision of 2026-11-16, which stands
+- Revisit if: the project is entered into another event whose rules ask for credits
 
 ## 2026-11-15 08:00 — Scanning inside our own app (side route)
 - Context: Max asked whether the phone app could scan the room like Scaniverse, and beat it. Scaniverse builds a
