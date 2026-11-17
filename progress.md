@@ -1168,3 +1168,10 @@ each builder's brief (`builder-file-<name>.md`, on the `context` branch).
 - ⚠️ Conflicts: @max @laura @salman — the local run writes in `dashboard/` and `ios/`; none of it reaches `main`
   without the owner's OK (and, for `ios/`, a build on a Mac)
 - Conflict status: open
+
+### 2026-11-17 02:52 — the README question is settled — @ahmed
+- Decision (Ahmed): Salman's 17:15 decision of 2026-11-16 stands. The README stays as it is; nothing is open on it.
+- Touched: on `context`: `PROJECT.md`, `CLAUDE.md` §7, `EVENT.md`, three briefs
+- 📨 To @salman @laura: no action needed.
+- ⚠️ Conflicts: none
+- Conflict status: n/a
